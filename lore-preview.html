@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Item & Lore Tooltip Generator</title>
+  
+  <style>
+    @font-face {
+      font-family: 'Minecraftia';
+      src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft/files/minecraft.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft/files/minecraft.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #141419;
+      color: #dcdce6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 15px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      font-size: 1.8rem;
+      color: #ffffff;
+      text-shadow: 2px 2px #000;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 850px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Panneau de configuration */
+    .editor-card {
+      background: #23232c;
+      border: 1px solid #363644;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #9ea0b8;
+    }
+
+    input[type="text"], select, textarea {
+      background: #14141b;
+      border: 1px solid #3c3c4e;
+      border-radius: 5px;
+      color: #ffffff;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, select:focus, textarea:focus {
+      border-color: #7a52cc;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .row > * {
+      flex: 1;
+    }
+
+    /* Section Enchantements */
+    .enchants-builder {
+      background: #191922;
+      border: 1px solid #2e2e3d;
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .enchants-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: #5d35b0;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #7345d6;
+    }
+
+    .btn-danger {
+      background: #8b2525;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger:hover {
+      background: #b13333;
+    }
+
+    .enchants-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .enchant-chip {
+      background: #242433;
+      padding: 6px 10px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      border: 1px solid #38384d;
+    }
+
+    textarea {
+      height: 100px;
+      font-family: monospace;
+      resize: vertical;
+    }
+
+    /* Zone Tooltip Minecraft */
+    .preview-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 250px;
+      background: radial-gradient(circle, #252233 0%, #0d0d12 100%);
+      border: 2px dashed #3a384d;
+      border-radius: 8px;
+      padding: 40px 15px;
+    }
+
+    /* Boîte de Tooltip fidèle à Minecraft */
+    .mc-tooltip {
+      position: relative;
+      background-color: #100010;
+      border: 2px solid #100010;
+      border-radius: 3px;
+      padding: 8px 10px;
+      box-shadow:
+        inset 0 0 0 2px #28007f,
+        inset 0 0 0 4px #5000ff,
+        4px 4px 15px rgba(0, 0, 0, 0.75);
+      font-family: 'Minecraftia', monospace, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      user-select: none;
+      max-width: 90%;
+      image-rendering: pixelated;
+    }
+
+    .mc-line {
+      white-space: pre-wrap;
+      /* Ombrage pixel-art de Minecraft : décalage 2px vers le bas/droite */
+      text-shadow: 2px 2px 0px #3f3f3f;
+    }
+
+    /* Styles */
+    .mc-bold { font-weight: bold; }
+    .mc-italic { font-style: italic; }
+    .mc-underline { text-decoration: underline; }
+    .mc-strikethrough { text-decoration: line-through; }
+    .mc-underline.mc-strikethrough { text-decoration: underline line-through; }
+  </style>
+</head>
+<body>
+
+  <h1>Minecraft Lore Previewer</h1>
+
+  <div class="container">
+    <div class="editor-card">
+      
+      <div class="row">
+        <div class="form-group" style="flex: 2;">
+          <label for="itemName">Nom de l'item (supporte &c, &6, etc.) :</label>
+          <input type="text" id="itemName" value="&bÉpée en diamant">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="itemRarity">Style par défaut :</label>
+          <select id="itemRarity">
+            <option value="&f">Normal (&f Blanc)</option>
+            <option value="&e">Inhabituel (&e Jaune)</option>
+            <option value="&b" selected>Rare (&b Aqua)</option>
+            <option value="&d">Épique (&d Magenta)</option>
+            <option value="&6">Légendaire (&6 Or)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Enchantements Minecraft :</label>
+        <div class="enchants-builder">
+          <div class="enchants-actions">
+            <select id="enchantSelect" style="flex: 2;">
+              <option value="Tranchant">Tranchant (Sharpness)</option>
+              <option value="Châtiment">Châtiment (Smite)</option>
+              <option value="Fléau des arthropodes">Fléau des arthropodes (Bane of Arthropods)</option>
+              <option value="Aura de feu">Aura de feu (Fire Aspect)</option>
+              <option value="Recul">Recul (Knockback)</option>
+              <option value="Butin">Butin (Looting)</option>
+              <option value="Balayage">Balayage (Sweeping Edge)</option>
+              <option value="Solidité">Solidité (Unbreaking)</option>
+              <option value="Raccommodage">Raccommodage (Mending)</option>
+              <option value="Efficacité">Efficacité (Efficiency)</option>
+              <option value="Fortune">Fortune</option>
+              <option value="Toucher de soie">Toucher de soie (Silk Touch)</option>
+            </select>
+            
+            <select id="enchantLevel" style="flex: 1;">
+              <option value="I">I</option>
+              <option value="II">II</option>
+              <option value="III">III</option>
+              <option value="IV">IV</option>
+              <option value="V" selected>V</option>
+            </select>
+
+            <button type="button" class="btn" id="addEnchantBtn">+ Ajouter</button>
+          </div>
+
+          <div class="enchants-list" id="enchantsList">
+            </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="customLore">Lore personnalisé (& codes de style autorisés) :</label>
+        <textarea id="customLore" placeholder="&7Dégâts d'attaque : &2+7&#10;&d&oForgée au sommet des cieux">&7Dégâts d'attaque : &2+7&#10;&7Vitesse d'attaque : &21.6&#10;&#10;&d&oForgée par les dieux anciens.</textarea>
+      </div>
+
+    </div>
+
+    <div class="preview-container">
+      <div class="mc-tooltip" id="tooltipDisplay"></div>
+    </div>
+  </div>
+
+  <script>
+    // Codes couleurs Minecraft RGB exacts et leurs ombres
+    const MC_COLORS = {
+      '0': { hex: '#000000', shadow: '#000000' },
+      '1': { hex: '#0000AA', shadow: '#00002A' },
+      '2': { hex: '#00AA00', shadow: '#002A00' },
+      '3': { hex: '#00AAAA', shadow: '#002A2A' },
+      '4': { hex: '#AA0000', shadow: '#2A0000' },
+      '5': { hex: '#AA00AA', shadow: '#2A002A' },
+      '6': { hex: '#FFAA00', shadow: '#2A2A00' },
+      '7': { hex: '#AAAAAA', shadow: '#2A2A2A' },
+      '8': { hex: '#555555', shadow: '#151515' },
+      '9': { hex: '#5555FF', shadow: '#15153F' },
+      'a': { hex: '#55FF55', shadow: '#153F15' },
+      'b': { hex: '#55FFFF', shadow: '#153F3F' },
+      'c': { hex: '#FF5555', shadow: '#3F1515' },
+      'd': { hex: '#FF55FF', shadow: '#3F153F' },
+      'e': { hex: '#FFFF55', shadow: '#3F3F15' },
+      'f': { hex: '#FFFFFF', shadow: '#3F3F3F' }
+    };
+
+    const OBF_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+
+    // Liste des enchantements actifs
+    let activeEnchants = [
+      { name: "Tranchant", level: "V" },
+      { name: "Aura de feu", level: "II" },
+      { name: "Raccommodage", level: "I" }
+    ];
+
+    // Parseur de texte Minecraft
+    function parseMinecraftCodes(text, defaultColorCode = 'f') {
+      const normalized = text.replace(/§/g, '&');
+      let currentColor = MC_COLORS[defaultColorCode] || MC_COLORS['f'];
+      let isBold = false;
+      let isItalic = false;
+      let isUnderline = false;
+      let isStrike = false;
+      let isObfuscated = false;
+
+      let html = '';
+      let buffer = '';
+
+      function flushBuffer() {
+        if (!buffer) return;
+
+        let classes = [];
+        if (isBold) classes.push('mc-bold');
+        if (isItalic) classes.push('mc-italic');
+        if (isUnderline) classes.push('mc-underline');
+        if (isStrike) classes.push('mc-strikethrough');
+        if (isObfuscated) classes.push('mc-obfuscated');
+
+        const classAttr = classes.length ? ` class="${classes.join(' ')}"` : '';
+        const styleAttr = ` style="color: ${currentColor.hex}; text-shadow: 2px 2px 0px ${currentColor.shadow};"`;
+        
+        const safeText = buffer
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        html += `<span${classAttr}${styleAttr}>${safeText}</span>`;
+        buffer = '';
+      }
+
+      for (let i = 0; i < normalized.length; i++) {
+        if (normalized[i] === '&' && i + 1 < normalized.length) {
+          const code = normalized[i + 1].toLowerCase();
+
+          if (MC_COLORS[code] !== undefined) {
+            flushBuffer();
+            currentColor = MC_COLORS[code];
+            // Changer de couleur réinitialise le style dans Minecraft
+            isBold = false;
+            isItalic = false;
+            isUnderline = false;
+            isStrike = false;
+            isObfuscated = false;
+            i++;
+            continue;
+          } else if (code === 'l') {
+            flushBuffer();
+            isBold = true;
+            i++;
+            continue;
+          } else if (code === 'o') {
+            flushBuffer();
+            isItalic = true;
+            i++;
+            continue;
+          } else if (code === 'n') {
+            flushBuffer();
+            isUnderline = true;
+            i++;
+            continue;
+          } else if (code === 'm') {
+            flushBuffer();
+            isStrike = true;
+            i++;
+            continue;
+          } else if (code === 'k') {
+            flushBuffer();
+            isObfuscated = true;
+            i++;
+            continue;
+          } else if (code === 'r') {
+            flushBuffer();
+            currentColor = MC_COLORS[defaultColorCode] || MC_COLORS['f'];
+            isBold = false;
+            isItalic = false;
+            isUnderline = false;
+            isStrike = false;
+            isObfuscated = false;
+            i++;
+            continue;
+          }
+        }
+        buffer += normalized[i];
+      }
+
+      flushBuffer();
+      return html;
+    }
+
+    // Gestion des enchantements (UI)
+    function renderEnchantList() {
+      const container = document.getElementById('enchantsList');
+      container.innerHTML = '';
+
+      activeEnchants.forEach((ench, index) => {
+        const item = document.createElement('div');
+        item.className = 'enchant-chip';
+        item.innerHTML = `
+          <span>${ench.name} ${ench.level}</span>
+          <button class="btn btn-danger" onclick="removeEnchant(${index})">×</button>
+        `;
+        container.appendChild(item);
+      });
+      updateTooltip();
+    }
+
+    function removeEnchant(index) {
+      activeEnchants.splice(index, 1);
+      renderEnchantList();
+    }
+
+    document.getElementById('addEnchantBtn').addEventListener('click', () => {
+      const name = document.getElementById('enchantSelect').value;
+      const level = document.getElementById('enchantLevel').value;
+      activeEnchants.push({ name, level });
+      renderEnchantList();
+    });
+
+    // Rendu global du Tooltip dans l'ordre Minecraft : Nom -> Enchantements -> Lore
+    function updateTooltip() {
+      const tooltip = document.getElementById('tooltipDisplay');
+      const lines = [];
+
+      // 1. Nom de l'item (Ligne 1)
+      let rawName = document.getElementById('itemName').value || 'Épée';
+      const defaultRarity = document.getElementById('itemRarity').value;
+      
+      // Si l'utilisateur n'a pas mis de code au début, on applique la rareté
+      if (!rawName.startsWith('&') && !rawName.startsWith('§')) {
+        rawName = defaultRarity + rawName;
+      }
+      lines.push(parseMinecraftCodes(rawName, 'b'));
+
+      // 2. Enchantements (Lignes suivantes, toujours en gris &7 dans Minecraft vanilla)
+      activeEnchants.forEach(ench => {
+        const text = `&7${ench.name} ${ench.level}`;
+        lines.push(parseMinecraftCodes(text, '7'));
+      });
+
+      // 3. Lore personnalisé (Lignes suivantes)
+      const loreText = document.getElementById('customLore').value;
+      if (loreText.trim().length > 0) {
+        const loreLines = loreText.split('\n');
+        loreLines.forEach(line => {
+          lines.push(parseMinecraftCodes(line, '5')); // Par défaut le lore custom sans code est violet (&5)
+        });
+      }
+
+      // Construction du rendu HTML
+      tooltip.innerHTML = lines
+        .map(line => `<div class="mc-line">${line || '&nbsp;'}</div>`)
+        .join('');
+    }
+
+    // Écouteurs de mise à jour instantanée
+    document.getElementById('itemName').addEventListener('input', updateTooltip);
+    document.getElementById('itemRarity').addEventListener('change', updateTooltip);
+    document.getElementById('customLore').addEventListener('input', updateTooltip);
+
+    // Animation du texte obfusqué (&k)
+    setInterval(() => {
+      const obfElements = document.querySelectorAll('.mc-obfuscated');
+      obfElements.forEach(el => {
+        const len = el.textContent.length;
+        let randomStr = '';
+        for (let i = 0; i < len; i++) {
+          randomStr += OBF_CHARS.charAt(Math.floor(Math.random() * OBF_CHARS.length));
+        }
+        el.textContent = randomStr;
+      });
+    }, 50);
+
+    // Initialisation
+    renderEnchantList();
+  </script>
+</body>
+</html>
