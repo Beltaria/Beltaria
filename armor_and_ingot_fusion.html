@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur & Ajusteur Pixel Art</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f1117',
+                            panel: '#1a1d24',
+                            border: '#2d3342',
+                            accent: '#6366f1', // Indigo moderne
+                            hover: '#4f46e5'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: theme('colors.dark.bg');
+            color: #E5E7EB;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .checkerboard {
+            background-color: #1a1d24;
+            background-image: 
+                linear-gradient(45deg, #2d3342 25%, transparent 25%), 
+                linear-gradient(-45deg, #2d3342 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #2d3342 75%), 
+                linear-gradient(-45deg, transparent 75%, #2d3342 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+
+        .pixelated {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: theme('colors.dark.accent');
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: theme('colors.dark.border');
+            border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <div class="w-full max-w-6xl space-y-8">
+        <div class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                <svg class="w-8 h-8 text-dark-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                Fusion & Texturing Pixel Art
+            </h1>
+            <p class="text-gray-400">Conserve la luminosité de l'armure d'origine avec l'esthétique moderne</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Colonne Gauche : Entrées & Filtres -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <div class="bg-dark-panel border border-dark-border p-6 rounded-2xl shadow-xl space-y-6">
+                    <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider flex justify-between items-center">
+                        Images sources
+                        <span id="status-badge" class="px-2 py-1 bg-gray-800 text-gray-400 rounded text-xs font-mono">En attente...</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Input Armure -->
+                        <div class="space-y-2">
+                            <label class="text-xs text-gray-400 block">1. Armure de base</label>
+                            <label class="block w-full aspect-square border-2 border-dashed border-gray-600 hover:border-dark-accent rounded-xl cursor-pointer relative bg-dark-bg group transition-colors overflow-hidden checkerboard">
+                                <input type="file" id="input-armor" accept="image/png, image/jpeg" class="hidden">
+                                <img id="preview-armor" class="absolute inset-0 w-full h-full object-contain pixelated hidden p-2" src="" alt="Armure">
+                                <div id="placeholder-armor" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-dark-accent transition-colors">
+                                    <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    <span class="text-xs font-medium">Charger</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Input Lingot -->
+                        <div class="space-y-2">
+                            <label class="text-xs text-gray-400 block">2. Lingot (Couleur)</label>
+                            <label class="block w-full aspect-square border-2 border-dashed border-gray-600 hover:border-dark-accent rounded-xl cursor-pointer relative bg-dark-bg group transition-colors overflow-hidden checkerboard">
+                                <input type="file" id="input-ingot" accept="image/png, image/jpeg" class="hidden">
+                                <img id="preview-ingot" class="absolute inset-0 w-full h-full object-contain pixelated hidden p-2" src="" alt="Lingot">
+                                <div id="placeholder-ingot" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-dark-accent transition-colors">
+                                    <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    <span class="text-xs font-medium">Charger</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="controls-panel" class="bg-dark-panel border border-dark-border p-6 rounded-2xl shadow-xl opacity-50 pointer-events-none transition-opacity duration-300">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Ajustements Manuels</h2>
+                        <button id="btn-reset" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded transition">Réinitialiser</button>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-medium text-gray-300">Teinte</label>
+                                <span id="val-hue" class="text-sm text-dark-accent font-mono">0°</span>
+                            </div>
+                            <input type="range" id="slider-hue" min="-180" max="180" value="0">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-medium text-gray-300">Saturation</label>
+                                <span id="val-sat" class="text-sm text-dark-accent font-mono">0%</span>
+                            </div>
+                            <input type="range" id="slider-sat" min="-100" max="100" value="0">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-medium text-gray-300">Luminosité</label>
+                                <span id="val-bri" class="text-sm text-dark-accent font-mono">0%</span>
+                            </div>
+                            <input type="range" id="slider-bri" min="-100" max="100" value="0">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-medium text-gray-300">Contraste</label>
+                                <span id="val-con" class="text-sm text-dark-accent font-mono">0%</span>
+                            </div>
+                            <input type="range" id="slider-con" min="-100" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonne Droite : Rendu & Export -->
+            <div class="lg:col-span-7 flex flex-col items-center">
+                <div class="bg-dark-panel border border-dark-border p-6 rounded-2xl shadow-xl w-full flex flex-col items-center h-full">
+                    
+                    <div class="w-full mb-4 flex justify-between items-center">
+                        <span class="text-sm text-gray-400 font-medium uppercase tracking-wider">Résultat Final</span>
+                        <span id="image-size" class="text-xs text-gray-500 font-mono bg-dark-bg px-2 py-1 rounded border border-dark-border">-- x -- px</span>
+                    </div>
+
+                    <div class="w-full max-w-md aspect-square relative rounded-xl overflow-hidden border border-gray-700 shadow-2xl flex-grow checkerboard flex items-center justify-center p-4">
+                        <canvas id="preview-canvas" class="relative z-10 w-full h-full object-contain pixelated drop-shadow-md hidden"></canvas>
+                        <div id="preview-placeholder" class="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
+                            <svg class="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-gray-500 text-sm">Le résultat s'affichera ici une fois les deux images chargées.</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 w-full">
+                        <button id="btn-download" disabled class="w-full bg-dark-accent hover:bg-dark-hover disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-xl shadow-lg transform transition-all flex items-center justify-center text-lg">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Télécharger la texture
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<!-- -->
+    <script>
+        const els = {
+            inputArmor: document.getElementById('input-armor'),
+            inputIngot: document.getElementById('input-ingot'),
+            prevArmor: document.getElementById('preview-armor'),
+            prevIngot: document.getElementById('preview-ingot'),
+            placeArmor: document.getElementById('placeholder-armor'),
+            placeIngot: document.getElementById('placeholder-ingot'),
+            statusBadge: document.getElementById('status-badge'),
+            
+            btnReset: document.getElementById('btn-reset'),
+            btnDownload: document.getElementById('btn-download'),
+            controls: document.getElementById('controls-panel'),
+            canvas: document.getElementById('preview-canvas'),
+            placeholder: document.getElementById('preview-placeholder'),
+            sizeText: document.getElementById('image-size')
+        };
+
+        const sliders = {
+            hue: document.getElementById('slider-hue'),
+            sat: document.getElementById('slider-sat'),
+            bri: document.getElementById('slider-bri'),
+            con: document.getElementById('slider-con')
+        };
+        const displays = {
+            hue: document.getElementById('val-hue'),
+            sat: document.getElementById('val-sat'),
+            bri: document.getElementById('val-bri'),
+            con: document.getElementById('val-con')
+        };
+
+        const ctx = els.canvas.getContext('2d', { willReadFrequently: true });
+        
+        let imgArmor = new Image();
+        let imgIngot = new Image();
+        let baseImageData = null; 
+        let originalFileName = "armure_coloree.png";
+
+        function handleFile(input, imgElement, previewElement, placeholderElement, callback) {
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (input === els.inputArmor) {
+                    originalFileName = file.name.replace(/\.[^/.]+$/, "") + "_recolor.png";
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imgElement.onload = () => {
+                        previewElement.src = imgElement.src;
+                        previewElement.classList.remove('hidden');
+                        placeholderElement.classList.add('hidden');
+                        callback();
+                    };
+                    imgElement.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        handleFile(els.inputArmor, imgArmor, els.prevArmor, els.placeArmor, processImages);
+        handleFile(els.inputIngot, imgIngot, els.prevIngot, els.placeIngot, processImages);
+
+<!-- -->
+        function getAverageColor(img) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(img, 0, 0);
+            const data = tCtx.getImageData(0, 0, img.width, img.height).data;
+            
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i+3] > 0) { // Ignorer la transparence
+                    r += data[i];
+                    g += data[i+1];
+                    b += data[i+2];
+                    count++;
+                }
+            }
+            if(count === 0) return [0,0,0];
+            return [r/count, g/count, b/count];
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max == min) {
+                h = s = 0; // achromatique
+            } else {
+                let d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h, s, l];
+        }
+
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            if (s == 0) {
+                r = g = b = l;
+            } else {
+                let hue2rgb = function hue2rgb(p, q, t) {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                }
+                let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                let p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+<!-- -->
+        function processImages() {
+            if (!imgArmor.src || !imgIngot.src) return;
+            
+            els.statusBadge.textContent = "Génération...";
+            els.statusBadge.classList.replace('bg-gray-800', 'bg-indigo-600');
+            els.statusBadge.classList.replace('text-gray-400', 'text-white');
+
+            els.canvas.width = imgArmor.width;
+            els.canvas.height = imgArmor.height;
+            els.sizeText.textContent = `${imgArmor.width} x ${imgArmor.height} px`;
+
+            const avgIngotRgb = getAverageColor(imgIngot);
+            const avgIngotHsl = rgbToHsl(avgIngotRgb[0], avgIngotRgb[1], avgIngotRgb[2]);
+
+            ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+            ctx.drawImage(imgArmor, 0, 0);
+            const armorData = ctx.getImageData(0, 0, els.canvas.width, els.canvas.height);
+            const d = armorData.data;
+
+            // Applique la Teinte et Saturation du lingot, MAIS garde la Luminosité de l'armure
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i+3] > 0) {
+                    const armorHsl = rgbToHsl(d[i], d[i+1], d[i+2]);
+                    
+                    // Magie ici : Teinte Lingot, Saturation Lingot, LUMINOSITÉ ARMURE
+                    const newRgb = hslToRgb(avgIngotHsl[0], avgIngotHsl[1], armorHsl[2]);
+                    
+                    d[i] = newRgb[0];
+                    d[i+1] = newRgb[1];
+                    d[i+2] = newRgb[2];
+                }
+            }
+
+            baseImageData = armorData;
+            
+            // Révéler l'UI
+            els.placeholder.classList.add('hidden');
+            els.canvas.classList.remove('hidden');
+            els.controls.classList.remove('opacity-50', 'pointer-events-none');
+            els.btnDownload.disabled = false;
+            
+            els.statusBadge.textContent = "Prêt";
+            els.statusBadge.classList.replace('bg-indigo-600', 'bg-green-600');
+
+            applyFilters(); 
+        }
+
+        function applyFilters() {
+            if (!baseImageData) return;
+
+            const hOffset = parseFloat(sliders.hue.value) / 360;
+            const sOffset = parseFloat(sliders.sat.value) / 100;
+            const lOffset = parseFloat(sliders.bri.value) / 100;
+            const contrast = parseFloat(sliders.con.value);
+            
+            displays.hue.textContent = `${sliders.hue.value}°`;
+            displays.sat.textContent = `${sliders.sat.value > 0 ? '+' : ''}${sliders.sat.value}%`;
+            displays.bri.textContent = `${sliders.bri.value > 0 ? '+' : ''}${sliders.bri.value}%`;
+            displays.con.textContent = `${sliders.con.value > 0 ? '+' : ''}${sliders.con.value}%`;
+
+            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+            const newData = new ImageData(
+                new Uint8ClampedArray(baseImageData.data),
+                baseImageData.width,
+                baseImageData.height
+            );
+            const d = newData.data;
+
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i+3] > 0) {
+                    let [h, s, l] = rgbToHsl(d[i], d[i+1], d[i+2]);
+                    
+                    // Appliquer les décalages manuels
+                    h = (h + hOffset) % 1;
+                    if (h < 0) h += 1;
+                    s = Math.max(0, Math.min(1, s + sOffset));
+                    l = Math.max(0, Math.min(1, l + lOffset));
+
+                    let [r, g, b] = hslToRgb(h, s, l);
+
+                    // Contraste
+                    r = factor * (r - 128) + 128;
+                    g = factor * (g - 128) + 128;
+                    b = factor * (b - 128) + 128;
+
+                    d[i] = Math.max(0, Math.min(255, r));
+                    d[i+1] = Math.max(0, Math.min(255, g));
+                    d[i+2] = Math.max(0, Math.min(255, b));
+                }
+            }
+
+            ctx.putImageData(newData, 0, 0);
+        }
+
+        Object.values(sliders).forEach(slider => {
+            slider.addEventListener('input', applyFilters);
+        });
+
+        els.btnReset.addEventListener('click', () => {
+            sliders.hue.value = 0;
+            sliders.sat.value = 0;
+            sliders.bri.value = 0;
+            sliders.con.value = 0;
+            applyFilters();
+        });
+
+        els.btnDownload.addEventListener('click', () => {
+            if (!baseImageData) return;
+            const link = document.createElement('a');
+            link.download = originalFileName;
+            link.href = els.canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
