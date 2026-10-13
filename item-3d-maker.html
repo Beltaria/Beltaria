@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualiseur d'Items 3D & Animations (Correction FPS)</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: radial-gradient(circle at center, #1e1e24 0%, #0a0a0c 100%); 
+            color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; 
+        }
+        #sidebar { 
+            width: 350px; background-color: rgba(20, 20, 25, 0.95); 
+            padding: 25px; box-shadow: 2px 0 15px rgba(0,0,0,0.8); 
+            display: flex; flex-direction: column; gap: 20px; z-index: 10; 
+            border-right: 2px solid #e67e22; overflow-y: auto;
+        }
+        #viewer { 
+            flex-grow: 1; position: relative; cursor: grab; transition: background 0.3s;
+            background-color: #1e1e24; /* Fond par défaut */
+        }
+        #viewer:active { cursor: grabbing; }
+        h2 { margin-top: 0; color: #e67e22; font-size: 1.5em; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .upload-group { 
+            background: #2a2a35; padding: 15px; border-radius: 8px; 
+            border: 1px dashed #555; text-align: center; transition: 0.3s;
+        }
+        .upload-group:hover { border-color: #e67e22; background: #30303e; }
+        .upload-group label.title { display: block; margin-bottom: 12px; font-weight: bold; color: #ddd; }
+        input[type=file] { display: none; }
+        .btn { 
+            background: #d35400; color: #fff; padding: 10px 20px; 
+            border-radius: 5px; cursor: pointer; display: inline-block; 
+            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s;
+            width: 100%; box-sizing: border-box;
+        }
+        .btn:hover { background: #e67e22; }
+        
+        .status { font-size: 0.85em; color: #888; margin-top: 10px; display: block; word-break: break-all; }
+        
+        .box { background: #222; padding: 15px; border-radius: 8px; border-left: 3px solid #e67e22; }
+        .box h3 { margin: 0 0 10px 0; font-size: 1em; color: #ccc; }
+        
+        label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.9em; margin-bottom: 10px;}
+        input[type=range] { width: 100%; accent-color: #e67e22; cursor: pointer; }
+        
+        .info-text { font-size: 0.85em; color: #999; line-height: 1.5; }
+        
+        #loading { display: none; color: #e67e22; font-weight: bold; margin-top: 5px; font-size: 0.9em; }
+
+        /* Le curseur Minecraft */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 16px; height: 16px;
+            transform: translate(-50%, -50%);
+            pointer-events: none; display: none;
+            background: linear-gradient(white, white) center/2px 16px no-repeat,
+                        linear-gradient(white, white) center/16px 2px no-repeat;
+            mix-blend-mode: difference; z-index: 5;
+        }
+        .highlight-check { background: rgba(230, 126, 34, 0.15); padding: 10px; border-radius: 5px; border: 1px solid #e67e22; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>⛏️ Item 3D Maker</h2>
+    <div class="info-text">
+        Importez un PNG (ex: épée).<br>
+        • Pour <b>les arcs</b>, importez les 4 fichiers d'un coup.
+    </div>
+    
+    <div class="upload-group">
+        <label class="title">Texture(s) de l'Item</label>
+        <label class="btn" for="itemUpload">📁 Choisir Fichier(s)</label>
+        <input type="file" id="itemUpload" accept="image/png" multiple>
+        <span class="status" id="statusText">Aucun item chargé.</span>
+        <div id="loading">Génération des voxels 3D...</div>
+    </div>
+
+    <div class="box">
+        <h3>🎥 Contrôle d'Animation</h3>
+        <label>
+            <input type="checkbox" id="autoPlay" checked> Lecture Automatique (Boucle)
+        </label>
+        <label style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            <span>Vitesse (Timer) : <span id="speedValue">400</span> ms</span>
+            <input type="range" id="speedSlider" min="50" max="2000" step="50" value="400">
+        </label>
+        <label style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            <span>Frame manuelle : <span id="frameCounter">1/1</span></span>
+            <input type="range" id="frameSlider" min="0" max="0" value="0" disabled>
+        </label>
+    </div>
+
+    <div class="box">
+        <h3>👁️ Mode de Vue</h3>
+        <label class="highlight-check">
+            <input type="checkbox" id="inGameMode"> 🎮 Rendu In-Game 1.8 (Vue FPS)
+        </label>
+        <label>
+            <input type="checkbox" id="autoRotate" checked> Rotation Automatique
+        </label>
+        <label style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            Épaisseur de l'objet (Z) :
+            <input type="range" id="thicknessSlider" min="0.2" max="3" step="0.2" value="1">
+        </label>
+    </div>
+</div>
+
+<div id="viewer">
+    <div id="crosshair"></div>
+</div>
+
+<script>
+    // --- 1. INITIALISATION DE LA SCÈNE 3D ---
+    const viewerDiv = document.getElementById('viewer');
+    const scene = new THREE.Scene();
+    
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(10, 20, 15);
+    scene.add(dirLight);
+
+    const camera = new THREE.PerspectiveCamera(45, viewerDiv.clientWidth / viewerDiv.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 30);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(viewerDiv.clientWidth, viewerDiv.clientHeight);
+    viewerDiv.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    window.addEventListener('resize', () => {
+        camera.aspect = viewerDiv.clientWidth / viewerDiv.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(viewerDiv.clientWidth, viewerDiv.clientHeight);
+    });
+
+    // --- VARIABLES GLOBALES ---
+    let itemGroup = new THREE.Group();
+    scene.add(itemGroup);
+    
+    let frames = [];
+    let currentFrame = 0;
+    let isPlaying = true;
+    let lastAnimTime = 0;
+    let animSpeed = 400; 
+    let currentThickness = 1;
+    let inGameMode = false;
+    let baseItemSize = 16; // Pour normaliser la taille
+
+    // --- 2. FONCTION DE GÉNÉRATION VOXEL ---
+    function buildVoxelFrame(image, sX, sY, width, height, thickness) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, sX, sY, width, height, 0, 0, width, height);
+        const data = ctx.getImageData(0, 0, width, height).data;
+
+        const frameGroup = new THREE.Group();
+        const geometry = new THREE.BoxGeometry(1, 1, thickness);
+        const offsetX = width / 2;
+        const offsetY = height / 2;
+        const matCache = {};
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x) * 4;
+                const a = data[idx + 3];
+
+                if (a > 10) {
+                    const r = data[idx]; const g = data[idx + 1]; const b = data[idx + 2];
+                    const hex = (r << 16) | (g << 8) | b;
+
+                    if (!matCache[hex]) {
+                        matCache[hex] = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.8, metalness: 0.1 });
+                    }
+                    const mesh = new THREE.Mesh(geometry, matCache[hex]);
+                    mesh.position.set(x - offsetX + 0.5, -(y - offsetY + 0.5), 0);
+                    frameGroup.add(mesh);
+                }
+            }
+        }
+        return frameGroup;
+    }
+
+    // --- 3. TRAITEMENT DES FICHIERS ---
+    async function processFiles(files) {
+        document.getElementById('loading').style.display = 'block';
+        
+        scene.remove(itemGroup);
+        itemGroup = new THREE.Group();
+        scene.add(itemGroup);
+        frames = [];
+        currentFrame = 0;
+
+        const sortedFiles = Array.from(files).sort((a, b) => a.name.localeCompare(b.name));
+
+        if (sortedFiles.length === 1) {
+            const file = sortedFiles[0];
+            const img = await loadImage(file);
+            let frameCount = 1;
+            
+            if (img.height > img.width && img.height % img.width === 0) {
+                frameCount = img.height / img.width;
+                document.getElementById('statusText').innerText = `Spritesheet : ${frameCount} frames.`;
+            } else {
+                document.getElementById('statusText').innerText = `Item simple : ${img.width}x${img.height}`;
+            }
+
+            baseItemSize = img.width; // Sauvegarde la résolution (16, 32, etc.)
+
+            for (let i = 0; i < frameCount; i++) {
+                const fGroup = buildVoxelFrame(img, 0, i * img.width, img.width, img.width, currentThickness);
+                fGroup.visible = (i === 0);
+                frames.push(fGroup);
+                itemGroup.add(fGroup);
+            }
+        } else {
+            document.getElementById('statusText').innerText = `Séquence de ${sortedFiles.length} fichiers.`;
+            const firstImg = await loadImage(sortedFiles[0]);
+            baseItemSize = firstImg.width;
+
+            for (let i = 0; i < sortedFiles.length; i++) {
+                const img = await loadImage(sortedFiles[i]);
+                const fGroup = buildVoxelFrame(img, 0, 0, img.width, img.height, currentThickness);
+                fGroup.visible = (i === 0);
+                frames.push(fGroup);
+                itemGroup.add(fGroup);
+            }
+        }
+
+        updateUI();
+        document.getElementById('loading').style.display = 'none';
+        
+        if (inGameMode) {
+            applyInGameMode(); // Réapplique l'échelle si on charge pendant le mode FPS
+        } else {
+            resetCameraToItem();
+        }
+    }
+
+    function loadImage(file) {
+        return new Promise((resolve) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.src = url;
+        });
+    }
+
+    // --- 4. GESTION DE L'INTERFACE ---
+    const frameSlider = document.getElementById('frameSlider');
+    const autoPlayCheckbox = document.getElementById('autoPlay');
+    
+    function updateUI() {
+        if (frames.length > 1) {
+            frameSlider.max = frames.length - 1;
+            frameSlider.disabled = isPlaying;
+            document.getElementById('frameCounter').innerText = `${currentFrame + 1}/${frames.length}`;
+        } else {
+            frameSlider.max = 0;
+            frameSlider.disabled = true;
+            document.getElementById('frameCounter').innerText = `1/1`;
+        }
+    }
+
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+        animSpeed = parseInt(e.target.value);
+        document.getElementById('speedValue').innerText = animSpeed;
+    });
+
+    autoPlayCheckbox.addEventListener('change', (e) => {
+        isPlaying = e.target.checked;
+        frameSlider.disabled = isPlaying;
+    });
+
+    frameSlider.addEventListener('input', (e) => {
+        if (!isPlaying) setFrame(parseInt(e.target.value));
+    });
+
+    document.getElementById('thicknessSlider').addEventListener('input', (e) => {
+        currentThickness = parseFloat(e.target.value);
+        if (!inGameMode) {
+            itemGroup.scale.z = currentThickness;
+        } else {
+            applyInGameMode(); // Réajuste l'épaisseur proportionnellement en mode FPS
+        }
+    });
+
+    function setFrame(index) {
+        frames.forEach((f, i) => { f.visible = (i === index); });
+        currentFrame = index;
+        frameSlider.value = index;
+        document.getElementById('frameCounter').innerText = `${currentFrame + 1}/${frames.length}`;
+    }
+
+    document.getElementById('itemUpload').addEventListener('change', (e) => {
+        if (e.target.files.length > 0) processFiles(e.target.files);
+    });
+
+    function resetCameraToItem() {
+        if(frames.length > 0) {
+            const box = new THREE.Box3().setFromObject(itemGroup);
+            const size = box.getSize(new THREE.Vector3()).length();
+            camera.position.set(0, 0, size * 1.2);
+            itemGroup.position.set(0, 0, 0);
+            itemGroup.rotation.set(0, 0, 0);
+            itemGroup.scale.set(1, 1, currentThickness);
+        }
+    }
+
+    // --- GESTION DU MODE IN-GAME 1.8 ---
+    const autoRotateCheckbox = document.getElementById('autoRotate');
+    const crosshair = document.getElementById('crosshair');
+
+    function applyInGameMode() {
+        controls.enabled = false;
+        autoRotateCheckbox.disabled = true;
+        crosshair.style.display = 'block';
+        
+        // Fov 70 typique de Minecraft
+        camera.fov = 70;
+        camera.position.set(0, 0, 30);
+        camera.updateProjectionMatrix();
+
+        // NORMALISATION DE LA TAILLE :
+        // Si l'image fait 32px, on divise la taille par 2 pour qu'elle prenne la même place qu'une 16px.
+        const normalizeScale = 16 / baseItemSize;
+        const finalScale = 0.8 * normalizeScale; // 0.8 est la taille de base parfaite pour l'écran
+
+        // Positionnement précis de l'arme en bas à droite
+        itemGroup.scale.set(finalScale, finalScale, finalScale * currentThickness);
+        itemGroup.position.set(12, -10, 15); 
+        
+        // Rotation (Incliné vers l'avant et légèrement tourné comme une épée en main)
+        itemGroup.rotation.set(-0.2, -0.6, 0.4); 
+    }
+
+    document.getElementById('inGameMode').addEventListener('change', (e) => {
+        inGameMode = e.target.checked;
+        if (inGameMode) {
+            applyInGameMode();
+            // Ajout d'un fond ciel/herbe très basique pour simuler l'extérieur
+            viewerDiv.style.background = "linear-gradient(to bottom, #78a7ff 0%, #78a7ff 60%, #449944 60%, #337733 100%)";
+        } else {
+            // Retour au mode 3D normal
+            controls.enabled = true;
+            autoRotateCheckbox.disabled = false;
+            crosshair.style.display = 'none';
+            viewerDiv.style.background = "none";
+            
+            camera.fov = 45;
+            camera.updateProjectionMatrix();
+            resetCameraToItem();
+        }
+    });
+
+    // --- 5. BOUCLE DE RENDU ---
+    function animate(time) {
+        requestAnimationFrame(animate);
+        controls.update();
+
+        // Rotation auto
+        if (autoRotateCheckbox.checked && !inGameMode && !autoRotateCheckbox.disabled) {
+            itemGroup.rotation.y += 0.01;
+        }
+
+        // View Bobbing (Effet de respiration)
+        if (inGameMode) {
+            const bobbing = Math.sin(time / 500) * 0.4;
+            itemGroup.position.y = -10 + bobbing; // Le -10 doit correspondre au Y de `applyInGameMode`
+        }
+
+        // Animation des frames
+        if (isPlaying && frames.length > 1) {
+            if (time - lastAnimTime > animSpeed) {
+                let nextFrame = (currentFrame + 1) % frames.length;
+                setFrame(nextFrame);
+                lastAnimTime = time;
+            }
+        }
+
+        renderer.render(scene, camera);
+    }
+    animate(0);
+
+</script>
+</body>
+</html>
