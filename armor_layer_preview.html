@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualiseur d'Armure Minecraft 1.8 (Enchantement Animé)</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: radial-gradient(circle at center, #2c2c3e 0%, #111116 100%); 
+            color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; 
+        }
+        #sidebar { 
+            width: 350px; background-color: rgba(30, 30, 40, 0.95); 
+            padding: 25px; box-shadow: 2px 0 15px rgba(0,0,0,0.8); 
+            display: flex; flex-direction: column; gap: 20px; z-index: 10; 
+            border-right: 2px solid #5a1e2b;
+        }
+        #viewer { 
+            flex-grow: 1; display: flex; justify-content: center; 
+            align-items: center; position: relative; cursor: grab;
+        }
+        #viewer:active { cursor: grabbing; }
+        h2 { margin-top: 0; color: #e74c3c; font-size: 1.5em; text-transform: uppercase; letter-spacing: 1px; }
+        .upload-group { 
+            background: #2a2a35; padding: 15px; border-radius: 8px; 
+            border: 1px dashed #555; text-align: center; transition: 0.3s;
+        }
+        .upload-group:hover { border-color: #e74c3c; background: #30303e; }
+        .upload-group label.title { display: block; margin-bottom: 12px; font-weight: bold; color: #ddd; }
+        input[type=file] { display: none; }
+        .btn { 
+            background: #c0392b; color: #fff; padding: 10px 20px; 
+            border-radius: 5px; cursor: pointer; display: inline-block; 
+            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        .btn:hover { background: #e74c3c; }
+        .status { font-size: 0.85em; color: #888; margin-top: 10px; display: block; word-break: break-all; }
+        .controls { margin-top: auto; padding-top: 20px; border-top: 1px solid #444; display: flex; flex-direction: column; gap: 10px; }
+        .highlight-check { background: rgba(138, 43, 226, 0.2); padding: 10px; border-radius: 5px; border: 1px solid #8a2be2; }
+    </style>
+    <!-- Chargement sécurisé de la librairie -->
+    <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0/bundles/skinview3d.bundle.min.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>⚔️ Rendu d'Armure</h2>
+    <div style="font-size: 0.95em; color: #aaa; line-height: 1.5;">
+        Nouvel effet d'enchantement : vague dynamique et fluide style Minecraft Vanilla.
+    </div>
+    
+    <div class="upload-group">
+        <label class="title">Pièces Hautes (Layer 1)</label>
+        <label class="btn" for="layer1">Importer Layer 1.png</label>
+        <input type="file" id="layer1" accept="image/png">
+        <span class="status" id="status1">Attente du fichier...</span>
+    </div>
+
+    <div class="upload-group">
+        <label class="title">Jambières (Layer 2)</label>
+        <label class="btn" for="layer2" style="background:#2980b9;">Importer Layer 2.png</label>
+        <input type="file" id="layer2" accept="image/png">
+        <span class="status" id="status2">Attente du fichier...</span>
+    </div>
+
+    <div class="controls">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:10px;" class="highlight-check">
+            <input type="checkbox" id="glowing"> ✨ Activer l'Enchantement
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="autoRotate" checked> Rotation Automatique
+        </label>
+    </div>
+</div>
+
+<div id="viewer">
+    <canvas id="skin_canvas"></canvas>
+</div>
+
+<script>
+    // 1. Initialisation de la 3D
+    const canvas3d = document.getElementById("skin_canvas");
+    const viewer = new skinview3d.SkinViewer({
+        canvas: canvas3d,
+        width: window.innerWidth - 400,
+        height: window.innerHeight
+    });
+    
+    viewer.autoRotate = true;
+    viewer.autoRotateSpeed = 0.5;
+    viewer.zoom = 0.8;
+
+    // Interface (Rotation et Redimensionnement)
+    document.getElementById("autoRotate").addEventListener("change", (e) => {
+        viewer.autoRotate = e.target.checked;
+    });
+    window.addEventListener("resize", () => {
+        viewer.width = window.innerWidth - 400;
+        viewer.height = window.innerHeight;
+    });
+
+    // 2. Toiles pour la création de texture
+    const mainCanvas = document.createElement("canvas");
+    mainCanvas.width = 64;
+    mainCanvas.height = 64;
+    const ctx = mainCanvas.getContext("2d");
+
+    const armorCanvas = document.createElement("canvas");
+    armorCanvas.width = 64;
+    armorCanvas.height = 64;
+    const actx = armorCanvas.getContext("2d");
+
+    // Variables globales
+    let imgLayer1 = null;
+    let imgLayer2 = null;
+    let isGlowing = false;
+    let waveOffset = 0;
+    let animTimer = null;
+
+    function drawMannequin() {
+        ctx.clearRect(0, 0, 64, 64);
+        ctx.fillStyle = "#c08c6c"; ctx.fillRect(0, 0, 32, 16); 
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(9, 12, 2, 2); ctx.fillRect(13, 12, 2, 2); 
+        ctx.fillStyle = "#333333"; ctx.fillRect(10, 12, 1, 2); ctx.fillRect(13, 12, 1, 2);
+        ctx.fillStyle = "#5c3a21"; ctx.fillRect(16, 16, 24, 16); 
+        ctx.fillStyle = "#c08c6c"; ctx.fillRect(40, 16, 16, 16); ctx.fillRect(32, 48, 16, 16); 
+        ctx.fillStyle = "#2b2b8c"; ctx.fillRect(0, 16, 16, 16); ctx.fillRect(16, 48, 16, 16); 
+    }
+
+    function drawFlipped(targetCtx, img, sx, sy, sw, sh, dx, dy, dw, dh) {
+        targetCtx.save();
+        targetCtx.translate(dx + dw, dy);
+        targetCtx.scale(-1, 1);
+        targetCtx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+        targetCtx.restore();
+    }
+
+    function mirrorLimb(targetCtx, img, srcX, destX, destY) {
+        drawFlipped(targetCtx, img, srcX + 0, 20, 4, 12, destX + 8, destY + 4, 4, 12);
+        drawFlipped(targetCtx, img, srcX + 4, 20, 4, 12, destX + 4, destY + 4, 4, 12);
+        drawFlipped(targetCtx, img, srcX + 8, 20, 4, 12, destX + 0, destY + 4, 4, 12);
+        drawFlipped(targetCtx, img, srcX + 12, 20, 4, 12, destX + 12, destY + 4, 4, 12);
+        drawFlipped(targetCtx, img, srcX + 4, 16, 4, 4, destX + 4, destY + 0, 4, 4);
+        drawFlipped(targetCtx, img, srcX + 8, 16, 4, 4, destX + 8, destY + 0, 4, 4);
+    }
+
+    // 3. Mise à jour de la texture (avec mode animation)
+    function updateTexture(isAnimFrame = false) {
+        drawMannequin();
+        actx.clearRect(0, 0, 64, 64);
+
+        // Dessin des armures
+        if (imgLayer2) {
+            actx.drawImage(imgLayer2, 16, 16, 24, 16, 16, 32, 24, 16); 
+            actx.drawImage(imgLayer2, 0, 16, 16, 16, 0, 32, 16, 16); 
+            mirrorLimb(actx, imgLayer2, 0, 0, 48); 
+        }
+        if (imgLayer1) {
+            actx.drawImage(imgLayer1, 0, 0, 32, 16, 32, 0, 32, 16); 
+            actx.drawImage(imgLayer1, 16, 16, 24, 16, 16, 32, 24, 16); 
+            actx.drawImage(imgLayer1, 40, 16, 16, 16, 40, 32, 16, 16); 
+            mirrorLimb(actx, imgLayer1, 40, 48, 48); 
+            actx.drawImage(imgLayer1, 0, 16, 16, 16, 0, 32, 16, 16); 
+            mirrorLimb(actx, imgLayer1, 0, 0, 48); 
+        }
+
+        // Effet "Vague" d'enchantement animé
+        if (isGlowing && (imgLayer1 || imgLayer2)) {
+            actx.save();
+            actx.globalCompositeOperation = "source-atop";
+            
+            // Base violette sombre transparente
+            actx.fillStyle = "rgba(110, 30, 200, 0.45)";
+            actx.fillRect(0, 0, 64, 64);
+            
+            // La Vague brillante
+            actx.translate(waveOffset - 64, waveOffset - 64);
+            const grad = actx.createLinearGradient(0, 0, 128, 128);
+            grad.addColorStop(0.0, "rgba(255, 255, 255, 0)");
+            grad.addColorStop(0.4, "rgba(255, 255, 255, 0)");
+            grad.addColorStop(0.5, "rgba(220, 180, 255, 0.8)"); // Pic de brillance
+            grad.addColorStop(0.6, "rgba(255, 255, 255, 0)");
+            grad.addColorStop(1.0, "rgba(255, 255, 255, 0)");
+            
+            actx.fillStyle = grad;
+            actx.fillRect(0, 0, 128, 128); // Couvre toute la zone en diagonale
+            
+            actx.restore();
+        }
+
+        ctx.drawImage(armorCanvas, 0, 0);
+
+        // Rendu dans la 3D
+        if (isAnimFrame) {
+            // Rendu ultra-rapide sans retoucher la posture (pour l'animation)
+            viewer.loadSkin(mainCanvas.toDataURL("image/png"));
+        } else {
+            // Premier chargement ou changement de fichier (on applique la posture A-Pose)
+            viewer.loadSkin(mainCanvas.toDataURL("image/png")).then(() => {
+                if (viewer.playerObject && viewer.playerObject.skin) {
+                    viewer.playerObject.skin.rightArm.rotation.z = -0.15;
+                    viewer.playerObject.skin.leftArm.rotation.z = 0.15;
+                    viewer.playerObject.skin.rightLeg.rotation.z = -0.05;
+                    viewer.playerObject.skin.leftLeg.rotation.z = 0.05;
+                    
+                    const bulk = 1.08;
+                    const parts = ['jacket', 'hat', 'rightSleeve', 'leftSleeve', 'rightPants', 'leftPants'];
+                    parts.forEach(part => {
+                        if (viewer.playerObject.skin[part]) {
+                            viewer.playerObject.skin[part].scale.set(bulk, bulk, bulk);
+                        }
+                    });
+                }
+            }).catch(err => console.log(err));
+        }
+    }
+
+    // Gestion de l'animation par intervalle de temps
+    document.getElementById("glowing").addEventListener("change", (e) => {
+        isGlowing = e.target.checked;
+        if (isGlowing) {
+            animTimer = setInterval(() => {
+                waveOffset += 3; // Vitesse de la vague
+                if (waveOffset >= 128) waveOffset = 0;
+                updateTexture(true); // On update juste la texture
+            }, 50); // Tourne à 20 FPS (fluide et sans lag)
+        } else {
+            clearInterval(animTimer);
+            updateTexture(false); // On coupe l'effet et on re-génère l'armure propre
+        }
+    });
+
+    // Upload des textures par le joueur
+    function setupUpload(inputId, statusId, isLayer1) {
+        document.getElementById(inputId).addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    if (isLayer1) imgLayer1 = img; else imgLayer2 = img;
+                    const statusText = document.getElementById(statusId);
+                    statusText.textContent = "✅ " + file.name;
+                    statusText.style.color = "#2ecc71";
+                    updateTexture(false); // Faux car ce n'est pas l'animation, c'est un nouveau fichier
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    setupUpload("layer1", "status1", true);
+    setupUpload("layer2", "status2", false);
+    
+    // Initialisation
+    updateTexture(false);
+</script>
+</body>
+</html>
