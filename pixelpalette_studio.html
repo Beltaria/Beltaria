@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelPalette Studio — Recoloriage Intelligent Pixel Art</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0e17;
+            color: #e2e8f0;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Rendu Pixel Art net sans lissage */
+        .pixelated {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        /* Damier de transparence */
+        .checkerboard {
+            background-color: #161a24;
+            background-image:
+                linear-gradient(45deg, #212736 25%, transparent 25%),
+                linear-gradient(-45deg, #212736 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #212736 75%),
+                linear-gradient(-45deg, transparent 75%, #212736 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        }
+        /* Barres de défilement */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1420;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+        input[type="range"] {
+            accent-color: #a855f7;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+
+    <!-- En-tête -->
+    <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-amber-500 p-0.5 shadow-lg shadow-purple-500/20">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-fuchsia-400 bg-clip-text text-transparent">
+                            PixelPalette Studio
+                        </h1>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            Dimensions Natives 1:1
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400">Sélectionnez les couleurs à remplacer sur l'Image 1 et appliquez les teintes de l'Image 2 avec variations automatiques</p>
+                </div>
+            </div>
+
+            <!-- Actions globales -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="btnLoadDemo" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
+                    Charger démo par défaut
+                </button>
+                <button id="btnAutoThreePasses" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-medium text-amber-200 border border-amber-500/40 transition" title="Exemple : recolorise la lame en violet, les ornements en or et le manche en rouge">
+                    ⚡ Démo 3 passes auto
+                </button>
+                <label class="flex items-center gap-1.5 text-xs bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-800 transition select-none">
+                    <input type="checkbox" id="chkBlinkSelection" class="rounded bg-slate-900 border-slate-600 text-purple-500 focus:ring-0">
+                    <span>Clignoter sélection (Img 1)</span>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Grille Principale 3 Colonnes -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+        <!-- ================================================================= -->
+        <!-- COLONNE 1 : IMAGE 1 (MODÈLE À RECOPIER / MODIFIER)                -->
+        <!-- ================================================================= -->
+        <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center justify-center">1</span>
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Image 1 — Modèle à modifier</h2>
+                        <p class="text-[11px] text-slate-400">Cliquez sur l'image ou sur les pastilles</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button id="btnUndo" type="button" disabled class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-35 disabled:pointer-events-none text-xs text-slate-200 border border-slate-700 transition" title="Annuler la dernière étape">
+                        ↩ Annuler
+                    </button>
+                    <button id="btnResetImg1" type="button" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition" title="Revenir à l'Image 1 d'origine">
+                        Réinit.
+                    </button>
+                    <button id="btnTriggerFile1" type="button" class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-semibold text-white transition shadow-sm">
+                        Importer Img 1
+                    </button>
+                    <input type="file" id="fileInput1" accept="image/*" class="hidden">
+                </div>
+            </div>
+
+            <!-- Zone d'affichage / Glisser-Déposer Image 1 -->
+            <div id="dropZone1" class="relative rounded-xl border-2 border-slate-800 hover:border-purple-500/50 transition checkerboard h-[300px] select-none overflow-hidden">
+                <div id="scrollWrap1" class="w-full h-full overflow-auto flex items-center justify-center p-4">
+                    <canvas id="canvasImg1" class="pixelated cursor-crosshair shadow-2xl m-auto block"></canvas>
+                </div>
+
+                <!-- Badge Dimensions Natives & Couleur survolée -->
+                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] mono text-slate-200 flex items-center gap-2 pointer-events-none z-10">
+                    <span id="infoDim1" class="font-semibold text-purple-300">32×32 px</span>
+                    <span id="hoverBadge1" class="hidden items-center gap-1">
+                        <span id="hoverBox1" class="w-3 h-3 rounded-sm inline-block border border-white/30"></span>
+                        <span id="hoverHex1">#000000</span>
+                    </span>
+                </div>
+
+                <!-- Contrôles de Zoom Image 1 -->
+                <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs z-10">
+                    <button id="zoomOut1" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">-</button>
+                    <span id="zoomLabel1" class="px-1.5 mono text-[11px] text-slate-300">Auto</span>
+                    <button id="zoomIn1" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">+</button>
+                    <button id="zoom1x1" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-slate-300" title="Taille réelle 1:1">1:1</button>
+                    <button id="zoomFit1" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-purple-300">Auto</button>
+                </div>
+            </div>
+
+            <!-- Sélection rapide par familles de teintes sur l'Image 1 -->
+            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-300">Familles de teintes (Image 1) :</span>
+                    <span id="totalColorsImg1" class="text-[11px] text-slate-400 mono">0 couleur</span>
+                </div>
+                <div id="familyChipsImg1" class="flex flex-wrap gap-1.5"></div>
+
+                <!-- Tolérance pipette & boutons Tout sélectionner / Tout désélectionner -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 mt-1">
+                    <label class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <span>Tolérance clic :</span>
+                        <input type="range" id="rngTolerance1" min="0" max="45" value="0" class="w-20 h-1.5">
+                        <span id="lblTolerance1" class="mono text-purple-300 font-semibold">Exact (0)</span>
+                    </label>
+                    <div class="flex items-center gap-1">
+                        <button id="btnSelectAll1" type="button" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 transition">
+                            Tout sélectionner
+                        </button>
+                        <button id="btnInvert1" type="button" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">
+                            Inverser
+                        </button>
+                        <button id="btnDeselectAll1" type="button" class="px-2 py-1 rounded bg-rose-950/60 hover:bg-rose-900/70 text-[11px] text-rose-300 border border-rose-800/50 transition">
+                            Tout désélectionner
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Palette complète extraite de l'Image 1 -->
+            <div class="flex flex-col gap-1.5 flex-1">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-purple-300">Couleurs sélectionnées (Img 1)</h3>
+                        <span id="badgeCount1" class="px-2 py-0.5 text-xs font-bold rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mono">0</span>
+                    </div>
+                    <span class="text-[11px] text-slate-500">Triées par luminosité ↑</span>
+                </div>
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 min-h-[120px] max-h-[190px] overflow-y-auto">
+                    <div id="paletteContainer1" class="flex flex-wrap gap-1.5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- COLONNE 2 : IMAGE 2 (PIPETTE À COULEURS / SOURCE)                 -->
+        <!-- ================================================================= -->
+        <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs font-bold flex items-center justify-center">2</span>
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Image 2 — Pipette à couleurs</h2>
+                        <p class="text-[11px] text-slate-400">Source des teintes & variations</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button id="btnTriggerFile2" type="button" class="px-2.5 py-1 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-xs font-semibold text-white transition shadow-sm">
+                        Importer Img 2
+                    </button>
+                    <input type="file" id="fileInput2" accept="image/*" class="hidden">
+                </div>
+            </div>
+
+            <!-- Zone d'affichage / Glisser-Déposer Image 2 -->
+            <div id="dropZone2" class="relative rounded-xl border-2 border-slate-800 hover:border-fuchsia-500/50 transition checkerboard h-[300px] select-none overflow-hidden">
+                <div id="scrollWrap2" class="w-full h-full overflow-auto flex items-center justify-center p-4">
+                    <canvas id="canvasImg2" class="pixelated cursor-crosshair shadow-2xl m-auto block"></canvas>
+                </div>
+
+                <!-- Badge Dimensions Natives & Couleur survolée -->
+                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] mono text-slate-200 flex items-center gap-2 pointer-events-none z-10">
+                    <span id="infoDim2" class="font-semibold text-fuchsia-300">32×32 px</span>
+                    <span id="hoverBadge2" class="hidden items-center gap-1">
+                        <span id="hoverBox2" class="w-3 h-3 rounded-sm inline-block border border-white/30"></span>
+                        <span id="hoverHex2">#000000</span>
+                    </span>
+                </div>
+
+                <!-- Contrôles de Zoom Image 2 -->
+                <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs z-10">
+                    <button id="zoomOut2" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">-</button>
+                    <span id="zoomLabel2" class="px-1.5 mono text-[11px] text-slate-300">Auto</span>
+                    <button id="zoomIn2" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">+</button>
+                    <button id="zoom1x2" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-slate-300" title="Taille réelle 1:1">1:1</button>
+                    <button id="zoomFit2" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-fuchsia-300">Auto</button>
+                </div>
+            </div>
+
+            <!-- Choix du Mode : Automatique (Rampes) vs Manuel (Pipette) -->
+            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5">
+                <div class="grid grid-cols-2 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button id="btnModeAuto2" type="button" class="py-1.5 px-2 rounded-md text-xs font-semibold transition bg-fuchsia-600 text-white shadow">
+                        ✨ Mode Automatique
+                    </button>
+                    <button id="btnModeManual2" type="button" class="py-1.5 px-2 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">
+                        💧 Pipette Manuelle
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-300 font-medium">Groupes de teintes détectés sur l'Image 2 :</span>
+                        <button id="btnClearImg2" type="button" class="text-rose-400 hover:text-rose-300 underline">Tout désélectionner</button>
+                    </div>
+                    <div id="familyChipsImg2" class="flex flex-wrap gap-1.5"></div>
+                </div>
+            </div>
+
+            <!-- Couleurs retenues sur l'Image 2 + Aperçu de la rampe générée -->
+            <div class="flex flex-col gap-1.5 flex-1">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Couleurs sources (Img 2)</h3>
+                        <span id="badgeCount2" class="px-2 py-0.5 text-xs font-bold rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 mono">0</span>
+                    </div>
+                    <span id="lblVariationInfo" class="text-[11px] text-slate-400">Variations auto</span>
+                </div>
+
+                <!-- Barre d'aperçu du dégradé continu + bouton d'ajout manuel -->
+                <div class="flex items-center gap-2">
+                    <div id="gradientPreviewBar" class="h-5 flex-1 rounded-lg border border-slate-700 shadow-inner bg-slate-950"></div>
+                    <button id="btnAddCustomColor2" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-200 shrink-0">
+                        + Couleur
+                    </button>
+                    <input type="color" id="inputCustomColor2" value="#d946ef" class="hidden">
+                </div>
+
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 min-h-[110px] max-h-[165px] overflow-y-auto">
+                    <div id="paletteContainer2" class="flex flex-wrap gap-1.5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- COLONNE 3 : RÉSULTAT EN TEMPS RÉEL, VARIATIONS & EXPORT           -->
+        <!-- ================================================================= -->
+        <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center">3</span>
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Résultat & Variations générées</h2>
+                        <p class="text-[11px] text-slate-400">Aperçu temps réel aux dimensions d'origine</p>
+                    </div>
+                </div>
+                <button id="btnHoldCompare" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-purple-600 text-xs text-slate-200 border border-slate-700 select-none transition">
+                    👁 Maintenir : Avant
+                </button>
+            </div>
+
+            <!-- Zone d'affichage du Résultat -->
+            <div class="relative rounded-xl border-2 border-emerald-500/30 checkerboard h-[300px] select-none overflow-hidden">
+                <div id="scrollWrapRes" class="w-full h-full overflow-auto flex items-center justify-center p-4">
+                    <canvas id="canvasResult" class="pixelated shadow-2xl m-auto block"></canvas>
+                </div>
+
+                <!-- Badge Dimensions de sortie -->
+                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-emerald-500/40 text-[11px] mono text-emerald-300 flex items-center gap-1.5 pointer-events-none z-10">
+                    <span>Sortie :</span>
+                    <strong id="infoDimRes">32×32 px</strong>
+                </div>
+
+                <!-- Contrôles de Zoom Résultat -->
+                <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs z-10">
+                    <button id="zoomOutRes" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">-</button>
+                    <span id="zoomLabelRes" class="px-1.5 mono text-[11px] text-slate-300">Auto</span>
+                    <button id="zoomInRes" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">+</button>
+                    <button id="zoom1xRes" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-slate-300" title="Taille réelle 1:1">1:1</button>
+                    <button id="zoomFitRes" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-emerald-300">Auto</button>
+                </div>
+            </div>
+
+            <!-- Boutons d'Action : Appliquer & Continuer / Télécharger PNG -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btnApplyStep" type="button" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 transition flex items-center justify-center gap-1.5">
+                    <span>✔ Appliquer & Continuer</span>
+                </button>
+                <button id="btnDownloadPng" type="button" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-1.5">
+                    <span>⬇ Télécharger PNG</span>
+                </button>
+            </div>
+
+            <!-- Réglages fins des variations -->
+            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-200">Réglages des variations</span>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btnInvertGradient" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-purple-300 border border-slate-700 transition">
+                            ⇄ Inverser dégradé
+                        </button>
+                        <button id="btnResetSliders" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-400 transition">
+                            Réinit.
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 text-xs">
+                    <label for="selMappingMode" class="text-slate-400 shrink-0 text-[11px]">Distribution :</label>
+                    <select id="selMappingMode" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="preserve_contrast">Préserver le contraste du modèle (Recommandé)</option>
+                        <option value="source_range">Calquer l'écart min/max des couleurs d'Image 2</option>
+                        <option value="uniform">Répartition linéaire uniforme</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] pt-1">
+                    <label class="flex flex-col gap-0.5">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Luminosité</span>
+                            <span id="valLightness" class="mono text-slate-200">0</span>
+                        </div>
+                        <input type="range" id="rngLightness" min="-40" max="40" value="0" class="w-full h-1.5">
+                    </label>
+
+                    <label class="flex flex-col gap-0.5">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Saturation</span>
+                            <span id="valSaturation" class="mono text-slate-200">0</span>
+                        </div>
+                        <input type="range" id="rngSaturation" min="-50" max="50" value="0" class="w-full h-1.5">
+                    </label>
+
+                    <label class="flex flex-col gap-0.5">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Contraste / Relief</span>
+                            <span id="valContrast" class="mono text-slate-200">100%</span>
+                        </div>
+                        <input type="range" id="rngContrast" min="40" max="180" value="100" class="w-full h-1.5">
+                    </label>
+
+                    <label class="flex flex-col gap-0.5" title="Décale légèrement les ombres vers le violet/froid et les reflets vers le chaud">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Hue-Shift Pixel Art</span>
+                            <span id="valHueShift" class="mono text-slate-200">6°</span>
+                        </div>
+                        <input type="range" id="rngHueShift" min="0" max="30" value="6" class="w-full h-1.5">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Tableau de correspondance (Image 1 -> Nouvelle couleur générée) -->
+            <div class="flex flex-col gap-1.5 flex-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-300">Correspondance (Img 1 ➔ Résultat)</span>
+                    <span id="lblMappingSummary" class="text-[11px] text-slate-400 mono">0 ➔ 0</span>
+                </div>
+                <div id="mappingListContainer" class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 min-h-[110px] max-h-[165px] overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Conteneur de notifications Toast -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /***********************************************************************
+         * PIXELPALETTE STUDIO — MOTEUR COMPLET ET AUTONOME
+         ***********************************************************************/
+
+        // --- 1. Fonctions de conversion de couleurs (RGB <-> HEX <-> HSL <-> CIE L*a*b*) ---
+        function clamp(val, min, max) {
+            return Math.max(min, Math.min(max, val));
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b]
+                .map(x => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0'))
+                .join('')
+                .toUpperCase();
+        }
+
+        function hexToRgb(hex) {
+            const clean = String(hex).replace('#', '').trim();
+            const num = parseInt(clean, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0, s = 0, l = (max + min) / 2;
+            if (max !== min) {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        }
+
+        function hslToRgb(h, s, l) {
+            h = ((h % 360) + 360) % 360;
+            s = clamp(s, 0, 100) / 100;
+            l = clamp(l, 0, 100) / 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            const m = l - c / 2;
+            let r = 0, g = 0, b = 0;
+            if (h < 60) { r = c; g = x; b = 0; }
+            else if (h < 120) { r = x; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = x; }
+            else if (h < 240) { r = 0; g = x; b = c; }
+            else if (h < 300) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            return {
+                r: Math.round((r + m) * 255),
+                g: Math.round((g + m) * 255),
+                b: Math.round((b + m) * 255)
+            };
+        }
+
+        function rgbToLab(r, g, b) {
+            let rn = r / 255, gn = g / 255, bn = b / 255;
+            rn = rn > 0.04045 ? Math.pow((rn + 0.055) / 1.055, 2.4) : rn / 12.92;
+            gn = gn > 0.04045 ? Math.pow((gn + 0.055) / 1.055, 2.4) : gn / 12.92;
+            bn = bn > 0.04045 ? Math.pow((bn + 0.055) / 1.055, 2.4) : bn / 12.92;
+
+            let x = (rn * 0.4124 + gn * 0.3576 + bn * 0.1805) / 0.95047;
+            let y = (rn * 0.2126 + gn * 0.7152 + bn * 0.0722) / 1.00000;
+            let z = (rn * 0.0193 + gn * 0.1192 + bn * 0.9505) / 1.08883;
+
+            const f = t => (t > 0.008856 ? Math.cbrt(t) : (7.787 * t) + (16 / 116));
+            const fx = f(x), fy = f(y), fz = f(z);
+
+            return {
+                L: (116 * fy) - 16,
+                a: 500 * (fx - fy),
+                b: 200 * (fy - fz)
+            };
+        }
+
+        function labToRgb(L, a, b) {
+            let y = (L + 16) / 116;
+            let x = a / 500 + y;
+            let z = y - b / 200;
+
+            const fInv = t => {
+                const t3 = t * t * t;
+                return t3 > 0.008856 ? t3 : (t - 16 / 116) / 7.787;
+            };
+
+            x = 0.95047 * fInv(x);
+            y = 1.00000 * fInv(y);
+            z = 1.08883 * fInv(z);
+
+            let r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+            let g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+            let bl = x * 0.0557 + y * -0.2040 + z * 1.0570;
+
+            const toSrgb = c => (c > 0.0031308 ? 1.055 * Math.pow(c, 1 / 2.4) - 0.055 : 12.92 * c);
+
+            return {
+                r: clamp(Math.round(toSrgb(r) * 255), 0, 255),
+                g: clamp(Math.round(toSrgb(g) * 255), 0, 255),
+                b: clamp(Math.round(toSrgb(bl) * 255), 0, 255)
+            };
+        }
+
+        function deltaE(lab1, lab2) {
+            const dL = lab1.L - lab2.L;
+            const da = lab1.a - lab2.a;
+            const db = lab1.b - lab2.b;
+            return Math.sqrt(dL * dL + da * da + db * db);
+        }
+
+        // --- 2. Classification automatique en familles de teintes ---
+        function classifyColorFamily(hex) {
+            const { r, g, b } = hexToRgb(hex);
+            const { h, s, l } = rgbToHsl(r, g, b);
+
+            if (l <= 12) {
+                return { id: 'dark_outline', name: 'Contours / Noir', badge: '#1e293b', order: 99 };
+            }
+            if (s <= 14) {
+                return { id: 'neutral_grey', name: 'Gris / Métal', badge: '#94a3b8', order: 90 };
+            }
+            if (h >= 340 || h < 18) {
+                return { id: 'red_sanguine', name: 'Rouge / Sanguin', badge: '#ef4444', order: 1 };
+            }
+            if (h >= 18 && h < 68) {
+                return { id: 'gold_amber', name: 'Or / Ambre', badge: '#f59e0b', order: 2 };
+            }
+            if (h >= 68 && h < 165) {
+                return { id: 'green_poison', name: 'Vert / Émeraude', badge: '#22c55e', order: 3 };
+            }
+            if (h >= 165 && h < 255) {
+                return { id: 'blue_cryo', name: 'Bleu / Azur', badge: '#3b82f6', order: 4 };
+            }
+            return { id: 'purple_amethyst', name: 'Violet / Magenta', badge: '#d946ef', order: 5 };
+        }
+
+        // --- 3. État global de l'application ---
+        const state = {
+            originalImg1Data: null,
+            img1Data: null,
+            img2Data: null,
+            resultData: null,
+            historyStack: [],
+
+            palette1: new Map(), // hex -> { hex, r, g, b, hsl, lab, count, family }
+            palette2: new Map(),
+
+            selectedHex1: new Set(),
+            selectedHex2: new Set(),
+            manualOverrides: new Map(), // srcHex1 -> targetHex
+
+            mode2: 'auto', // 'auto' | 'manual'
+            mappingMode: 'preserve_contrast',
+            invertGradient: false,
+            lightnessOffset: 0,
+            saturationOffset: 0,
+            contrastScale: 100,
+            hueShiftDeg: 6,
+
+            zoom1: null,   // null = Auto, sinon multiplicateur numérique
+            zoom2: null,
+            zoomRes: null,
+
+            isComparingBefore: false,
+            blinkPhase: false
+        };
+
+        // --- 4. Notifications Toast ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const styles = {
+                success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
+                warn: 'bg-amber-950/95 border-amber-500/50 text-amber-200',
+                info: 'bg-slate-900/95 border-purple-500/50 text-purple-200'
+            };
+            toast.className = `px-3.5 py-2 rounded-xl border text-xs font-medium shadow-xl backdrop-blur transition-all duration-300 ${styles[type] || styles.info}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+
+        // --- 5. Extraction de la palette unique d'un ImageData ---
+        function extractPaletteFromImageData(imgData) {
+            const map = new Map();
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                const alpha = d[i + 3];
+                if (alpha < 16) continue; // Ignore les pixels transparents
+                const r = d[i], g = d[i + 1], b = d[i + 2];
+                const hex = rgbToHex(r, g, b);
+                if (map.has(hex)) {
+                    map.get(hex).count++;
+                } else {
+                    const hsl = rgbToHsl(r, g, b);
+                    const lab = rgbToLab(r, g, b);
+                    const family = classifyColorFamily(hex);
+                    map.set(hex, { hex, r, g, b, hsl, lab, count: 1, family });
+                }
+            }
+            // Tri par luminosité perceptuelle L* croissante (du plus sombre au plus clair)
+            const sorted = Array.from(map.entries()).sort((a, b) => a[1].lab.L - b[1].lab.L);
+            return new Map(sorted);
+        }
+
+        // --- 6. Moteur de Génération des Variations (Image 1 -> Image 2) ---
+        function getActiveTargetSeeds() {
+            let seeds = Array.from(state.selectedHex2)
+                .map(hex => {
+                    if (state.palette2.has(hex)) return state.palette2.get(hex);
+                    const { r, g, b } = hexToRgb(hex);
+                    return { hex, r, g, b, hsl: rgbToHsl(r, g, b), lab: rgbToLab(r, g, b) };
+                })
+                .filter(Boolean);
+
+            // Si aucune couleur n'est cochée sur l'Image 2, le moteur prend automatiquement les teintes dominantes
+            if (seeds.length === 0 && state.palette2.size > 0) {
+                const vibrant = Array.from(state.palette2.values()).filter(c => c.lab.L > 14 && c.hsl.s > 18);
+                seeds = vibrant.length > 0 ? vibrant : Array.from(state.palette2.values());
+            }
+
+            seeds.sort((a, b) => a.lab.L - b.lab.L);
+            if (state.invertGradient) {
+                seeds.reverse();
+            }
+            return seeds;
+        }
+
+        function computeColorMapping() {
+            const mapping = new Map();
+            if (state.selectedHex1.size === 0) return mapping;
+
+            // 1. Couleurs sélectionnées sur l'Image 1 triées par luminosité L*
+            const srcColors = Array.from(state.selectedHex1)
+                .map(hex => state.palette1.get(hex))
+                .filter(Boolean)
+                .sort((a, b) => a.lab.L - b.lab.L);
+
+            const N = srcColors.length;
+            if (N === 0) return mapping;
+
+            // 2. Couleurs sources sur l'Image 2
+            const targetSeeds = getActiveTargetSeeds();
+            const M = targetSeeds.length;
+            if (M === 0) return mapping;
+
+            const minL1 = srcColors[0].lab.L;
+            const maxL1 = srcColors[N - 1].lab.L;
+            const spanL1 = Math.max(1, maxL1 - minL1);
+            const midL1 = (minL1 + maxL1) / 2;
+
+            const lValues2 = targetSeeds.map(c => c.lab.L);
+            const minL2 = Math.min(...lValues2);
+            const maxL2 = Math.max(...lValues2);
+
+            // Échantillonne une position continue t dans [0, 1] sur la rampe des M couleurs de l'Image 2
+            function sampleRamp(t) {
+                t = clamp(t, 0, 1);
+                if (M === 1) return { ...targetSeeds[0] };
+
+                const scaled = t * (M - 1);
+                const idx = Math.min(M - 2, Math.floor(scaled));
+                const frac = scaled - idx;
+                const cA = targetSeeds[idx];
+                const cB = targetSeeds[idx + 1];
+
+                // Interpolation en espace CIE L*a*b* tout en préservant la richesse de saturation
+                const L = cA.lab.L + (cB.lab.L - cA.lab.L) * frac;
+                const a = cA.lab.a + (cB.lab.a - cA.lab.a) * frac;
+                const b = cA.lab.b + (cB.lab.b - cA.lab.b) * frac;
+
+                const rgbLab = labToRgb(L, a, b);
+                const hslLab = rgbToHsl(rgbLab.r, rgbLab.g, rgbLab.b);
+
+                const expectedSat = cA.hsl.s + (cB.hsl.s - cA.hsl.s) * frac;
+                const finalSat = Math.max(hslLab.s, expectedSat * 0.92);
+                const rgbFinal = hslToRgb(hslLab.h, finalSat, hslLab.l);
+
+                return {
+                    r: rgbFinal.r,
+                    g: rgbFinal.g,
+                    b: rgbFinal.b,
+                    hsl: rgbToHsl(rgbFinal.r, rgbFinal.g, rgbFinal.b),
+                    lab: rgbToLab(rgbFinal.r, rgbFinal.g, rgbFinal.b)
+                };
+            }
+
+            // 3. Calcul de chaque variation pour les N couleurs de l'Image 1
+            srcColors.forEach((srcCol, index) => {
+                if (state.manualOverrides.has(srcCol.hex)) {
+                    mapping.set(srcCol.hex, state.manualOverrides.get(srcCol.hex));
+                    return;
+                }
+
+                const relativePos = N === 1 ? 0.5 : (srcCol.lab.L - minL1) / spanL1;
+                const uniformPos = N === 1 ? 0.5 : index / (N - 1);
+                const t = state.mappingMode === 'uniform' ? uniformPos : relativePos;
+
+                const sampled = sampleRamp(t);
+                const contrastFactor = state.contrastScale / 100;
+                let targetL = sampled.lab.L;
+
+                if (M === 1) {
+                    // Si 1 seule couleur est sélectionnée sur l'Image 2, on recrée automatiquement tout le relief !
+                    const deltaFromMid = (srcCol.lab.L - midL1) * contrastFactor;
+                    targetL = clamp(sampled.lab.L + deltaFromMid, 6, 95);
+                } else if (state.mappingMode === 'preserve_contrast') {
+                    const rampSpan = Math.max(24, maxL2 - minL2);
+                    const rampMid = (minL2 + maxL2) / 2;
+                    const centeredT = (relativePos - 0.5) * contrastFactor;
+                    const dir = state.invertGradient ? -1 : 1;
+                    targetL = rampMid + dir * centeredT * rampSpan;
+                } else if (state.mappingMode === 'source_range') {
+                    const mid2 = (minL2 + maxL2) / 2;
+                    targetL = mid2 + (sampled.lab.L - mid2) * contrastFactor;
+                } else {
+                    targetL = 50 + (sampled.lab.L - 50) * contrastFactor;
+                }
+
+                targetL = clamp(targetL + state.lightnessOffset, 3, 98);
+
+                // Reconstruction avec la luminosité cible L* et la chrominance de la rampe
+                const baseRgb = labToRgb(targetL, sampled.lab.a, sampled.lab.b);
+                const baseHsl = rgbToHsl(baseRgb.r, baseRgb.g, baseRgb.b);
+
+                // Hue-Shift Pixel Art : décale légèrement la teinte selon l'ombre ou la lumière
+                const shiftFactor = (t - 0.5) * 2; // -1 (ombre) à +1 (lumière)
+                const shiftedHue = (sampled.hsl.h + shiftFactor * state.hueShiftDeg + 360) % 360;
+
+                // Ajustement de la saturation (évite la désaturation excessive dans les tons moyens)
+                const bellCurve = 1 - 0.22 * Math.pow(shiftFactor, 2);
+                const targetSat = clamp((sampled.hsl.s * bellCurve) + state.saturationOffset, 0, 100);
+
+                const finalRgb = hslToRgb(shiftedHue, targetSat, baseHsl.l);
+                mapping.set(srcCol.hex, rgbToHex(finalRgb.r, finalRgb.g, finalRgb.b));
+            });
+
+            return mapping;
+        }
+
+        function updateGradientPreviewBar() {
+            const bar = document.getElementById('gradientPreviewBar');
+            const seeds = getActiveTargetSeeds();
+            if (seeds.length === 0) {
+                bar.style.background = '#0f172a';
+            } else if (seeds.length === 1) {
+                const c = seeds[0];
+                const dark = hslToRgb(c.hsl.h, c.hsl.s, Math.max(10, c.hsl.l - 25));
+                const light = hslToRgb(c.hsl.h, c.hsl.s, Math.min(92, c.hsl.l + 25));
+                bar.style.background = `linear-gradient(90deg, ${rgbToHex(dark.r, dark.g, dark.b)}, ${c.hex}, ${rgbToHex(light.r, light.g, light.b)})`;
+            } else {
+                const stops = seeds.map((s, idx) => `${s.hex} ${Math.round((idx / (seeds.length - 1)) * 100)}%`).join(', ');
+                bar.style.background = `linear-gradient(90deg, ${stops})`;
+            }
+        }
+
+        // --- 7. Rendu des Canvas aux dimensions 1:1 exactes + Zoom CSS propre ---
+        function renderDisplayCanvas(canvasId, scrollWrapId, imgData, zoomValue, highlightHexSet = null) {
+            const canvas = document.getElementById(canvasId);
+            const scrollWrap = document.getElementById(scrollWrapId);
+            if (!canvas || !scrollWrap || !imgData) return;
+
+            const w = imgData.width;
+            const h = imgData.height;
+
+            // Le canvas garde TOUJOURS la résolution native exacte de l'image (1:1)
+            if (canvas.width !== w) canvas.width = w;
+            if (canvas.height !== h) canvas.height = h;
+
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+
+            if (highlightHexSet && highlightHexSet.size > 0 && document.getElementById('chkBlinkSelection').checked && state.blinkPhase) {
+                const temp = new ImageData(new Uint8ClampedArray(imgData.data), w, h);
+                const d = temp.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    if (d[i + 3] < 16) continue;
+                    const hex = rgbToHex(d[i], d[i + 1], d[i + 2]);
+                    if (highlightHexSet.has(hex)) {
+                        d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
+                    }
+                }
+                ctx.putImageData(temp, 0, 0);
+            } else {
+                ctx.putImageData(imgData, 0, 0);
+            }
+
+            // Calcul du zoom visuel CSS uniquement (sans jamais modifier canvas.width / canvas.height)
+            const availW = Math.max(60, scrollWrap.clientWidth - 32);
+            const availH = Math.max(60, scrollWrap.clientHeight - 32);
+
+            let scale;
+            if (typeof zoomValue === 'number' && zoomValue > 0) {
+                scale = zoomValue;
+            } else {
+                const fit = Math.min(availW / w, availH / h);
+                scale = fit >= 1 ? Math.max(1, Math.floor(fit)) : fit;
+            }
+
+            canvas.style.width = `${Math.max(1, Math.round(w * scale))}px`;
+            canvas.style.height = `${Math.max(1, Math.round(h * scale))}px`;
+        }
+
+        function updateResultAndUI() {
+            if (!state.img1Data) return;
+
+            const mapping = computeColorMapping();
+            updateGradientPreviewBar();
+
+            const w = state.img1Data.width;
+            const h = state.img1Data.height;
+            const src = state.img1Data.data;
+            const outData = new ImageData(new Uint8ClampedArray(src), w, h);
+            const dst = outData.data;
+
+            if (!state.isComparingBefore && mapping.size > 0) {
+                for (let i = 0; i < src.length; i += 4) {
+                    if (src[i + 3] < 16) continue;
+                    const hex = rgbToHex(src[i], src[i + 1], src[i + 2]);
+                    if (mapping.has(hex)) {
+                        const targetRgb = hexToRgb(mapping.get(hex));
+                        dst[i] = targetRgb.r;
+                        dst[i + 1] = targetRgb.g;
+                        dst[i + 2] = targetRgb.b;
+                    }
+                }
+            }
+
+            state.resultData = outData;
+
+            // Mise à jour des badges de dimensions natives
+            document.getElementById('infoDim1').textContent = `${w}×${h} px`;
+            document.getElementById('infoDimRes').textContent = `${w}×${h} px`;
+            if (state.img2Data) {
+                document.getElementById('infoDim2').textContent = `${state.img2Data.width}×${state.img2Data.height} px`;
+            }
+
+            // Rendu des 3 canvas
+            renderDisplayCanvas('canvasImg1', 'scrollWrap1', state.img1Data, state.zoom1, state.selectedHex1);
+            if (state.img2Data) {
+                renderDisplayCanvas('canvasImg2', 'scrollWrap2', state.img2Data, state.zoom2, null);
+            }
+            renderDisplayCanvas('canvasResult', 'scrollWrapRes', state.resultData, state.zoomRes, null);
+
+            // Mise à jour des compteurs
+            const n1 = state.selectedHex1.size;
+            const n2 = state.selectedHex2.size;
+            document.getElementById('badgeCount1').textContent = n1;
+            document.getElementById('badgeCount2').textContent = n2;
+            document.getElementById('lblMappingSummary').textContent = `${n1} sélectionnée(s) ➔ ${mapping.size} générée(s)`;
+            document.getElementById('lblVariationInfo').textContent =
+                n2 === 0 ? 'Auto (Rampe dominante)' : `${n2} choisie(s) ➔ ${n1} variation(s)`;
+
+            renderMappingList(mapping);
+        }
+
+        // --- 8. Construction des Palettes et Familles de Teintes (Image 1 & Image 2) ---
+        function renderPalette1UI() {
+            const paletteEl = document.getElementById('paletteContainer1');
+            const chipsEl = document.getElementById('familyChipsImg1');
+            paletteEl.innerHTML = '';
+            chipsEl.innerHTML = '';
+
+            document.getElementById('totalColorsImg1').textContent = `${state.palette1.size} couleurs uniques`;
+
+            // Regroupement par famille de teintes
+            const families = new Map();
+            state.palette1.forEach(col => {
+                const fid = col.family.id;
+                if (!families.has(fid)) {
+                    families.set(fid, { ...col.family, hexes: [] });
+                }
+                families.get(fid).hexes.push(col.hex);
+            });
+
+            Array.from(families.values())
+                .sort((a, b) => a.order - b.order)
+                .forEach(fam => {
+                    const allSelected = fam.hexes.every(h => state.selectedHex1.has(h));
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `px-2.5 py-1 rounded-lg text-[11px] font-medium border transition flex items-center gap-1.5 ${
+                        allSelected
+                            ? 'bg-purple-600/35 border-purple-400 text-white shadow-sm'
+                            : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+                    }`;
+                    btn.innerHTML = `<span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${fam.badge}"></span><span>${fam.name} (${fam.hexes.length})</span>`;
+                    btn.addEventListener('click', () => {
+                        if (allSelected) {
+                            fam.hexes.forEach(h => state.selectedHex1.delete(h));
+                        } else {
+                            fam.hexes.forEach(h => state.selectedHex1.add(h));
+                        }
+                        state.manualOverrides.clear();
+                        renderPalette1UI();
+                        updateResultAndUI();
+                    });
+                    chipsEl.appendChild(btn);
+                });
+
+            // Pastilles individuelles
+            state.palette1.forEach(col => {
+                const isSelected = state.selectedHex1.has(col.hex);
+                const sw = document.createElement('button');
+                sw.type = 'button';
+                sw.title = `${col.hex} (${col.count} px) — L*:${Math.round(col.lab.L)}`;
+                sw.className = `w-7 h-7 rounded-lg border transition relative flex items-center justify-center ${
+                    isSelected
+                        ? 'border-white scale-105 z-10 ring-2 ring-purple-500 shadow-md'
+                        : 'border-slate-700/80 opacity-65 hover:opacity-100 hover:scale-105'
+                }`;
+                sw.style.backgroundColor = col.hex;
+                if (isSelected) {
+                    sw.innerHTML = `<span class="w-2 h-2 rounded-full bg-white shadow border border-black/60"></span>`;
+                }
+                sw.addEventListener('click', () => {
+                    if (state.selectedHex1.has(col.hex)) {
+                        state.selectedHex1.delete(col.hex);
+                    } else {
+                        state.selectedHex1.add(col.hex);
+                    }
+                    state.manualOverrides.clear();
+                    renderPalette1UI();
+                    updateResultAndUI();
+                });
+                paletteEl.appendChild(sw);
+            });
+        }
+
+        function renderPalette2UI() {
+            const paletteEl = document.getElementById('paletteContainer2');
+            const chipsEl = document.getElementById('familyChipsImg2');
+            paletteEl.innerHTML = '';
+            chipsEl.innerHTML = '';
+
+            const families = new Map();
+            state.palette2.forEach(col => {
+                const fid = col.family.id;
+                if (!families.has(fid)) {
+                    families.set(fid, { ...col.family, hexes: [] });
+                }
+                families.get(fid).hexes.push(col.hex);
+            });
+
+            Array.from(families.values())
+                .sort((a, b) => a.order - b.order)
+                .forEach(fam => {
+                    if (fam.id === 'dark_outline' && families.size > 1) return;
+                    const isCurrentRamp = fam.hexes.some(h => state.selectedHex2.has(h)) &&
+                        Array.from(state.selectedHex2).every(h => fam.hexes.includes(h));
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `px-2.5 py-1 rounded-lg text-[11px] font-medium border transition flex items-center gap-1.5 ${
+                        isCurrentRamp
+                            ? 'bg-fuchsia-600/35 border-fuchsia-400 text-white shadow-sm'
+                            : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+                    }`;
+                    btn.innerHTML = `<span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${fam.badge}"></span><span>${fam.name} (${fam.hexes.length})</span>`;
+                    btn.addEventListener('click', () => {
+                        state.selectedHex2.clear();
+                        fam.hexes.forEach(h => state.selectedHex2.add(h));
+                        state.manualOverrides.clear();
+                        renderPalette2UI();
+                        updateResultAndUI();
+                    });
+                    chipsEl.appendChild(btn);
+                });
+
+            state.palette2.forEach(col => {
+                const isSelected = state.selectedHex2.has(col.hex);
+                const sw = document.createElement('button');
+                sw.type = 'button';
+                sw.title = `${col.hex} — Cliquez pour activer/désactiver cette couleur source`;
+                sw.className = `w-7 h-7 rounded-lg border transition relative flex items-center justify-center ${
+                    isSelected
+                        ? 'border-white scale-105 z-10 ring-2 ring-fuchsia-500 shadow-md'
+                        : 'border-slate-700/80 opacity-65 hover:opacity-100 hover:scale-105'
+                }`;
+                sw.style.backgroundColor = col.hex;
+                if (isSelected) {
+                    sw.innerHTML = `<span class="w-2 h-2 rounded-full bg-white shadow border border-black/60"></span>`;
+                }
+                sw.addEventListener('click', () => {
+                    setMode2('manual');
+                    if (state.selectedHex2.has(col.hex)) {
+                        state.selectedHex2.delete(col.hex);
+                    } else {
+                        state.selectedHex2.add(col.hex);
+                    }
+                    state.manualOverrides.clear();
+                    renderPalette2UI();
+                    updateResultAndUI();
+                });
+                paletteEl.appendChild(sw);
+            });
+        }
+
+        function renderMappingList(mapping) {
+            const container = document.getElementById('mappingListContainer');
+            container.innerHTML = '';
+
+            if (mapping.size === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-500 py-6">Sélectionnez des couleurs sur l'Image 1 pour générer les variations.</div>`;
+                return;
+            }
+
+            const sortedSrc = Array.from(mapping.keys())
+                .map(hex => state.palette1.get(hex))
+                .filter(Boolean)
+                .sort((a, b) => a.lab.L - b.lab.L);
+
+            sortedSrc.forEach(srcCol => {
+                const targetHex = mapping.get(srcCol.hex);
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900/90 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between gap-1 hover:border-slate-700 transition';
+                card.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded border border-white/20 shrink-0" style="background:${srcCol.hex}" title="Couleur d'origine : ${srcCol.hex}"></span>
+                        <span class="text-slate-500 text-[10px]">➔</span>
+                        <label class="w-5 h-5 rounded border border-white/40 shrink-0 cursor-pointer relative overflow-hidden" style="background:${targetHex}" title="Cliquez pour ajuster manuellement cette teinte (${targetHex})">
+                            <input type="color" value="${targetHex}" class="opacity-0 absolute inset-0 cursor-pointer w-full h-full">
+                        </label>
+                    </div>
+                    <span class="mono text-[10px] text-slate-300">${targetHex}</span>
+                `;
+                const input = card.querySelector('input[type="color"]');
+                input.addEventListener('input', (e) => {
+                    state.manualOverrides.set(srcCol.hex, e.target.value.toUpperCase());
+                    updateResultAndUI();
+                });
+                container.appendChild(card);
+            });
+        }
+
+        function setMode2(mode) {
+            state.mode2 = mode;
+            const btnAuto = document.getElementById('btnModeAuto2');
+            const btnManual = document.getElementById('btnModeManual2');
+            if (mode === 'auto') {
+                btnAuto.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition bg-fuchsia-600 text-white shadow';
+                btnManual.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white';
+            } else {
+                btnManual.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition bg-fuchsia-600 text-white shadow';
+                btnAuto.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white';
+            }
+        }
+
+        // --- 9. Sélection Automatique Intelligente au chargement d'une image ---
+        function autoSelectMainFamilyOnImg1() {
+            state.selectedHex1.clear();
+            const countsByFam = new Map();
+            state.palette1.forEach(col => {
+                if (col.family.id === 'dark_outline') return;
+                const fid = col.family.id;
+                countsByFam.set(fid, (countsByFam.get(fid) || 0) + col.count);
+            });
+            let bestFam = null, maxCount = -1;
+            countsByFam.forEach((cnt, fid) => {
+                if (cnt > maxCount) { maxCount = cnt; bestFam = fid; }
+            });
+            if (bestFam) {
+                state.palette1.forEach(col => {
+                    if (col.family.id === bestFam) state.selectedHex1.add(col.hex);
+                });
+            }
+        }
+
+        function autoSelectMainRampOnImg2() {
+            state.selectedHex2.clear();
+            const hexesByFam = new Map();
+            state.palette2.forEach(col => {
+                if (col.family.id === 'dark_outline') return;
+                const fid = col.family.id;
+                if (!hexesByFam.has(fid)) hexesByFam.set(fid, []);
+                hexesByFam.get(fid).push(col.hex);
+            });
+
+            // Privilégie la famille avec le plus de nuances colorées
+            let chosenHexes = hexesByFam.get('purple_amethyst') || [];
+            if (chosenHexes.length === 0) {
+                hexesByFam.forEach((list, fid) => {
+                    if (fid !== 'neutral_grey' && list.length > chosenHexes.length) {
+                        chosenHexes = list;
+                    }
+                });
+            }
+            if (chosenHexes.length === 0) {
+                hexesByFam.forEach(list => {
+                    if (list.length > chosenHexes.length) chosenHexes = list;
+                });
+            }
+            chosenHexes.forEach(h => state.selectedHex2.add(h));
+        }
+
+        // --- 10. Import d'Images 100% Fiable et Sans Redimensionnement ---
+        function importImageFile(file, slotNumber) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('Veuillez sélectionner un fichier image valide (PNG, JPG, WebP, GIF).', 'warn');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onerror = () => {
+                showToast('Erreur lors de la lecture du fichier.', 'warn');
+            };
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onerror = () => {
+                    showToast('Impossible de décoder cette image.', 'warn');
+                };
+                img.onload = () => {
+                    // Dimensions natives strictes de l'image importée
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+
+                    const offCanvas = document.createElement('canvas');
+                    offCanvas.width = w;
+                    offCanvas.height = h;
+                    const offCtx = offCanvas.getContext('2d');
+                    offCtx.imageSmoothingEnabled = false;
+                    offCtx.drawImage(img, 0, 0, w, h);
+                    const imgData = offCtx.getImageData(0, 0, w, h);
+
+                    if (slotNumber === 1) {
+                        state.originalImg1Data = new ImageData(new Uint8ClampedArray(imgData.data), w, h);
+                        state.img1Data = imgData;
+                        state.historyStack = [];
+                        document.getElementById('btnUndo').disabled = true;
+                        state.zoom1 = null;
+                        state.zoomRes = null;
+                        document.getElementById('zoomLabel1').textContent = 'Auto';
+                        document.getElementById('zoomLabelRes').textContent = 'Auto';
+
+                        state.palette1 = extractPaletteFromImageData(state.img1Data);
+                        autoSelectMainFamilyOnImg1();
+                        state.manualOverrides.clear();
+                        renderPalette1UI();
+                        updateResultAndUI();
+                        showToast(`Image 1 importée (${w}×${h} px — ${state.palette1.size} couleurs)`, 'success');
+                    } else {
+                        state.img2Data = imgData;
+                        state.zoom2 = null;
+                        document.getElementById('zoomLabel2').textContent = 'Auto';
+
+                        state.palette2 = extractPaletteFromImageData(state.img2Data);
+                        setMode2('auto');
+                        autoSelectMainRampOnImg2();
+                        state.manualOverrides.clear();
+                        renderPalette2UI();
+                        updateResultAndUI();
+                        showToast(`Image 2 importée (${w}×${h} px — ${state.palette2.size} couleurs)`, 'success');
+                    }
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- 11. Pipette directe sur les Canvas Image 1 et Image 2 ---
+        function setupCanvasPipette(canvasId, slotNumber) {
+            const canvas = document.getElementById(canvasId);
+            const badge = document.getElementById(`hoverBadge${slotNumber}`);
+            const box = document.getElementById(`hoverBox${slotNumber}`);
+            const hexLabel = document.getElementById(`hoverHex${slotNumber}`);
+
+            function getHexAtMouse(e) {
+                const imgData = slotNumber === 1 ? state.img1Data : state.img2Data;
+                if (!imgData) return null;
+                const rect = canvas.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) return null;
+
+                const x = Math.floor(((e.clientX - rect.left) / rect.width) * imgData.width);
+                const y = Math.floor(((e.clientY - rect.top) / rect.height) * imgData.height);
+                if (x < 0 || x >= imgData.width || y < 0 || y >= imgData.height) return null;
+
+                const idx = (y * imgData.width + x) * 4;
+                if (imgData.data[idx + 3] < 16) return null;
+                return rgbToHex(imgData.data[idx], imgData.data[idx + 1], imgData.data[idx + 2]);
+            }
+
+            canvas.addEventListener('mousemove', (e) => {
+                const hex = getHexAtMouse(e);
+                if (hex) {
+                    badge.classList.remove('hidden');
+                    badge.classList.add('inline-flex');
+                    box.style.backgroundColor = hex;
+                    hexLabel.textContent = hex;
+                } else {
+                    badge.classList.add('hidden');
+                    badge.classList.remove('inline-flex');
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                badge.classList.add('hidden');
+                badge.classList.remove('inline-flex');
+            });
+
+            canvas.addEventListener('click', (e) => {
+                const hex = getHexAtMouse(e);
+                if (!hex) return;
+
+                if (slotNumber === 1) {
+                    const tolerance = parseInt(document.getElementById('rngTolerance1').value, 10) || 0;
+                    const clickedCol = state.palette1.get(hex);
+                    if (!clickedCol) return;
+
+                    const willSelect = !state.selectedHex1.has(hex);
+                    state.palette1.forEach(col => {
+                        if (col.hex === hex || (tolerance > 0 && deltaE(clickedCol.lab, col.lab) <= tolerance)) {
+                            if (willSelect) state.selectedHex1.add(col.hex);
+                            else state.selectedHex1.delete(col.hex);
+                        }
+                    });
+                    state.manualOverrides.clear();
+                    renderPalette1UI();
+                    updateResultAndUI();
+                } else {
+                    setMode2('manual');
+                    if (state.selectedHex2.has(hex)) {
+                        state.selectedHex2.delete(hex);
+                    } else {
+                        state.selectedHex2.add(hex);
+                    }
+                    state.manualOverrides.clear();
+                    renderPalette2UI();
+                    updateResultAndUI();
+                }
+            });
+        }
+
+        // --- 12. Sprites de démonstration générés sur Canvas au démarrage ---
+        function createDemoScytheImageData() {
+            const c = document.createElement('canvas');
+            c.width = 32; c.height = 32;
+            const ctx = c.getContext('2d');
+
+            const K = '#12131A';
+            const G1 = '#15803D', G2 = '#16A34A', G3 = '#22C55E', G4 = '#4ADE80', G5 = '#84CC16', G6 = '#A3E635', G7 = '#ECFCCB';
+            const S1 = '#27273A', S2 = '#3F3F5A', S3 = '#646482', S4 = '#8E8EA8', S5 = '#B8B8D1';
+
+            const grid = Array.from({ length: 32 }, () => Array(32).fill(null));
+            const setPx = (x, y, col) => {
+                if (x >= 0 && x < 32 && y >= 0 && y < 32) grid[y][x] = col;
+            };
+
+            for (let i = 3; i <= 22; i++) {
+                const x = i, y = 31 - i;
+                setPx(x - 1, y - 1, K);
+                setPx(x, y - 1, S4);
+                setPx(x, y, S3);
+                setPx(x + 1, y, S2);
+                setPx(x + 1, y + 1, K);
+                if (i % 4 === 0) setPx(x, y, S5);
+            }
+            setPx(1, 29, K); setPx(2, 28, K); setPx(3, 28, G3); setPx(2, 29, G6); setPx(3, 29, G4);
+            setPx(1, 30, K); setPx(2, 30, G2); setPx(3, 30, S2); setPx(4, 30, K);
+            setPx(2, 31, K); setPx(3, 31, K);
+
+            const gripCoords = [
+                [11, 13, K], [12, 13, K], [10, 14, K], [11, 14, G5], [12, 14, G3], [13, 14, K],
+                [12, 15, K], [13, 15, S4], [14, 15, S2], [15, 15, K],
+                [16, 17, K], [17, 17, S4], [18, 17, S3], [19, 17, K],
+                [16, 18, K], [17, 18, S2], [18, 18, K]
+            ];
+            gripCoords.forEach(([x, y, col]) => setPx(x, y, col));
+
+            for (let y = 5; y <= 11; y++) {
+                for (let x = 18; x <= 25; x++) {
+                    const dist = Math.hypot(x - 21.5, y - 8);
+                    if (dist <= 4.2) {
+                        if (dist > 3.3) setPx(x, y, K);
+                        else if (x >= 21 && x <= 24 && y >= 6 && y <= 9) {
+                            setPx(x, y, (x + y) % 2 === 0 ? G6 : G3);
+                        } else {
+                            setPx(x, y, y < 8 ? S4 : S2);
+                        }
+                    }
+                }
+            }
+
+            const backSpikes = [
+                [25, 7, K], [26, 7, G6], [27, 7, G3], [28, 7, K],
+                [25, 8, K], [26, 8, G5], [27, 8, G2], [28, 8, K],
+                [26, 9, K], [27, 9, K],
+                [24, 10, K], [25, 10, G5], [26, 10, G2], [27, 10, K],
+                [24, 11, K], [25, 11, G3], [26, 11, G1], [27, 11, K],
+                [25, 12, K], [26, 12, K]
+            ];
+            backSpikes.forEach(([x, y, col]) => setPx(x, y, col));
+
+            for (let y = 2; y <= 12; y++) {
+                for (let x = 2; x <= 22; x++) {
+                    const dx = (x - 14) / 11;
+                    const topCurve = 2.3 + 5.8 * (dx * dx);
+                    const botCurve = 6.2 + 6.5 * Math.pow(dx + 0.08, 2);
+
+                    if (y >= topCurve - 0.9 && y <= botCurve + 0.8 && x <= 21) {
+                        if (y < topCurve + 0.25 || y > botCurve - 0.2 || x === 2) {
+                            setPx(x, y, K);
+                        } else {
+                            const ratio = (y - topCurve) / Math.max(1, botCurve - topCurve);
+                            if (ratio < 0.22) setPx(x, y, G1);
+                            else if (ratio < 0.38) setPx(x, y, G2);
+                            else if (ratio < 0.55) setPx(x, y, G5);
+                            else if (ratio < 0.75) setPx(x, y, G7);
+                            else if (ratio < 0.88) setPx(x, y, G6);
+                            else setPx(x, y, G4);
+                        }
+                    }
+                }
+            }
+
+            setPx(3, 8, K); setPx(3, 9, G6); setPx(4, 9, G7); setPx(4, 10, K);
+            setPx(2, 9, K); setPx(2, 10, G4); setPx(3, 10, G2); setPx(2, 11, K); setPx(3, 11, K);
+
+            const drips = [
+                [8, 7, G5], [8, 8, G6], [8, 9, G3], [8, 10, G2],
+                [13, 8, G6], [13, 9, G4], [13, 10, G2],
+                [3, 15, G5], [3, 16, G6], [3, 17, G3], [3, 18, G1]
+            ];
+            drips.forEach(([x, y, col]) => setPx(x, y, col));
+
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillStyle = grid[y][x];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            return ctx.getImageData(0, 0, 32, 32);
+        }
+
+        function createDemoSanguineSwordImageData() {
+            const c = document.createElement('canvas');
+            c.width = 32; c.height = 32;
+            const ctx = c.getContext('2d');
+
+            const K = '#110C18';
+            const P = ['#2E0F46', '#4A156B', '#6B1D99', '#8E24C2', '#B52BE0', '#D946EF', '#F075FF', '#FBCFE8'];
+            const Au = ['#6E420C', '#9E6314', '#CC8B1E', '#F5B82E', '#FDE68A'];
+            const R = ['#4C0519', '#881337', '#BE123C', '#FB7185'];
+            const Ob = ['#181326', '#27203D', '#3D335E'];
+
+            const grid = Array.from({ length: 32 }, () => Array(32).fill(null));
+            const setPx = (x, y, col) => {
+                if (x >= 0 && x < 32 && y >= 0 && y < 32) grid[y][x] = col;
+            };
+
+            for (let i = 2; i <= 10; i++) {
+                const x = i, y = 31 - i;
+                setPx(x - 1, y - 1, K);
+                const isGoldBand = (i === 2 || i === 6 || i === 10);
+                setPx(x, y - 1, isGoldBand ? Au[4] : R[3]);
+                setPx(x, y, isGoldBand ? Au[3] : R[2]);
+                setPx(x + 1, y, isGoldBand ? Au[1] : R[1]);
+                setPx(x + 1, y + 1, K);
+            }
+            setPx(1, 29, K); setPx(2, 29, Au[3]); setPx(3, 29, R[2]);
+            setPx(1, 30, P[5]); setPx(2, 30, P[6]); setPx(3, 30, Au[2]);
+            setPx(1, 31, K); setPx(2, 31, K);
+
+            for (let d = -6; d <= 6; d++) {
+                const gx = 11 - d;
+                const gy = 20 - d;
+                setPx(gx, gy, Ob[2]);
+                setPx(gx - 1, gy, Ob[1]);
+                setPx(gx + 1, gy, K);
+                setPx(gx, gy - 1, Ob[0]);
+            }
+            setPx(11, 20, R[3]); setPx(12, 20, R[2]); setPx(11, 19, R[2]); setPx(12, 19, Au[4]);
+
+            for (let i = 12; i <= 29; i++) {
+                const cx = i, cy = 31 - i;
+                for (let w = -3; w <= 3; w++) {
+                    const px = cx + Math.floor(w / 2);
+                    const py = cy - Math.ceil(w / 2);
+                    if (w === -3 || w === 3 || i === 29) {
+                        setPx(px, py, K);
+                    } else {
+                        const isGoldScroll = (i >= 15 && i <= 23 && (w === 1 || (w === 0 && i % 2 === 0)));
+                        if (isGoldScroll) {
+                            const gIdx = clamp(Math.floor((i - 14) / 2), 0, 4);
+                            setPx(px, py, Au[gIdx]);
+                        } else {
+                            const pIdx = clamp(Math.floor(((i - 12) / 17) * 6) + (w < 0 ? 1 : 0), 0, 7);
+                            setPx(px, py, P[pIdx]);
+                        }
+                    }
+                }
+            }
+
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillStyle = grid[y][x];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            return ctx.getImageData(0, 0, 32, 32);
+        }
+
+        function loadDefaultDemo() {
+            const img1 = createDemoScytheImageData();
+            const img2 = createDemoSanguineSwordImageData();
+
+            state.originalImg1Data = new ImageData(new Uint8ClampedArray(img1.data), img1.width, img1.height);
+            state.img1Data = img1;
+            state.img2Data = img2;
+            state.historyStack = [];
+            document.getElementById('btnUndo').disabled = true;
+
+            state.palette1 = extractPaletteFromImageData(state.img1Data);
+            state.palette2 = extractPaletteFromImageData(state.img2Data);
+
+            autoSelectMainFamilyOnImg1();
+            autoSelectMainRampOnImg2();
+            state.manualOverrides.clear();
+
+            renderPalette1UI();
+            renderPalette2UI();
+            updateResultAndUI();
+        }
+
+        function applyCurrentStepSilently() {
+            if (!state.resultData) return;
+            state.historyStack.push(
+                new ImageData(new Uint8ClampedArray(state.img1Data.data), state.img1Data.width, state.img1Data.height)
+            );
+            document.getElementById('btnUndo').disabled = false;
+            state.img1Data = new ImageData(
+                new Uint8ClampedArray(state.resultData.data),
+                state.resultData.width,
+                state.resultData.height
+            );
+            state.palette1 = extractPaletteFromImageData(state.img1Data);
+            state.selectedHex1.clear();
+            state.manualOverrides.clear();
+        }
+
+        function runThreePassDemo() {
+            loadDefaultDemo();
+            // Passe 1 : Lame verte -> Violet/Magenta
+            applyCurrentStepSilently();
+
+            // Passe 2 : Gris clairs -> Or
+            state.selectedHex1.clear();
+            state.palette1.forEach(col => {
+                if (col.family.id === 'neutral_grey' && col.lab.L >= 45) {
+                    state.selectedHex1.add(col.hex);
+                }
+            });
+            state.selectedHex2.clear();
+            state.palette2.forEach(col => {
+                if (col.family.id === 'gold_amber') state.selectedHex2.add(col.hex);
+            });
+            updateResultAndUI();
+            applyCurrentStepSilently();
+
+            // Passe 3 : Gris sombres du manche -> Rouge Sanguin
+            state.selectedHex1.clear();
+            state.palette1.forEach(col => {
+                if (col.family.id === 'neutral_grey') state.selectedHex1.add(col.hex);
+            });
+            state.selectedHex2.clear();
+            state.palette2.forEach(col => {
+                if (col.family.id === 'red_sanguine') state.selectedHex2.add(col.hex);
+            });
+
+            renderPalette1UI();
+            renderPalette2UI();
+            updateResultAndUI();
+            showToast('Démo 3 passes appliquée : Lame Violette + Garde Or + Manche Rouge !', 'success');
+        }
+
+        // --- 13. Initialisation de tous les Écouteurs d'Événements ---
+        window.addEventListener('DOMContentLoaded', () => {
+            setupCanvasPipette('canvasImg1', 1);
+            setupCanvasPipette('canvasImg2', 2);
+
+            // Boutons d'import de fichiers (ouverture garantie de la boîte de dialogue)
+            const fileInput1 = document.getElementById('fileInput1');
+            const fileInput2 = document.getElementById('fileInput2');
+
+            document.getElementById('btnTriggerFile1').addEventListener('click', () => {
+                fileInput1.value = '';
+                fileInput1.click();
+            });
+            document.getElementById('btnTriggerFile2').addEventListener('click', () => {
+                fileInput2.value = '';
+                fileInput2.click();
+            });
+
+            fileInput1.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    importImageFile(e.target.files[0], 1);
+                }
+            });
+            fileInput2.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    importImageFile(e.target.files[0], 2);
+                }
+            });
+
+            // Glisser-déposer (Drag & Drop) sur DropZone 1 et DropZone 2
+            [['dropZone1', 1], ['dropZone2', 2]].forEach(([zoneId, slot]) => {
+                const zone = document.getElementById(zoneId);
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.add('border-purple-400');
+                });
+                zone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.remove('border-purple-400');
+                });
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.remove('border-purple-400');
+                    const files = e.dataTransfer && e.dataTransfer.files;
+                    if (files && files[0]) {
+                        importImageFile(files[0], slot);
+                    }
+                });
+            });
+
+            // Coller une image avec Ctrl+V
+            window.addEventListener('paste', (e) => {
+                const items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith('image/')) {
+                        const file = items[i].getAsFile();
+                        if (file) importImageFile(file, 1);
+                        break;
+                    }
+                }
+            });
+
+            // Contrôles de sélection Image 1
+            document.getElementById('btnSelectAll1').addEventListener('click', () => {
+                state.palette1.forEach(col => state.selectedHex1.add(col.hex));
+                state.manualOverrides.clear();
+                renderPalette1UI();
+                updateResultAndUI();
+            });
+
+            document.getElementById('btnInvert1').addEventListener('click', () => {
+                const next = new Set();
+                state.palette1.forEach(col => {
+                    if (!state.selectedHex1.has(col.hex)) next.add(col.hex);
+                });
+                state.selectedHex1 = next;
+                state.manualOverrides.clear();
+                renderPalette1UI();
+                updateResultAndUI();
+            });
+
+            document.getElementById('btnDeselectAll1').addEventListener('click', () => {
+                state.selectedHex1.clear();
+                state.manualOverrides.clear();
+                renderPalette1UI();
+                updateResultAndUI();
+            });
+
+            document.getElementById('rngTolerance1').addEventListener('input', (e) => {
+                const v = parseInt(e.target.value, 10) || 0;
+                document.getElementById('lblTolerance1').textContent = v === 0 ? 'Exact (0)' : `ΔE ≤ ${v}`;
+            });
+
+            // Contrôles de mode Image 2
+            document.getElementById('btnModeAuto2').addEventListener('click', () => {
+                setMode2('auto');
+                autoSelectMainRampOnImg2();
+                state.manualOverrides.clear();
+                renderPalette2UI();
+                updateResultAndUI();
+            });
+
+            document.getElementById('btnModeManual2').addEventListener('click', () => {
+                setMode2('manual');
+                showToast('Mode Pipette Manuelle : cliquez sur les couleurs souhaitées sur l\'Image 2.', 'info');
+            });
+
+            document.getElementById('btnClearImg2').addEventListener('click', () => {
+                state.selectedHex2.clear();
+                setMode2('manual');
+                state.manualOverrides.clear();
+                renderPalette2UI();
+                updateResultAndUI();
+            });
+
+            const inputCustomColor2 = document.getElementById('inputCustomColor2');
+            document.getElementById('btnAddCustomColor2').addEventListener('click', () => inputCustomColor2.click());
+            inputCustomColor2.addEventListener('input', (e) => {
+                const hex = e.target.value.toUpperCase();
+                const { r, g, b } = hexToRgb(hex);
+                if (!state.palette2.has(hex)) {
+                    state.palette2.set(hex, {
+                        hex, r, g, b,
+                        hsl: rgbToHsl(r, g, b),
+                        lab: rgbToLab(r, g, b),
+                        count: 1,
+                        family: classifyColorFamily(hex)
+                    });
+                }
+                setMode2('manual');
+                state.selectedHex2.add(hex);
+                state.manualOverrides.clear();
+                renderPalette2UI();
+                updateResultAndUI();
+            });
+
+            // Réglages des variations
+            document.getElementById('selMappingMode').addEventListener('change', (e) => {
+                state.mappingMode = e.target.value;
+                state.manualOverrides.clear();
+                updateResultAndUI();
+            });
+
+            document.getElementById('btnInvertGradient').addEventListener('click', () => {
+                state.invertGradient = !state.invertGradient;
+                state.manualOverrides.clear();
+                updateResultAndUI();
+            });
+
+            function bindSlider(sliderId, labelId, stateKey, suffix = '') {
+                const slider = document.getElementById(sliderId);
+                slider.addEventListener('input', () => {
+                    const val = parseInt(slider.value, 10) || 0;
+                    state[stateKey] = val;
+                    document.getElementById(labelId).textContent = (val > 0 && suffix === '' ? `+${val}` : val) + suffix;
+                    state.manualOverrides.clear();
+                    updateResultAndUI();
+                });
+            }
+            bindSlider('rngLightness', 'valLightness', 'lightnessOffset', '');
+            bindSlider('rngSaturation', 'valSaturation', 'saturationOffset', '');
+            bindSlider('rngContrast', 'valContrast', 'contrastScale', '%');
+            bindSlider('rngHueShift', 'valHueShift', 'hueShiftDeg', '°');
+
+            document.getElementById('btnResetSliders').addEventListener('click', () => {
+                state.lightnessOffset = 0;
+                state.saturationOffset = 0;
+                state.contrastScale = 100;
+                state.hueShiftDeg = 6;
+                state.invertGradient = false;
+                state.manualOverrides.clear();
+                document.getElementById('rngLightness').value = 0;
+                document.getElementById('rngSaturation').value = 0;
+                document.getElementById('rngContrast').value = 100;
+                document.getElementById('rngHueShift').value = 6;
+                document.getElementById('valLightness').textContent = '0';
+                document.getElementById('valSaturation').textContent = '0';
+                document.getElementById('valContrast').textContent = '100%';
+                document.getElementById('valHueShift').textContent = '6°';
+                updateResultAndUI();
+            });
+
+            // Appliquer & Continuer / Annuler / Réinitialiser
+            document.getElementById('btnApplyStep').addEventListener('click', () => {
+                if (state.selectedHex1.size === 0) {
+                    showToast('Sélectionnez d\'abord des couleurs à remplacer sur l\'Image 1.', 'warn');
+                    return;
+                }
+                applyCurrentStepSilently();
+                renderPalette1UI();
+                updateResultAndUI();
+                showToast('Modifications appliquées ! Sélectionnez d\'autres couleurs sur l\'Image 1 pour continuer.', 'success');
+            });
+
+            document.getElementById('btnUndo').addEventListener('click', () => {
+                if (state.historyStack.length === 0) return;
+                state.img1Data = state.historyStack.pop();
+                document.getElementById('btnUndo').disabled = state.historyStack.length === 0;
+                state.palette1 = extractPaletteFromImageData(state.img1Data);
+                state.selectedHex1.clear();
+                state.manualOverrides.clear();
+                renderPalette1UI();
+                updateResultAndUI();
+                showToast('Étape précédente restaurée.', 'info');
+            });
+
+            document.getElementById('btnResetImg1').addEventListener('click', () => {
+                if (!state.originalImg1Data) return;
+                state.img1Data = new ImageData(
+                    new Uint8ClampedArray(state.originalImg1Data.data),
+                    state.originalImg1Data.width,
+                    state.originalImg1Data.height
+                );
+                state.historyStack = [];
+                document.getElementById('btnUndo').disabled = true;
+                state.palette1 = extractPaletteFromImageData(state.img1Data);
+                autoSelectMainFamilyOnImg1();
+                state.manualOverrides.clear();
+                renderPalette1UI();
+                updateResultAndUI();
+                showToast('Image 1 réinitialisée à l\'original.', 'info');
+            });
+
+            // Comparaison Avant / Après
+            const btnCompare = document.getElementById('btnHoldCompare');
+            const startCompare = () => { state.isComparingBefore = true; updateResultAndUI(); };
+            const stopCompare = () => { state.isComparingBefore = false; updateResultAndUI(); };
+            btnCompare.addEventListener('mousedown', startCompare);
+            btnCompare.addEventListener('mouseup', stopCompare);
+            btnCompare.addEventListener('mouseleave', stopCompare);
+            btnCompare.addEventListener('touchstart', (e) => { e.preventDefault(); startCompare(); });
+            btnCompare.addEventListener('touchend', stopCompare);
+
+            // Téléchargement PNG aux dimensions natives exactes
+            document.getElementById('btnDownloadPng').addEventListener('click', () => {
+                if (!state.resultData) return;
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = state.resultData.width;
+                exportCanvas.height = state.resultData.height;
+                exportCanvas.getContext('2d').putImageData(state.resultData, 0, 0);
+
+                const link = document.createElement('a');
+                link.download = `pixelpalette_${exportCanvas.width}x${exportCanvas.height}.png`;
+                link.href = exportCanvas.toDataURL('image/png');
+                link.click();
+                showToast(`PNG exporté en ${exportCanvas.width}×${exportCanvas.height} px !`, 'success');
+            });
+
+            // Contrôles de Zoom simples sur les 3 panneaux
+            function setupZoom(suffix, propName) {
+                document.getElementById(`zoomIn${suffix}`).addEventListener('click', () => {
+                    const cur = typeof state[propName] === 'number' ? state[propName] : 4;
+                    state[propName] = Math.min(32, cur < 2 ? cur + 0.5 : Math.round(cur + 2));
+                    document.getElementById(`zoomLabel${suffix}`).textContent = `${state[propName]}x`;
+                    updateResultAndUI();
+                });
+                document.getElementById(`zoomOut${suffix}`).addEventListener('click', () => {
+                    const cur = typeof state[propName] === 'number' ? state[propName] : 4;
+                    state[propName] = Math.max(0.5, cur <= 2 ? cur - 0.5 : Math.round(cur - 2));
+                    document.getElementById(`zoomLabel${suffix}`).textContent = `${state[propName]}x`;
+                    updateResultAndUI();
+                });
+                document.getElementById(`zoom1x${suffix}`).addEventListener('click', () => {
+                    state[propName] = 1;
+                    document.getElementById(`zoomLabel${suffix}`).textContent = '1x';
+                    updateResultAndUI();
+                });
+                document.getElementById(`zoomFit${suffix}`).addEventListener('click', () => {
+                    state[propName] = null;
+                    document.getElementById(`zoomLabel${suffix}`).textContent = 'Auto';
+                    updateResultAndUI();
+                });
+            }
+            setupZoom('1', 'zoom1');
+            setupZoom('2', 'zoom2');
+            setupZoom('Res', 'zoomRes');
+
+            // Clignotement optionnel des pixels sélectionnés sur l'Image 1
+            setInterval(() => {
+                if (document.getElementById('chkBlinkSelection').checked && state.selectedHex1.size > 0) {
+                    state.blinkPhase = !state.blinkPhase;
+                    renderDisplayCanvas('canvasImg1', 'scrollWrap1', state.img1Data, state.zoom1, state.selectedHex1);
+                }
+            }, 450);
+
+            document.getElementById('btnLoadDemo').addEventListener('click', () => {
+                loadDefaultDemo();
+                showToast('Sprites de démonstration rechargés.', 'info');
+            });
+            document.getElementById('btnAutoThreePasses').addEventListener('click', runThreePassDemo);
+
+            window.addEventListener('resize', updateResultAndUI);
+
+            // Chargement initial
+            loadDefaultDemo();
+        });
+    </script>
+</body>
+</html>
