@@ -1,0 +1,2510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menus des cosmétiques (config.yml)</title>
+<meta name="description" content="Édite la partie cosmétiques du config.yml de BeltariaContent (ailes, auras, traînées, titres des menus, pack) : validation identique au plugin, croisement avec le pack, aperçu du menu tel que le client 1.8 l'affiche, permissions à accorder, modifications ciblées qui gardent les commentaires.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23c6c6c6'/%3E%3Cpath fill='%238b8b8b' d='M1 1h2v2H1zM5 1h2v2H5zM1 5h2v2H1zM5 5h2v2H5z'/%3E%3Cpath fill='%23c084fc' d='M3 3h2v2H3z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="studio.css">
+<script src="studio-nav.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  @font-face {
+    font-family: 'MinecraftPreview';
+    src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft@1.0.0/files/minecraft.woff2') format('woff2');
+    font-display: swap;
+  }
+  * { box-sizing: border-box; }
+  body { font-size: 14px; line-height: 1.5; min-height: 100vh; }
+  .lead { color: var(--st-muted); margin: 0 0 12px; max-width: 110ch; font-size: 13.5px; }
+  .cc-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .cc-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  @media (max-width: 1100px) { .cc-layout { grid-template-columns: minmax(0, 1fr); } }
+  .st-panel-head { justify-content: flex-start; flex-wrap: wrap; }
+  .st-panel-head .grow { flex: 1 1 auto; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  .muted { color: var(--st-muted); font-size: 13px; }
+  .small { font-size: 12px; }
+  .hint { margin: 4px 0 0; font-size: 12px; color: var(--st-muted); }
+  code, .mono { font-family: var(--st-mono); font-size: .9em; color: var(--st-accent-text); overflow-wrap: anywhere; }
+  .file-btn { position: relative; overflow: hidden; }
+  .file-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .file-btn::before { content: '＋'; font-size: 12px; opacity: .8; }
+  .group-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--st-faint); margin: 14px 0 6px; }
+  .group-label:first-child { margin-top: 0; }
+  .files-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+  .files-list li { overflow-wrap: anywhere; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--st-faint); }
+  .dot.ok { background: var(--st-ok); } .dot.warn { background: var(--st-warn); } .dot.error { background: var(--st-error); }
+  details { font-size: 13px; color: var(--st-muted); }
+  details > summary { cursor: pointer; color: var(--st-text); font-weight: 600; padding: 4px 0; }
+  details > summary:hover { color: var(--st-accent-text); }
+  .st-textarea { width: 100%; min-height: 120px; resize: vertical; line-height: 1.5; }
+  .st-input, .st-select { min-height: 36px; width: 100%; }
+
+  /* Formulaires */
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field > span.lbl { font-size: 12px; font-weight: 600; color: var(--st-muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .field .ref { font: 400 11px/1.3 var(--st-mono); color: var(--st-faint); overflow-wrap: anywhere; }
+  .field.wide { grid-column: 1 / -1; }
+  .field .count { margin-left: auto; font: 600 11px/1.3 var(--st-mono); color: var(--st-muted); }
+  .field .count.bad { color: var(--st-error); }
+  .field .state { font-size: 11.5px; color: var(--st-muted); overflow-wrap: anywhere; }
+  .field .state.bad { color: var(--st-error); } .field .state.warn { color: var(--st-warn); }
+  .title-strip { display: block; max-width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
+
+  /* Catalogue */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tab { min-height: 36px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--st-border-strong); background: var(--st-surface-2); color: var(--st-text); font: 600 13px/1.2 var(--st-font); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--st-accent-soft); border-color: var(--st-accent-line); color: var(--st-accent-text); }
+  .tab:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+  .entries { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 420px; overflow-y: auto; }
+  .entry { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 4px 6px; border-radius: var(--st-radius-sm); background: var(--st-inset); border: 1px solid var(--st-border); }
+  .entry.sel { border-color: var(--st-accent-hover); box-shadow: 0 0 0 2px var(--st-accent-soft); }
+  .entry.bad { border-left: 3px solid var(--st-error); }
+  .entry .ord { font: 600 11px/1 var(--st-mono); color: var(--st-faint); text-align: right; }
+  .entry .main { all: unset; cursor: pointer; display: flex; flex-direction: column; min-width: 0; padding: 2px 0; }
+  .entry .main:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; border-radius: 4px; }
+  .entry .eid { font: 600 12.5px/1.3 var(--st-mono); color: var(--st-text-strong); overflow-wrap: anywhere; }
+  .entry .ename { font-size: 12.5px; overflow-wrap: anywhere; }
+  .entry .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+  .entry .moves { display: flex; gap: 4px; }
+  .entry .moves button, .mini { min-height: 30px; min-width: 30px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--st-border-strong); background: var(--st-surface-2); color: var(--st-text); cursor: pointer; font: 600 13px/1 var(--st-font); }
+  .entry .moves button:disabled { opacity: .3; cursor: default; }
+  .chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--st-surface-2); border: 1px solid var(--st-border-strong); color: var(--st-text); font-family: var(--st-mono); overflow-wrap: anywhere; }
+  .chip.ok { background: var(--st-ok-soft); border-color: var(--st-ok-line); color: var(--st-ok); }
+  .chip.error { background: var(--st-error-soft); border-color: var(--st-error-line); color: var(--st-error); }
+  .chip.warn { background: var(--st-warn-soft); border-color: var(--st-warn-line); color: var(--st-warn); }
+  button.chip { cursor: pointer; }
+  .editor { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--st-border); }
+  .editor h3, .sub { font-size: 13px; font-weight: 700; color: var(--st-text-strong); margin: 0 0 8px; }
+  .swarm { border: 1px solid var(--st-border-strong); border-radius: 10px; padding: 10px; background: var(--st-inset); margin-top: 8px; }
+  .swarm-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .swarm-head b { color: var(--st-text-strong); font-size: 12.5px; }
+  .swarm .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 120px), 1fr)); }
+  .issues { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .issues li { font-size: 13px; padding: 7px 10px; border-radius: var(--st-radius-sm); background: var(--st-inset); border: 1px solid var(--st-border); border-left: 3px solid var(--st-accent-line); overflow-wrap: anywhere; }
+  .issues li.error { border-left-color: var(--st-error); }
+  .issues li.warn { border-left-color: var(--st-warn); }
+  .issues li.info { border-left-color: var(--st-faint); }
+  .issues li.first { box-shadow: 0 0 0 1px var(--st-error-line); }
+  .issues li .ref { display: block; font: 400 11.5px/1.4 var(--st-mono); color: var(--st-muted); margin-top: 2px; }
+  .issues li .path { font-family: var(--st-mono); color: var(--st-accent-text); }
+  .issues li[data-id] { cursor: pointer; }
+
+  /* Aperçu */
+  .stage { background: radial-gradient(circle at 50% 30%, #2b3446 0%, #10141d 100%); border-radius: 12px; padding: 12px; border: 1px solid var(--st-border-strong); display: flex; flex-direction: column; align-items: center; gap: 10px; overflow: hidden; }
+  .stage canvas { display: block; max-width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: manipulation; }
+  #chest { cursor: pointer; }
+  .stage .cap { font-size: 11px; color: #cbd5e1; text-align: center; overflow-wrap: anywhere; }
+  .pager { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .legend { margin: 8px 0 0; font-size: 12px; color: var(--st-muted); }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+
+  /* Permissions et sortie */
+  .perm-group { margin-top: 10px; }
+  .perm-group:first-child { margin-top: 0; }
+  .perm-list { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font: 12.5px/1.5 var(--st-mono); }
+  .perm-list li { overflow-wrap: anywhere; }
+  .perm-list .why { font-family: var(--st-font); color: var(--st-muted); font-size: 12px; }
+  pre.code { margin: 8px 0 0; padding: 10px 12px; background: var(--st-inset); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); font: 12.5px/1.55 var(--st-mono); overflow: auto; max-width: 100%; max-height: 380px; white-space: pre; color: var(--st-text); }
+  pre.code .add { color: var(--st-ok); background: var(--st-ok-soft); display: block; }
+  pre.code .del { color: var(--st-error); background: var(--st-error-soft); display: block; }
+  pre.code .ctx { color: var(--st-muted); display: block; }
+  pre.code .hunk { color: var(--st-accent-text); display: block; }
+  #source { min-height: 260px; font-size: 12.5px; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+  @media (max-width: 640px) {
+    .entry { grid-template-columns: 1.8em minmax(0, 1fr); }
+    .entry .moves { grid-column: 2; }
+    .lead { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<header class="st-header">
+  <div class="st-header-inner">
+    <div class="st-brand">
+      <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+      <div class="st-logo"><span><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path stroke-linecap="round" d="M3 10h18M8 5v14M13 5v14"/></svg></span></div>
+      <div>
+        <div class="st-title-row">
+          <h1 class="st-title">Menus des cosmétiques</h1>
+          <span class="st-badge st-badge-accent">config.yml</span>
+        </div>
+        <p class="st-subtitle">Ailes, auras et traînées de BeltariaContent : validation du plugin, menu du client 1.8, permissions</p>
+      </div>
+    </div>
+    <div class="st-actions">
+      <button type="button" class="st-btn" id="undoBtn" title="Annuler la dernière modification" disabled>Annuler</button>
+    </div>
+  </div>
+</header>
+
+<main class="st-main">
+  <p class="lead">Chargez le <code>config.yml</code> de BeltariaContent (et, si vous l'avez, le dossier du pack) : l'outil le valide <b>exactement comme le plugin</b> (mêmes messages, même ordre), montre le menu <code>/wings</code>, <code>/aura</code> ou <code>/trail</code> tel que le client 1.8 le dessine, liste les permissions à accorder et écrit vos changements <b>sans toucher au reste du fichier</b> : commentaires, ordre et mise en forme restent tels quels. Tout reste dans votre navigateur.</p>
+  <div id="status" class="st-note" role="status" aria-live="polite">Chargement…</div>
+
+  <div class="cc-layout" style="margin-top:16px">
+    <div class="cc-col">
+      <section class="st-panel" aria-labelledby="h-files">
+        <div class="st-panel-head"><span class="st-step">1</span><h2 id="h-files" class="st-panel-title">Fichiers</h2></div>
+        <span class="group-label">config.yml</span>
+        <div class="row">
+          <span class="st-btn st-btn-primary file-btn">config.yml<input id="fileConfig" type="file" accept=".yml,.yaml,text/yaml,text/plain" aria-label="Charger config.yml"></span>
+          <button type="button" class="st-btn st-btn-soft" id="exampleBtn">Charger l'exemple</button>
+        </div>
+        <details style="margin-top:8px">
+          <summary>Coller le texte du fichier</summary>
+          <textarea id="pasteArea" class="st-textarea" spellcheck="false" aria-label="Texte de config.yml à coller" placeholder="wings:&#10;  fairy_wings:&#10;    name: &quot;&amp;dAiles de fee&quot;"></textarea>
+          <div class="row" style="margin-top:6px"><button type="button" class="st-btn" id="pasteBtn">Utiliser ce texte</button></div>
+        </details>
+        <span class="group-label">Pack (facultatif : quels modèles existent)</span>
+        <div class="row">
+          <span class="st-btn file-btn">Dossier du pack<input id="filePackDir" type="file" webkitdirectory multiple aria-label="Charger le dossier pack-src ou plugins/BeltariaContent/pack"></span>
+          <span class="st-btn file-btn">Pack .zip<input id="filePackZip" type="file" accept=".zip,application/zip" aria-label="Charger le pack en zip"></span>
+          <button type="button" class="st-btn" id="demoPackBtn">Pack d'exemple</button>
+          <button type="button" class="st-btn" id="clearPackBtn" hidden>Retirer le pack</button>
+        </div>
+        <p class="hint"><code>pack-src/</code> du dépôt ou <code>plugins/BeltariaContent/pack/</code> du serveur : l'outil lit <code>pack.json</code> et les dossiers <code>wings/&lt;id&gt;/</code>, <code>auras/&lt;id&gt;/</code>, <code>motes/&lt;modèle&gt;/</code> (avec leur <code>icon.png</code> pour l'aperçu).</p>
+        <span class="group-label">Police exacte (facultatif)</span>
+        <div class="row">
+          <span class="st-btn file-btn">Client 1.8.9 .jar / ascii.png<input id="fileFont" type="file" accept=".jar,.png,application/java-archive,image/png" aria-label="Charger le client 1.8.9 ou ascii.png pour un texte exact"></span>
+        </div>
+        <ul id="filesList" class="files-list"></ul>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-settings">
+        <div class="st-panel-head"><span class="st-step">2</span><h2 id="h-settings" class="st-panel-title">Réglages généraux et titres des menus</h2></div>
+        <div id="settingsBox"></div>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-cat">
+        <div class="st-panel-head"><span class="st-step">3</span><h2 id="h-cat" class="st-panel-title">Catalogue</h2><span class="grow"></span><span class="st-badge" id="catCount">0</span></div>
+        <div class="tabs" role="tablist" id="slotTabs" aria-label="Emplacement"></div>
+        <p class="hint" id="slotHint"></p>
+        <ul class="entries" id="entryList" aria-label="Entrées, dans l'ordre du menu"></ul>
+        <div class="row" style="margin-top:10px">
+          <label class="field" style="flex:1 1 200px"><span class="lbl">Nouvel identifiant</span><input id="addId" class="st-input mono" spellcheck="false" autocomplete="off" placeholder="ex. frost_wings"></label>
+          <button type="button" class="st-btn st-btn-primary" id="addBtn" style="align-self:flex-end">Ajouter</button>
+        </div>
+        <p class="hint" id="addHint"></p>
+        <div id="packSuggest"></div>
+        <div class="editor" id="entryEditor"></div>
+      </section>
+    </div>
+
+    <div class="cc-col">
+      <section class="st-panel" aria-labelledby="h-preview">
+        <div class="st-panel-head"><span class="st-step">4</span><h2 id="h-preview" class="st-panel-title">Aperçu en jeu</h2><span class="grow"></span><span class="st-badge st-badge-accent">Client 1.8</span></div>
+        <div class="fields" style="margin-bottom:10px">
+          <label class="field"><span class="lbl">Joueur qui ouvre le menu</span>
+            <select id="viewer" class="st-select">
+              <option value="op">Opérateur : tout est accessible</option>
+              <option value="none">Joueur sans permission</option>
+              <option value="custom">Permissions choisies…</option>
+            </select></label>
+          <div class="field"><span class="lbl">Page</span>
+            <div class="pager"><button type="button" class="st-btn" id="pgPrev" aria-label="Page précédente">‹</button><span id="pgInfo" class="muted">1 / 1</span><button type="button" class="st-btn" id="pgNext" aria-label="Page suivante">›</button></div></div>
+          <label class="field wide" id="viewerNodesBox" hidden><span class="lbl">Nœuds accordés (un par ligne ; le joker de l'emplacement couvre tout)</span>
+            <textarea id="viewerNodes" class="st-textarea" style="min-height:70px" spellcheck="false">beltaria.content.wings.fairy_wings</textarea></label>
+        </div>
+        <div id="titleNote" hidden></div>
+        <div class="stage">
+          <canvas id="chest" width="352" height="300" aria-label="Menu du coffre tel que le client 1.8 l'affiche"></canvas>
+          <canvas id="chat" width="352" height="24" aria-label="Message envoyé au joueur"></canvas>
+          <canvas id="tip" width="200" height="60" aria-label="Infobulle de la case survolée"></canvas>
+          <div class="cap" id="stageCap">Survolez ou touchez une case : infobulle comme en jeu. Un clic équipe, comme sur le serveur.</div>
+        </div>
+        <p class="legend" id="legend"></p>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-diag">
+        <div class="st-panel-head"><span class="st-step">5</span><h2 id="h-diag" class="st-panel-title">Diagnostic</h2><span class="grow"></span><span class="st-badge" id="diagCount">0</span></div>
+        <div id="consoleLine" class="st-note"></div>
+        <ul class="issues" id="issueList"></ul>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-perms">
+        <div class="st-panel-head"><span class="st-step">6</span><h2 id="h-perms" class="st-panel-title">Permissions à accorder</h2><span class="grow"></span><button type="button" class="st-btn" id="copyPermsBtn">Copier</button></div>
+        <div id="permsBox"></div>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-out">
+        <div class="st-panel-head"><span class="st-step">7</span><h2 id="h-out" class="st-panel-title">Sortie</h2><span class="grow"></span><span class="st-badge" id="diffCount">0</span></div>
+        <div class="row">
+          <button type="button" class="st-btn st-btn-primary" id="downloadBtn">Télécharger config.yml</button>
+          <button type="button" class="st-btn" id="copyBtn">Copier le fichier</button>
+          <button type="button" class="st-btn" id="resetBtn">Revenir à l'original</button>
+        </div>
+        <p class="hint">Seules les lignes touchées changent : le reste du fichier, commentaires compris, est recopié tel quel.</p>
+        <span class="group-label">Modifications</span>
+        <pre class="code" id="diffBox" aria-label="Différences avec le fichier chargé"></pre>
+        <span class="group-label">Extrait de l'entrée sélectionnée</span>
+        <div class="row"><button type="button" class="st-btn" id="copySnippetBtn">Copier l'extrait</button></div>
+        <pre class="code" id="snippetBox" aria-label="Extrait YAML de l'entrée"></pre>
+        <details style="margin-top:12px">
+          <summary>Texte complet (modifiable)</summary>
+          <textarea id="source" class="st-textarea" spellcheck="false" aria-label="config.yml complet"></textarea>
+        </details>
+      </section>
+    </div>
+  </div>
+</main>
+
+<datalist id="materialList"></datalist>
+<datalist id="moteList"></datalist>
+
+<script>
+/* ============================================================================
+ * BeltariaContent rules, ported. Pure functions only (no DOM): window.CosmeticsLogic.
+ * Every rule cites its source:
+ *   BC  = BeltariaContent src/main/java/fr/beltaria/content/... (config/CosmeticsConfig.java,
+ *         config/ConfigValues.java, config/PackConfig.java, wings/Swarm.java, wings/Wing.java,
+ *         wings/CosmeticSlot.java, menu/MenuLayout.java, menu/WingsMenu.java, menu/MenuButtons.java,
+ *         pack/PackBuild.java, CosmeticMarker.java) and src/main/resources/config.yml
+ *   API = net.beltaria:beltariaspigot-api 1.8.8-R0.1-SNAPSHOT sources (org/bukkit/...)
+ * ========================================================================== */
+(function () {
+  'use strict';
+
+  const MAX_MENU_TITLE = 32;                                   // CosmeticsConfig.java:33
+  const WING_ID = /^[a-z0-9_-]+$/;                             // CosmeticsConfig.java:36 (matches() = whole string)
+  const COLOR_CODES = '0123456789AaBbCcDdEeFfKkLlMmNnOoRr';    // API ChatColor.java:326
+  const COLUMNS = 9, MAX_ROWS = 6, PER_PAGE = (MAX_ROWS - 1) * COLUMNS; // MenuLayout.java:15-19
+  const SHORT_MAX = 32767;                                     // CosmeticsConfig.java:148 (Short.MAX_VALUE)
+  const MAX_PORT = 65535, DEFAULT_PORT = 8163, DEFAULT_DELAY_TICKS = 20; // PackConfig.java:43-45
+
+  /** CosmeticSlot.java:18-36 (texts), :72-113 (section, carriesModel, permissions). */
+  const SLOTS = Object.freeze({
+    wings: Object.freeze({ key: 'wings', title: 'Ailes', noun: 'ailes', equipped: 'Ailes equipees', removed: 'Ailes retirees.', denied: "Vous n'avez pas acces a ces ailes.", removeButton: 'Retirer les ailes', removeHint: "Cliquez pour ne plus porter d'ailes.", noneWorn: 'Aucune aile portee.', chosenLore: 'Equipees', lockedLore: 'Verrouillees', carriesModel: true, menuKey: 'title', command: '/wings', packFolder: 'wings', label: 'Ailes' }),
+    auras: Object.freeze({ key: 'auras', title: 'Aura', noun: 'aura', equipped: 'Aura equipee', removed: 'Aura retiree.', denied: "Vous n'avez pas acces a cette aura.", removeButton: "Retirer l'aura", removeHint: "Cliquez pour ne plus porter d'aura.", noneWorn: 'Aucune aura portee.', chosenLore: 'Equipee', lockedLore: 'Verrouillee', carriesModel: true, menuKey: 'auras-title', command: '/aura', packFolder: 'auras', label: 'Auras' }),
+    trails: Object.freeze({ key: 'trails', title: 'Trainee', noun: 'trainee', equipped: 'Trainee equipee', removed: 'Trainee retiree.', denied: "Vous n'avez pas acces a cette trainee.", removeButton: 'Retirer la trainee', removeHint: 'Cliquez pour ne plus porter de trainee.', noneWorn: 'Aucune trainee portee.', chosenLore: 'Equipee', lockedLore: 'Verrouillee', carriesModel: false, menuKey: 'trails-title', command: '/trail', packFolder: 'motes', label: 'Traînées' })
+  });
+  const SLOT_ORDER = Object.freeze(['wings', 'auras', 'trails']);
+  function permissionPrefix(slot) { return 'beltaria.content.' + slot + '.'; }  // CosmeticSlot.java:106-108
+  function defaultPermission(slot, id) { return permissionPrefix(slot) + id; } // CosmeticSlot.java:101-103
+  function permissionWildcard(slot) { return permissionPrefix(slot) + '*'; }  // CosmeticSlot.java:111-113
+
+  /** Menu titles, in the order CosmeticsConfig reads them (CosmeticsConfig.java:85-89), Java fallbacks :38-42. */
+  const MENU_TITLES = Object.freeze([
+    { key: 'title', def: 'Ailes', ref: 'CosmeticsConfig.java:38, 85', label: 'Menu des ailes (/wings)' },
+    { key: 'items-title', def: '&8Items', ref: 'CosmeticsConfig.java:39, 86', label: "Registre d'items (/content items)" },
+    { key: 'options-title', def: "&8Preferences d'affichage", ref: 'CosmeticsConfig.java:40, 87', label: "Préférences d'affichage" },
+    { key: 'auras-title', def: '&8Auras', ref: 'CosmeticsConfig.java:41, 88', label: 'Menu des auras (/aura)' },
+    { key: 'trails-title', def: '&8Trainees', ref: 'CosmeticsConfig.java:42, 89', label: 'Menu des traînées (/trail)' }
+  ]);
+
+  /** PackConfig.java:54-61. */
+  const DEFAULT_DECLINED = '&cVous avez refuse le pack de ressources de Beltaria.\n\n'
+    + "&7Il porte les ailes, les armures et les outils du serveur :\n"
+    + "&7sans lui, tout s'affiche en pierre grise.\n\n"
+    + '&ePour le recevoir, reconnectez-vous et repondez &aOui&e.\n'
+    + "&7Si aucune question n'apparait, ouvrez\n"
+    + '&7Options &8> &7Multijoueur &8> &7Packs de ressources du serveur\n'
+    + '&7et choisissez &aActives&7 ou &aDemander&7.';
+
+  /**
+   * Lists of the config.yml shipped in the jar (config.yml:176-187). JavaPlugin.reloadConfig sets that
+   * file as defaults (API JavaPlugin.java), and ConfigValues.stringList asks contains()/getList(), which
+   * fall back to defaults (API MemorySection.java:105-107, 372-380): an entry of these ids with no lore
+   * of its own shows the shipped one.
+   */
+  const DEFAULT_LISTS = new Map([
+    ['wings.fairy_wings.lore', ['&7Legeres et lumineuses.']],
+    ['wings.bat_wings.lore', ['&7Sombres et silencieuses.']],
+    ['wings.horus_wings.lore', ["&7L'or du soleil levant."]]
+  ]);
+
+  /** Keys parseWing reads (CosmeticsConfig.java:133-179); motes only means something under trails:. */
+  const ENTRY_KEYS = Object.freeze(['name', 'lore', 'permission', 'icon', 'icon-data', 'motes']);
+
+  /* ---------- Swarms: CosmeticsConfig.java:181-253, Swarm.java:21-168 ---------- */
+  const MOTIONS = Object.freeze(['ORBIT', 'SPIRAL', 'TRAIL', 'BURST']);      // Swarm.java:22-31
+  const TRIGGERS = Object.freeze(['LAND', 'INTERVAL']);                      // Swarm.java:34-39
+  const SWARM_KEYS = Object.freeze(['count', 'radius', 'base', 'height', 'turn', 'spin', 'bob', 'speed', 'lift', 'gravity', 'lifetime-ticks', 'interval-ticks']);
+  const SWARM_INT_KEYS = Object.freeze(['count', 'lifetime-ticks', 'interval-ticks']); // CosmeticsConfig.java:223, 229-230 (getInt)
+  /** CosmeticsConfig.java:241-253, same order as SWARM_KEYS. */
+  const SWARM_DEFAULTS = Object.freeze({
+    ORBIT: [3, 0.9, 0, 0.35, 6, 0, 0.1, 0, 0, 0, 0, 0],
+    SPIRAL: [3, 0.8, 0, 0.5, 12, 10, 0, 0, 0, 0, 40, 20],
+    TRAIL: [1, 0.3, 0, 0.3, 0, 8, 0, 0, 0.005, 0, 30, 4],
+    BURST: [8, 0.3, 0, 0.1, 0, 15, 0, 0.12, 0.17, 0.04, 30, 40]
+  });
+  const SW = Object.freeze({ MAX_COUNT: 12, MIN_LIFETIME: 5, MAX_LIFETIME: 200, MIN_INTERVAL: 2, MAX_RADIUS: 3, MIN_HEIGHT: -0.5, MAX_HEIGHT: 3, MAX_TURN: 45, MAX_SPEED: 1, MAX_BOB: 1, MAX_GRAVITY: 0.2, BELOW_WAIST: 0.7, ABOVE_HEAD: 2.1 }); // Swarm.java:41-74
+
+  /* ---------- org.bukkit.Material of the 1.8.8 API (API Material.java:66-457) ---------- */
+  const MATERIALS_RAW = 'AIR:0,STONE:1,GRASS:2,DIRT:3,COBBLESTONE:4,WOOD:5,SAPLING:6,BEDROCK:7,WATER:8,STATIONARY_WATER:9,LAVA:10,STATIONARY_LAVA:11,SAND:12,GRAVEL:13,GOLD_ORE:14,IRON_ORE:15,COAL_ORE:16,LOG:17,LEAVES:18,SPONGE:19,GLASS:20,LAPIS_ORE:21,LAPIS_BLOCK:22,DISPENSER:23,SANDSTONE:24,NOTE_BLOCK:25,BED_BLOCK:26,POWERED_RAIL:27,DETECTOR_RAIL:28,PISTON_STICKY_BASE:29,WEB:30,LONG_GRASS:31,DEAD_BUSH:32,PISTON_BASE:33,PISTON_EXTENSION:34,WOOL:35,PISTON_MOVING_PIECE:36,YELLOW_FLOWER:37,RED_ROSE:38,BROWN_MUSHROOM:39,RED_MUSHROOM:40,GOLD_BLOCK:41,IRON_BLOCK:42,DOUBLE_STEP:43,STEP:44,BRICK:45,TNT:46,BOOKSHELF:47,MOSSY_COBBLESTONE:48,OBSIDIAN:49,TORCH:50,FIRE:51,MOB_SPAWNER:52,WOOD_STAIRS:53,CHEST:54,REDSTONE_WIRE:55,DIAMOND_ORE:56,DIAMOND_BLOCK:57,WORKBENCH:58,CROPS:59,SOIL:60,FURNACE:61,BURNING_FURNACE:62,SIGN_POST:63,WOODEN_DOOR:64,LADDER:65,RAILS:66,COBBLESTONE_STAIRS:67,WALL_SIGN:68,LEVER:69,STONE_PLATE:70,IRON_DOOR_BLOCK:71,WOOD_PLATE:72,REDSTONE_ORE:73,GLOWING_REDSTONE_ORE:74,REDSTONE_TORCH_OFF:75,REDSTONE_TORCH_ON:76,STONE_BUTTON:77,SNOW:78,ICE:79,SNOW_BLOCK:80,CACTUS:81,CLAY:82,SUGAR_CANE_BLOCK:83,JUKEBOX:84,FENCE:85,PUMPKIN:86,NETHERRACK:87,SOUL_SAND:88,GLOWSTONE:89,PORTAL:90,JACK_O_LANTERN:91,CAKE_BLOCK:92,DIODE_BLOCK_OFF:93,DIODE_BLOCK_ON:94,STAINED_GLASS:95,TRAP_DOOR:96,MONSTER_EGGS:97,SMOOTH_BRICK:98,HUGE_MUSHROOM_1:99,HUGE_MUSHROOM_2:100,IRON_FENCE:101,THIN_GLASS:102,MELON_BLOCK:103,PUMPKIN_STEM:104,MELON_STEM:105,VINE:106,FENCE_GATE:107,BRICK_STAIRS:108,SMOOTH_STAIRS:109,MYCEL:110,WATER_LILY:111,NETHER_BRICK:112,NETHER_FENCE:113,NETHER_BRICK_STAIRS:114,NETHER_WARTS:115,ENCHANTMENT_TABLE:116,BREWING_STAND:117,CAULDRON:118,ENDER_PORTAL:119,ENDER_PORTAL_FRAME:120,ENDER_STONE:121,DRAGON_EGG:122,REDSTONE_LAMP_OFF:123,REDSTONE_LAMP_ON:124,WOOD_DOUBLE_STEP:125,WOOD_STEP:126,COCOA:127,SANDSTONE_STAIRS:128,EMERALD_ORE:129,ENDER_CHEST:130,TRIPWIRE_HOOK:131,TRIPWIRE:132,EMERALD_BLOCK:133,SPRUCE_WOOD_STAIRS:134,BIRCH_WOOD_STAIRS:135,JUNGLE_WOOD_STAIRS:136,COMMAND:137,BEACON:138,COBBLE_WALL:139,FLOWER_POT:140,CARROT:141,POTATO:142,WOOD_BUTTON:143,SKULL:144,ANVIL:145,TRAPPED_CHEST:146,GOLD_PLATE:147,IRON_PLATE:148,REDSTONE_COMPARATOR_OFF:149,REDSTONE_COMPARATOR_ON:150,DAYLIGHT_DETECTOR:151,REDSTONE_BLOCK:152,QUARTZ_ORE:153,HOPPER:154,QUARTZ_BLOCK:155,QUARTZ_STAIRS:156,ACTIVATOR_RAIL:157,DROPPER:158,STAINED_CLAY:159,STAINED_GLASS_PANE:160,LEAVES_2:161,LOG_2:162,ACACIA_STAIRS:163,DARK_OAK_STAIRS:164,SLIME_BLOCK:165,BARRIER:166,IRON_TRAPDOOR:167,PRISMARINE:168,SEA_LANTERN:169,HAY_BLOCK:170,CARPET:171,HARD_CLAY:172,COAL_BLOCK:173,PACKED_ICE:174,DOUBLE_PLANT:175,STANDING_BANNER:176,WALL_BANNER:177,DAYLIGHT_DETECTOR_INVERTED:178,RED_SANDSTONE:179,RED_SANDSTONE_STAIRS:180,DOUBLE_STONE_SLAB2:181,STONE_SLAB2:182,SPRUCE_FENCE_GATE:183,BIRCH_FENCE_GATE:184,JUNGLE_FENCE_GATE:185,DARK_OAK_FENCE_GATE:186,ACACIA_FENCE_GATE:187,SPRUCE_FENCE:188,BIRCH_FENCE:189,JUNGLE_FENCE:190,DARK_OAK_FENCE:191,ACACIA_FENCE:192,SPRUCE_DOOR:193,BIRCH_DOOR:194,JUNGLE_DOOR:195,ACACIA_DOOR:196,DARK_OAK_DOOR:197,IRON_SPADE:256,IRON_PICKAXE:257,IRON_AXE:258,FLINT_AND_STEEL:259,APPLE:260,BOW:261,ARROW:262,COAL:263,DIAMOND:264,IRON_INGOT:265,GOLD_INGOT:266,IRON_SWORD:267,WOOD_SWORD:268,WOOD_SPADE:269,WOOD_PICKAXE:270,WOOD_AXE:271,STONE_SWORD:272,STONE_SPADE:273,STONE_PICKAXE:274,STONE_AXE:275,DIAMOND_SWORD:276,DIAMOND_SPADE:277,DIAMOND_PICKAXE:278,DIAMOND_AXE:279,STICK:280,BOWL:281,MUSHROOM_SOUP:282,GOLD_SWORD:283,GOLD_SPADE:284,GOLD_PICKAXE:285,GOLD_AXE:286,STRING:287,FEATHER:288,SULPHUR:289,WOOD_HOE:290,STONE_HOE:291,IRON_HOE:292,DIAMOND_HOE:293,GOLD_HOE:294,SEEDS:295,WHEAT:296,BREAD:297,LEATHER_HELMET:298,LEATHER_CHESTPLATE:299,LEATHER_LEGGINGS:300,LEATHER_BOOTS:301,CHAINMAIL_HELMET:302,CHAINMAIL_CHESTPLATE:303,CHAINMAIL_LEGGINGS:304,CHAINMAIL_BOOTS:305,IRON_HELMET:306,IRON_CHESTPLATE:307,IRON_LEGGINGS:308,IRON_BOOTS:309,DIAMOND_HELMET:310,DIAMOND_CHESTPLATE:311,DIAMOND_LEGGINGS:312,DIAMOND_BOOTS:313,GOLD_HELMET:314,GOLD_CHESTPLATE:315,GOLD_LEGGINGS:316,GOLD_BOOTS:317,FLINT:318,PORK:319,GRILLED_PORK:320,PAINTING:321,GOLDEN_APPLE:322,SIGN:323,WOOD_DOOR:324,BUCKET:325,WATER_BUCKET:326,LAVA_BUCKET:327,MINECART:328,SADDLE:329,IRON_DOOR:330,REDSTONE:331,SNOW_BALL:332,BOAT:333,LEATHER:334,MILK_BUCKET:335,CLAY_BRICK:336,CLAY_BALL:337,SUGAR_CANE:338,PAPER:339,BOOK:340,SLIME_BALL:341,STORAGE_MINECART:342,POWERED_MINECART:343,EGG:344,COMPASS:345,FISHING_ROD:346,WATCH:347,GLOWSTONE_DUST:348,RAW_FISH:349,COOKED_FISH:350,INK_SACK:351,BONE:352,SUGAR:353,CAKE:354,BED:355,DIODE:356,COOKIE:357,MAP:358,SHEARS:359,MELON:360,PUMPKIN_SEEDS:361,MELON_SEEDS:362,RAW_BEEF:363,COOKED_BEEF:364,RAW_CHICKEN:365,COOKED_CHICKEN:366,ROTTEN_FLESH:367,ENDER_PEARL:368,BLAZE_ROD:369,GHAST_TEAR:370,GOLD_NUGGET:371,NETHER_STALK:372,POTION:373,GLASS_BOTTLE:374,SPIDER_EYE:375,FERMENTED_SPIDER_EYE:376,BLAZE_POWDER:377,MAGMA_CREAM:378,BREWING_STAND_ITEM:379,CAULDRON_ITEM:380,EYE_OF_ENDER:381,SPECKLED_MELON:382,MONSTER_EGG:383,EXP_BOTTLE:384,FIREBALL:385,BOOK_AND_QUILL:386,WRITTEN_BOOK:387,EMERALD:388,ITEM_FRAME:389,FLOWER_POT_ITEM:390,CARROT_ITEM:391,POTATO_ITEM:392,BAKED_POTATO:393,POISONOUS_POTATO:394,EMPTY_MAP:395,GOLDEN_CARROT:396,SKULL_ITEM:397,CARROT_STICK:398,NETHER_STAR:399,PUMPKIN_PIE:400,FIREWORK:401,FIREWORK_CHARGE:402,ENCHANTED_BOOK:403,REDSTONE_COMPARATOR:404,NETHER_BRICK_ITEM:405,QUARTZ:406,EXPLOSIVE_MINECART:407,HOPPER_MINECART:408,PRISMARINE_SHARD:409,PRISMARINE_CRYSTALS:410,RABBIT:411,COOKED_RABBIT:412,RABBIT_STEW:413,RABBIT_FOOT:414,RABBIT_HIDE:415,ARMOR_STAND:416,IRON_BARDING:417,GOLD_BARDING:418,DIAMOND_BARDING:419,LEASH:420,NAME_TAG:421,COMMAND_MINECART:422,MUTTON:423,COOKED_MUTTON:424,BANNER:425,SPRUCE_DOOR_ITEM:427,BIRCH_DOOR_ITEM:428,JUNGLE_DOOR_ITEM:429,ACACIA_DOOR_ITEM:430,DARK_OAK_DOOR_ITEM:431,GOLD_RECORD:2256,GREEN_RECORD:2257,RECORD_3:2258,RECORD_4:2259,RECORD_5:2260,RECORD_6:2261,RECORD_7:2262,RECORD_8:2263,RECORD_9:2264,RECORD_10:2265,RECORD_11:2266,RECORD_12:2267';
+  const BY_NAME = new Map(), BY_ID = new Map(), MATERIAL_NAMES = [];
+  for (const pair of MATERIALS_RAW.split(',')) {
+    const i = pair.indexOf(':');
+    const m = Object.freeze({ name: pair.slice(0, i), id: Number(pair.slice(i + 1)) });
+    BY_NAME.set(m.name, m); BY_ID.set(m.id, m); MATERIAL_NAMES.push(m.name);
+  }
+  /** API Material.java:670-686 (matchMaterial): an int id first, then the upper-cased name, spaces as _, non-word chars dropped. */
+  function matchMaterial(raw) {
+    if (raw == null) return null;
+    const s = String(raw);
+    if (/^[+-]?[0-9]+$/.test(s)) {                              // Integer.parseInt
+      const n = Number(s);
+      if (n >= -2147483648 && n <= 2147483647 && BY_ID.has(n)) return BY_ID.get(n); // getMaterial(int), API Material.java:631-637
+    }
+    const filtered = s.toUpperCase().replace(/[ \t\n\x0B\f\r]+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
+    return BY_NAME.get(filtered) || null;
+  }
+  /** API Material.java:585-587. */
+  function isBlock(m) { return m.id < 256; }
+
+  /* ---------- Java value semantics ---------- */
+  /** Double.toString. */
+  function javaDouble(d) {
+    if (Number.isNaN(d)) return 'NaN';
+    if (d === Infinity) return 'Infinity';
+    if (d === -Infinity) return '-Infinity';
+    if (d === 0) return Object.is(d, -0) ? '-0.0' : '0.0';
+    const a = Math.abs(d);
+    if (a >= 1e-3 && a < 1e7) { const s = String(d); return s.indexOf('.') >= 0 || s.indexOf('e') >= 0 ? s : s + '.0'; }
+    let [mant, exp] = d.toExponential().split('e');
+    if (mant.indexOf('.') < 0) mant += '.0';
+    return mant + 'E' + (exp[0] === '+' ? exp.slice(1) : exp);
+  }
+  /** (int) of a YAML number: Integer/Long.intValue wraps, (int) of a double saturates (NumberConversions.toInt). */
+  function javaInt(v) {
+    if (Number.isInteger(v)) return v | 0;
+    if (Number.isNaN(v)) return 0;
+    return Math.max(-2147483648, Math.min(2147483647, Math.trunc(v)));
+  }
+  /** String.format(Locale.ROOT, "%.2f", d): HALF_UP on the decimal value Java prints. */
+  function javaFixed2(d) {
+    if (!Number.isFinite(d)) return javaDouble(d);
+    const s = String(Math.abs(d));
+    if (s.indexOf('e') >= 0) return d.toFixed(2);
+    const [ip, fp = ''] = s.split('.');
+    let scaled = BigInt(ip + (fp + '00').slice(0, 2));
+    if ((fp[2] || '0') >= '5') scaled += 1n;
+    let t = scaled.toString().padStart(3, '0');
+    const out = t.slice(0, -2) + '.' + t.slice(-2);
+    return (d < 0 && scaled !== 0n ? '-' : '') + out;
+  }
+  function isMap(v) { return v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !(v instanceof Section) && !ArrayBuffer.isView(v); }
+  /** Object.toString as BC's messages print it (String, Integer, Double, List, Map, MemorySection). */
+  function javaStr(v) {
+    if (v === null || v === undefined) return 'null';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'boolean') return String(v);
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : javaDouble(v);
+    if (Array.isArray(v)) return '[' + v.map(javaStr).join(', ') + ']';
+    if (v instanceof Section) return "MemorySection[path='" + v.path + "', root='YamlConfiguration']";
+    if (v instanceof Date) return v.toString();
+    if (typeof v === 'object') return '{' + Object.keys(v).map(k => k + '=' + javaStr(v[k])).join(', ') + '}';
+    return String(v);
+  }
+  /** API ChatColor.java:323-332 (translateAlternateColorCodes('&', ...)). */
+  function translateColors(text) {
+    const b = String(text).split('');
+    for (let i = 0; i < b.length - 1; i++) {
+      if (b[i] === '&' && COLOR_CODES.indexOf(b[i + 1]) > -1) { b[i] = '§'; b[i + 1] = b[i + 1].toLowerCase(); }
+    }
+    return b.join('');
+  }
+
+  /* ---------- Bukkit configuration model (API YamlConfiguration.java:64-97, MemorySection.java) ---------- */
+  class Section {
+    constructor(path) { this.path = path; this.map = new Map(); }
+  }
+  function childPath(sec, key) { return sec.path ? sec.path + '.' + key : key; }
+  /** Walks a dotted path as MemorySection.set/createSection do, creating the missing sections. */
+  function walkTo(sec, path) {
+    const parts = String(path).split('.');
+    let cur = sec;
+    for (let i = 0; i < parts.length - 1; i++) {
+      let n = cur.map.get(parts[i]);
+      if (!(n instanceof Section)) { n = new Section(childPath(cur, parts[i])); cur.map.set(parts[i], n); }
+      cur = n;
+    }
+    return [cur, parts[parts.length - 1]];
+  }
+  function createSection(sec, path) { const [p, k] = walkTo(sec, path); const s = new Section(childPath(p, k)); p.map.set(k, s); return s; }
+  /** MemorySection.java:162-191: a null value removes the key - an empty entry vanishes on load. */
+  function setPath(sec, path, v) { const [p, k] = walkTo(sec, path); if (v === null || v === undefined) p.map.delete(k); else p.map.set(k, v); }
+  function orderedKeys(obj, rawPath, orderOf) {
+    const keys = Object.keys(obj);
+    const ord = orderOf ? orderOf(rawPath) : null;
+    if (!ord) return keys;
+    const pos = k => { const i = ord.indexOf(k); return i < 0 ? 1e9 : i; };
+    return keys.slice().sort((a, b) => pos(a) - pos(b));
+  }
+  /** convertMapsToSections (YamlConfiguration.java:86-97). orderOf restores file order (JS objects list integer-like keys first). */
+  function fill(sec, obj, rawPath, orderOf) {
+    for (const k of orderedKeys(obj, rawPath, orderOf)) {
+      const v = obj[k];
+      if (isMap(v)) fill(createSection(sec, k), v, rawPath.concat([k]), orderOf);
+      else setPath(sec, k, v);
+    }
+  }
+  function toSection(obj, orderOf) { const root = new Section(''); if (isMap(obj)) fill(root, obj, [], orderOf); return root; }
+  // MemorySection getters with an explicit default (API MemorySection.java:284-332).
+  function getString(sec, key, def) { const v = sec.map.get(key); return v !== undefined && v !== null ? javaStr(v) : def; }
+  function getInt(sec, key, def) { const v = sec.map.get(key); return typeof v === 'number' ? javaInt(v) : def; }
+  function getDouble(sec, key, def) { const v = sec.map.get(key); return typeof v === 'number' ? v : def; }
+  function getBool(sec, key, def) { const v = sec.map.get(key); return typeof v === 'boolean' ? v : def; }
+  /** ConfigValues.section (ConfigValues.java:29-35): a missing or non-block value is an empty section. */
+  function sectionOf(sec, key) { const v = sec.map.get(key); return v instanceof Section ? v : new Section(childPath(sec, key)); }
+
+  /* ---------- YAML: js-yaml with SnakeYAML's YAML 1.1 booleans (yes/no/on/off) ---------- */
+  let SCHEMA = null;
+  function schema() {
+    if (SCHEMA) return SCHEMA;
+    const Y = window.jsyaml;
+    const bool11 = new Y.Type('tag:yaml.org,2002:bool', {
+      kind: 'scalar',
+      resolve: d => d !== null && /^(?:yes|Yes|YES|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF)$/.test(d),
+      construct: d => /^(?:yes|true|on)$/i.test(d),
+      predicate: o => Object.prototype.toString.call(o) === '[object Boolean]',
+      represent: { lowercase: o => (o ? 'true' : 'false') },
+      defaultStyle: 'lowercase'
+    });
+    SCHEMA = Y.DEFAULT_SCHEMA.extend({ implicit: [bool11] });
+    return SCHEMA;
+  }
+  /** YamlConfiguration.loadFromString (YamlConfiguration.java:64-84); duplicate keys allowed, last wins (SnakeYAML 1.33). */
+  function parseYaml(text) {
+    if (!window.jsyaml) return { error: "js-yaml n'a pas pu être chargé (hors ligne ?)" };
+    try {
+      const data = window.jsyaml.load(String(text), { schema: schema(), json: true });
+      if (data === undefined || data === null) return { data: {} };
+      if (!isMap(data)) return { error: 'Top level is not a Map.' };
+      return { data };
+    } catch (e) { return { error: e.message }; }
+  }
+
+  /* ---------- Line index of a block-style YAML file, for targeted edits ---------- */
+  function leading(line) { let n = 0; while (n < line.length && line[n] === ' ') n++; return n; }
+  function skipSpaces(s, i) { while (i < s.length && (s[i] === ' ' || s[i] === '\t')) i++; return i; }
+  function closeQuote(s, from, q) {
+    for (let j = from; j < s.length; j++) {
+      if (q === '"' && s[j] === '\\') { j++; continue; }
+      if (s[j] === q) { if (q === "'" && s[j + 1] === "'") { j++; continue; } return j + 1; }
+    }
+    return -1;
+  }
+  function scanFlow(s, i, st) {
+    let depth = st.depth, quote = st.quote;
+    for (let j = i; j < s.length; j++) {
+      const ch = s[j];
+      if (quote) {
+        if (quote === '"' && ch === '\\') { j++; continue; }
+        if (ch === quote) { if (quote === "'" && s[j + 1] === "'") { j++; continue; } quote = null; }
+        continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; continue; }
+      if (ch === '#' && (j === 0 || /\s/.test(s[j - 1]))) break;
+      if (ch === '[' || ch === '{') depth++;
+      else if (ch === ']' || ch === '}') { depth--; if (depth === 0) return { end: j + 1, open: null }; }
+    }
+    return { end: s.length, open: { flow: true, depth, quote } };
+  }
+  /** One inline value from i: where it ends, where its comment starts, and an open multi-line state. */
+  function scanValue(s, i) {
+    if (i >= s.length) return { end: i, comment: -1, open: null };
+    const c = s[i];
+    let end;
+    if (c === '"' || c === "'") {
+      end = closeQuote(s, i + 1, c);
+      if (end < 0) return { end: s.length, comment: -1, open: { quote: c } };
+    } else if (c === '[' || c === '{') {
+      const r = scanFlow(s, i, { depth: 0, quote: null });
+      if (r.open) return { end: s.length, comment: -1, open: r.open };
+      end = r.end;
+    } else {
+      let j = i;
+      while (j < s.length && !(s[j] === '#' && j > i && /\s/.test(s[j - 1]))) j++;
+      end = j;
+      while (end > i && /\s/.test(s[end - 1])) end--;
+      return { end, comment: j < s.length ? j : -1, open: null };
+    }
+    const j = skipSpaces(s, end);
+    return { end, comment: j < s.length && s[j] === '#' ? j : -1, open: null };
+  }
+  function continueOpen(line, open) {
+    if (open.flow) { const r = scanFlow(line, 0, open); return r.open; }
+    return closeQuote(line, 0, open.quote) < 0 ? open : null;
+  }
+  const BLOCK_SCALAR = /^[|>][0-9+-]*(\s+#.*)?$/;
+  function parseKey(line, ind) {
+    const c = line[ind];
+    if (c === undefined) return null;
+    if (c === '"' || c === "'") {
+      const e = closeQuote(line, ind + 1, c);
+      if (e < 0) return null;
+      const lit = line.slice(ind, e);
+      let key;
+      if (c === '"') { try { key = JSON.parse(lit); } catch (x) { key = lit.slice(1, -1); } } else key = lit.slice(1, -1).replace(/''/g, "'");
+      const j = skipSpaces(line, e);
+      if (line[j] !== ':' || !(j + 1 >= line.length || /\s/.test(line[j + 1]))) return null;
+      return { key, keyEnd: e, colon: j };
+    }
+    if ('#[]{},&*!|>%@`'.indexOf(c) >= 0) return null;
+    if (c === '-' && (ind + 1 >= line.length || /\s/.test(line[ind + 1]))) return null;
+    let j;
+    for (j = ind; j < line.length; j++) {
+      if (line[j] === ':' && (j + 1 >= line.length || /\s/.test(line[j + 1]))) break;
+      if (line[j] === '#' && j > ind && /\s/.test(line[j - 1])) return null;
+    }
+    if (j >= line.length) return null;
+    let k = j; while (k > ind && /\s/.test(line[k - 1])) k--;
+    return { key: line.slice(ind, k), keyEnd: k, colon: j };
+  }
+  function pk(path) { return JSON.stringify(path); }
+  /**
+   * Index of the mapping keys of a block-style YAML text: for each key its line, indentation, inline value
+   * span, comment, and the last line of its block (children, list items, block scalar lines).
+   */
+  function indexYaml(text) {
+    const eol = text.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+    const lines = text.split(/\r?\n/);
+    const root = { path: [], key: null, indent: -1, line: -1, last: -1, children: [], hasInline: false, isRoot: true };
+    const nodes = new Map();
+    const dups = [];
+    const stack = [root];
+    let block = null, open = null, unit = 0;
+    const mark = i => { for (const n of stack) n.last = i; };
+    const tailOf = (line, valStart) => {
+      if (BLOCK_SCALAR.test(line.slice(valStart))) return 'block';
+      const r = scanValue(line, valStart);
+      return r.open;
+    };
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (open) { mark(i); open = continueOpen(line, open); continue; }
+      const t = line.trim();
+      const ind = leading(line);
+      if (block) {
+        if (t === '') continue;
+        if (ind > block.indent) { mark(i); continue; }
+        block = null;
+      }
+      if (t === '' || t[0] === '#' || t === '---' || t === '...') continue;
+      if (line[ind] === '\t') { mark(i); continue; }
+      if (t === '-' || t.startsWith('- ')) {
+        while (stack.length > 1) { const top = stack[stack.length - 1]; if (top.indent > ind || (top.indent === ind && top.hasInline)) stack.pop(); else break; }
+        const top = stack[stack.length - 1];
+        if (top.listIndent === undefined) top.listIndent = ind;
+        mark(i);
+        const vs = skipSpaces(line, ind + 1);
+        const k = parseKey(line, vs);
+        const tail = tailOf(line, k ? skipSpaces(line, k.colon + 1) : vs);
+        if (tail === 'block') block = { indent: ind }; else if (tail) open = tail;
+        continue;
+      }
+      while (stack.length > 1 && stack[stack.length - 1].indent >= ind) stack.pop();
+      const top = stack[stack.length - 1];
+      if (top.listIndent !== undefined && ind > top.listIndent) {
+        mark(i);
+        const k = parseKey(line, ind);
+        const tail = tailOf(line, k ? skipSpaces(line, k.colon + 1) : ind);
+        if (tail === 'block') block = { indent: ind }; else if (tail) open = tail;
+        continue;
+      }
+      const k = parseKey(line, ind);
+      if (!k) { mark(i); continue; }
+      const vStart = skipSpaces(line, k.colon + 1);
+      const node = { path: top.path.concat([k.key]), key: k.key, indent: ind, line: i, last: i, keyEnd: k.keyEnd, colon: k.colon, valueStart: vStart, valueEnd: vStart, comment: -1, inline: '', hasInline: false, block: false, children: [], parent: top };
+      const rest = line.slice(vStart);
+      if (rest !== '' && rest[0] !== '#') {
+        node.hasInline = true;
+        if (BLOCK_SCALAR.test(rest)) { node.block = true; block = { indent: ind }; node.valueEnd = line.length; }
+        else { const r = scanValue(line, vStart); node.valueEnd = r.end; node.comment = r.comment; if (r.open) open = r.open; }
+        node.inline = line.slice(vStart, node.valueEnd);
+      } else if (rest[0] === '#') node.comment = vStart;
+      if (!unit && top !== root && ind > top.indent) unit = ind - top.indent;
+      const key = pk(node.path);
+      if (nodes.has(key)) dups.push({ first: nodes.get(key), second: node });
+      top.children.push(node);
+      nodes.set(key, node);                                       // the last one wins, as in SnakeYAML
+      mark(i);
+      stack.push(node);
+    }
+    return { lines, eol, nodes, root, dups, unit: unit || 2 };
+  }
+  /** File order of the keys of a mapping (first occurrence), for toSection. */
+  function orderFromIndex(ix) {
+    return rawPath => {
+      const n = rawPath.length ? ix.nodes.get(pk(rawPath)) : ix.root;
+      if (!n || !n.children.length) return null;
+      return n.children.map(c => c.key);
+    };
+  }
+
+  /* ---------- Targeted edits: change only the lines of the touched key ---------- */
+  const SPECIAL = /^(?:y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF|null|Null|NULL|~)$/;
+  const NUMLIKE = /^[-+]?(?:\.?[0-9][0-9_]*(?:\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|0x[0-9a-fA-F_]+|0o?[0-7_]+|0b[01_]+|\.inf|\.Inf|\.INF|\.nan|\.NaN|\.NAN)$|^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+(?:\.[0-9_]*)?$/;
+  function yamlKey(k) { k = String(k); return /^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(k) && !SPECIAL.test(k) && !NUMLIKE.test(k) ? k : JSON.stringify(k); }
+  function yamlScalar(v) {
+    if (v === null) return 'null';
+    if (typeof v === 'boolean') return v ? 'true' : 'false';
+    if (typeof v === 'number') return Number.isFinite(v) ? String(v) : (Number.isNaN(v) ? '.nan' : (v > 0 ? '.inf' : '-.inf'));
+    const s = String(v);
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(s) && !SPECIAL.test(s)) return s;
+    return JSON.stringify(s);
+  }
+  function isMultiline(v) { return typeof v === 'string' && v.indexOf('\n') >= 0; }
+  /** Block-style lines for "key: value" at this indentation. */
+  function serializeKV(indent, keyText, value, unit) {
+    const ind = ' '.repeat(indent);
+    if (Array.isArray(value)) {
+      if (!value.length) return [ind + keyText + ': []'];
+      const out = [ind + keyText + ':'];
+      for (const item of value) out.push(...serializeItem(indent + unit, item, unit));
+      return out;
+    }
+    if (isMap(value)) {
+      const keys = Object.keys(value);
+      if (!keys.length) return [ind + keyText + ': {}'];
+      const out = [ind + keyText + ':'];
+      for (const k of keys) out.push(...serializeKV(indent + unit, yamlKey(k), value[k], unit));
+      return out;
+    }
+    if (isMultiline(value) && !/\n$/.test(value) && !/^[ \t]/.test(value) && !/[\u0000-\u0008\u000b-\u001f]/.test(value)) {
+      return [ind + keyText + ': |-'].concat(value.split('\n').map(l => (l === '' ? '' : ind + ' '.repeat(unit) + l)));
+    }
+    return [ind + keyText + ': ' + yamlScalar(value)];
+  }
+  function serializeItem(indent, item, unit) {
+    const ind = ' '.repeat(indent);
+    if (isMap(item) && Object.keys(item).length) {
+      const lines = [];
+      for (const k of Object.keys(item)) lines.push(...serializeKV(indent + 2, yamlKey(k), item[k], unit));
+      lines[0] = ind + '- ' + lines[0].slice(indent + 2);
+      return lines;
+    }
+    if (Array.isArray(item) || isMap(item)) return [ind + '- ' + (Array.isArray(item) ? '[]' : '{}')];
+    return [ind + '- ' + yamlScalar(item)];
+  }
+  function rawAt(data, path) {
+    let cur = data;
+    for (const k of path) { if (!isMap(cur) || !Object.prototype.hasOwnProperty.call(cur, k)) return undefined; cur = cur[k]; }
+    return cur;
+  }
+  function deepEqual(a, b) {
+    if (a === b) return true;
+    if (typeof a === 'number' && typeof b === 'number') return Number.isNaN(a) && Number.isNaN(b);
+    if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
+    if (isMap(a) && isMap(b)) { const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every(k => Object.prototype.hasOwnProperty.call(b, k) && deepEqual(a[k], b[k])); }
+    return false;
+  }
+  function joinLines(ix, lines) { return lines.join(ix.eol); }
+  function editError(msg) { const e = new Error(msg); e.name = 'EditError'; return e; }
+  /** Re-reads the edited text and checks the value really landed; refuses the edit otherwise. */
+  function verified(text, check, what) {
+    const p = parseYaml(text);
+    if (p.error) throw editError('Modification refusée (' + what + ') : le YAML ne se relirait plus (' + p.error.split('\n')[0] + ').');
+    if (!check(p.data)) throw editError('Modification refusée (' + what + ') : la relecture ne donne pas la valeur voulue - modifiez cette clé dans le texte complet.');
+    return text;
+  }
+  function pathLabel(path) { return path.join('.'); }
+  /**
+   * Sets path to value (scalar, list or map), or removes it when value is undefined. Only the key's own
+   * lines change; a missing parent is created; "key: {}" turns into a block when it gets a child.
+   */
+  function setValue(text, path, value) {
+    if (!path.length) throw editError('Chemin vide.');
+    const out = setRaw(text, path, value);
+    return verified(out, data => {
+      const got = rawAt(data, path);
+      if (value === undefined) return got === undefined && (path.length === 1 || isMap(rawAt(data, path.slice(0, -1))));
+      return deepEqual(got, value);
+    }, pathLabel(path));
+  }
+  function setRaw(text, path, value) {
+    const ix = indexYaml(text);
+    const L = ix.lines.slice();
+    const node = ix.nodes.get(pk(path));
+    if (value === undefined) {
+      if (!node) return text;
+      L.splice(node.line, node.last - node.line + 1);
+      const parent = node.parent;
+      if (!parent.isRoot && parent.children.length === 1 && !parent.hasInline) {
+        // The last child gone: keep the parent a map ("x: {}") - a bare "x:" is null, and Bukkit drops it.
+        const pl = L[parent.line];
+        L[parent.line] = parent.comment >= 0 ? pl.slice(0, parent.colon + 1) + ' {} ' + pl.slice(parent.comment) : pl.slice(0, parent.colon + 1) + ' {}';
+      }
+      return joinLines(ix, L);
+    }
+    if (node) {
+      const line = L[node.line];
+      const scalar = !Array.isArray(value) && !isMap(value) && !isMultiline(value);
+      if (scalar && node.hasInline && !node.block && node.last === node.line) {
+        L[node.line] = line.slice(0, node.valueStart) + yamlScalar(value) + line.slice(node.valueEnd);
+      } else {
+        const keyText = line.slice(node.indent, node.keyEnd);
+        const repl = serializeKV(node.indent, keyText, value, ix.unit);
+        if (node.comment >= 0 && node.last === node.line && !node.block) repl[0] += ' ' + line.slice(node.comment);
+        L.splice(node.line, node.last - node.line + 1, ...repl);
+      }
+      return joinLines(ix, L);
+    }
+    const parentPath = path.slice(0, -1);
+    let P = parentPath.length ? ix.nodes.get(pk(parentPath)) : ix.root;
+    if (!P) return setRaw(setRaw(text, parentPath, {}), path, value);
+    let at;
+    let childIndent = P.children.length ? P.children[0].indent : (P.isRoot ? 0 : P.indent + ix.unit);
+    if (P.hasInline) {
+      if (!/^\{\s*\}$/.test(P.inline)) {
+        // "x: value" or "x: {a: 1}": rewrite x as a block holding what it had plus the new key.
+        const current = rawAt(parseYaml(text).data || {}, parentPath);
+        if (!isMap(current)) throw editError(pathLabel(parentPath) + " n'est pas un bloc (valeur : " + javaStr(current) + ') : impossible d\'y ajouter ' + path[path.length - 1] + '.');
+        const merged = Object.assign({}, current, { [path[path.length - 1]]: value });
+        return setRaw(text, parentPath, merged);
+      }
+      const pl = L[P.line];
+      L[P.line] = pl.slice(0, P.colon + 1) + (P.comment >= 0 ? ' ' + pl.slice(P.comment) : '');
+      childIndent = P.indent + ix.unit;
+      at = P.line + 1;
+    } else {
+      at = P.isRoot ? ix.root.last + 1 : P.last + 1;
+    }
+    L.splice(at, 0, ...serializeKV(childIndent, yamlKey(path[path.length - 1]), value, ix.unit));
+    if (P.isRoot && at >= L.length - 1 && L[L.length - 1] !== '') L.push('');
+    return joinLines(ix, L);
+  }
+  /** Renames the last key of path (an entry id): only the key text changes. */
+  function renameKey(text, path, newKey) {
+    const ix = indexYaml(text);
+    const node = ix.nodes.get(pk(path));
+    if (!node) throw editError(pathLabel(path) + ' introuvable.');
+    const siblings = node.parent.children.map(c => c.key);
+    if (siblings.indexOf(newKey) >= 0) throw editError('« ' + newKey + ' » existe déjà sous ' + (pathLabel(path.slice(0, -1)) || 'la racine') + '.');
+    const before = rawAt(parseYaml(text).data, path);
+    const L = ix.lines.slice();
+    const line = L[node.line];
+    L[node.line] = line.slice(0, node.indent) + yamlKey(newKey) + line.slice(node.keyEnd);
+    const np = path.slice(0, -1).concat([newKey]);
+    return verified(joinLines(ix, L), d => rawAt(d, path) === undefined && deepEqual(rawAt(d, np), before), pathLabel(path));
+  }
+  /** Swaps an entry with its previous (dir -1) or next (dir +1) sibling; lines between them stay put. */
+  function moveKey(text, path, dir) {
+    const ix = indexYaml(text);
+    const node = ix.nodes.get(pk(path));
+    if (!node) throw editError(pathLabel(path) + ' introuvable.');
+    const sib = node.parent.children;
+    const i = sib.indexOf(node), j = i + dir;
+    if (j < 0 || j >= sib.length) return text;
+    const a = sib[Math.min(i, j)], b = sib[Math.max(i, j)];
+    const L = ix.lines;
+    const out = L.slice(0, a.line).concat(L.slice(b.line, b.last + 1), L.slice(a.last + 1, b.line), L.slice(a.line, a.last + 1), L.slice(b.last + 1));
+    const parentPath = path.slice(0, -1);
+    const before = parseYaml(text).data;
+    const keysBefore = Object.keys(rawAt(before, parentPath) || {});
+    return verified(joinLines(ix, out), d => {
+      const p = rawAt(d, parentPath);
+      if (!isMap(p) || !deepEqual(p, rawAt(before, parentPath))) return false;
+      const order = indexYaml(joinLines(ix, out)).nodes.get(pk(parentPath)).children.map(c => c.key);
+      return order.length === keysBefore.length && order[i] === sib[j].key && order[j] === node.key;
+    }, pathLabel(path));
+  }
+  /** Lines of one key's block, for the entry snippet. */
+  function blockText(text, path) {
+    const ix = indexYaml(text);
+    const node = ix.nodes.get(pk(path));
+    if (!node) return null;
+    return ix.lines.slice(node.line, node.last + 1);
+  }
+
+  /* ---------- Validation, in the order CosmeticsConfig runs it ---------- */
+  function markerProblem(k) {
+    if (k == null || k === '') return 'Cle de marqueur vide';                               // CosmeticMarker.java:42-44
+    const sep = k.indexOf(':');
+    if (sep <= 0 || sep === k.length - 1) return 'Cle de marqueur attendue sous la forme namespace:cle, recu ' + k; // :45-49
+    const ns = k.slice(0, sep), name = k.slice(sep + 1);
+    if (!/^[a-z0-9._-]+$/.test(ns)) return 'Invalid namespace. Must be [a-z0-9._-]: ' + ns;    // API NamespacedKey.java:40, 57
+    if (!/^[a-z0-9/._-]+$/.test(name)) return 'Invalid key. Must be [a-z0-9/._-]: ' + name;   // API NamespacedKey.java:41, 58
+    if ((ns + ':' + name).length >= 256) return 'NamespacedKey must be less than 256 characters'; // API NamespacedKey.java:63-64
+    return null;
+  }
+  function within(name, value, min, max) {                                                   // Swarm.java:212-217
+    return value >= min && value <= max ? null : name + ' entre ' + javaDouble(min) + ' et ' + javaDouble(max) + ', recu ' + javaDouble(value);
+  }
+  function landingAge(s) {                                                                    // Swarm.java:277-284
+    if (s.gravity === 0) return s.lift < 0 ? s.height / -s.lift : Infinity;
+    const g = s.gravity;
+    return (s.lift + Math.sqrt(s.lift * s.lift + 2 * g * s.height)) / g;
+  }
+  function burstHeight(s, age) {                                                              // Swarm.java:206-210
+    const flight = Math.min(age, landingAge(s));
+    return Math.max(0, s.height + s.lift * flight - 0.5 * s.gravity * flight * flight);
+  }
+  function verticalRange(s) {                                                                 // Swarm.java:179-203
+    switch (s.motion) {
+      case 'ORBIT': return [s.height - s.bob, s.height + s.bob];
+      case 'SPIRAL': return [Math.min(s.base, s.height), Math.max(s.base, s.height)];
+      case 'TRAIL': { const end = s.height + s.lift * s.lifetimeTicks; return [Math.min(s.height, end), Math.max(s.height, end)]; }
+      default: {
+        const life = s.lifetimeTicks;
+        let top = s.height;
+        if (s.lift > 0) { const apex = s.gravity > 0 ? Math.min(life, s.lift / s.gravity) : life; top = burstHeight(s, apex); }
+        return [Math.min(s.height, burstHeight(s, life)), top];
+      }
+    }
+  }
+  /** new Swarm(...) checks, in order (Swarm.java:116-168); null when valid. */
+  function swarmProblem(s) {
+    if (s.count < 1 || s.count > SW.MAX_COUNT) return 'Entre 1 et ' + SW.MAX_COUNT + ' objets, recu ' + s.count;
+    const w = within('radius', s.radius, 0, SW.MAX_RADIUS) || within('base', s.base, SW.MIN_HEIGHT, SW.MAX_HEIGHT)
+      || within('height', s.height, SW.MIN_HEIGHT, SW.MAX_HEIGHT) || within('turn', s.turn, -SW.MAX_TURN, SW.MAX_TURN)
+      || within('spin', s.spin, -SW.MAX_TURN, SW.MAX_TURN) || within('bob', s.bob, 0, SW.MAX_BOB)
+      || within('speed', s.speed, 0, SW.MAX_SPEED) || within('lift', s.lift, -SW.MAX_SPEED, SW.MAX_SPEED)
+      || within('gravity', s.gravity, 0, SW.MAX_GRAVITY);
+    if (w) return w;
+    if (s.motion !== 'ORBIT' && (s.lifetimeTicks < SW.MIN_LIFETIME || s.lifetimeTicks > SW.MAX_LIFETIME)) return 'Duree de vie entre ' + SW.MIN_LIFETIME + ' et ' + SW.MAX_LIFETIME + ' ticks, recu ' + s.lifetimeTicks;
+    const timed = s.motion === 'SPIRAL' || s.motion === 'TRAIL' || (s.motion === 'BURST' && s.trigger === 'INTERVAL');
+    if (timed && s.intervalTicks < SW.MIN_INTERVAL) return 'Intervalle de ' + SW.MIN_INTERVAL + ' ticks au moins, recu ' + s.intervalTicks;
+    const r = verticalRange(s);
+    if (r[1] > SW.BELOW_WAIST && r[0] < SW.ABOVE_HEAD) {
+      return 'la trajectoire va de ' + javaFixed2(r[0]) + ' a ' + javaFixed2(r[1]) + ' bloc au-dessus des pieds : elle doit rester sous la ceinture (' + javaFixed2(SW.BELOW_WAIST) + ' au plus) ou au-dessus de la tete (' + javaFixed2(SW.ABOVE_HEAD) + ' au moins), un objet devant le corps gene';
+    }
+    return null;
+  }
+
+  /**
+   * Runs CosmeticsConfig's constructor (CosmeticsConfig.java:60-110) on a parsed config.yml.
+   * BC stops at its first exception and logs "config.yml invalide, plugin desactive : <message>"
+   * (BeltariaContent.java:146-148); here every independent check runs, errors[0] being that first one.
+   * opts: { index: indexYaml(text) (file order, duplicates), pack: pack summary (cross-check) }.
+   */
+  function validate(raw, opts) {
+    opts = opts || {};
+    const ix = opts.index || null;
+    const root = toSection(raw || {}, ix ? orderFromIndex(ix) : null);
+    const errors = [], warnings = [];
+    const E = (path, problem, ref, extra) => errors.push(Object.assign({ level: 'error', path, problem, message: path ? path + ' : ' + problem : problem, ref }, extra || {}));
+    const W = (path, text, ref, extra) => warnings.push(Object.assign({ level: 'warn', path, text, ref }, extra || {}));
+    const I = (path, text, ref, extra) => warnings.push(Object.assign({ level: 'info', path, text, ref }, extra || {}));
+    const typeWarn = (sec, key, path, def, ref) => {
+      const v = sec.map.get(key);
+      if (v !== undefined && typeof v !== 'number') W(path, 'nombre attendu, reçu « ' + javaStr(v) + ' » : BC lit la valeur par défaut, ' + def, ref + ', API MemorySection.java:299-302');
+    };
+
+    // enabled (CosmeticsConfig.java:61): getBoolean with an explicit default ignores the shipped file.
+    const enabledRaw = root.map.get('enabled');
+    const enabled = typeof enabledRaw === 'boolean' ? enabledRaw : false;
+    if (enabledRaw === undefined) W('enabled', 'absente : BC lit false (défaut du code, pas celui du config.yml livré) - aucune pièce n\'est rendue', 'CosmeticsConfig.java:61, ConfigValues.java:41-43');
+    else if (typeof enabledRaw !== 'boolean') W('enabled', 'true ou false attendu, reçu « ' + javaStr(enabledRaw) + ' » : BC lit false', 'CosmeticsConfig.java:61, API MemorySection.java:314-317');
+
+    const markerKey = getString(root, 'marker-key', 'beltaria:id');
+    const mp = markerProblem(markerKey);
+    if (mp) E('marker-key', mp, 'CosmeticsConfig.java:62-71, CosmeticMarker.java:41-53, API NamespacedKey.java:56-64');
+
+    const baseName = getString(root, 'base-material', 'STONE');
+    const base = matchMaterial(baseName);
+    if (!base) E('base-material', 'matiere inconnue : ' + baseName, 'CosmeticsConfig.java:72-74, ConfigValues.java:149-158, API Material.java:670-686');
+    else if (!isBlock(base)) W('base-material', base.name + " n'est pas un bloc : le client 1.8.9 ne dessine sur la tête que les blocs et les crânes, les pièces seraient invisibles (BC ne le refuse pas)", 'config.yml:32-33, CosmeticsConfig.java:301-306, API Material.java:585-587');
+
+    const updateTicks = getInt(root, 'update-interval-ticks', 2);
+    typeWarn(root, 'update-interval-ticks', 'update-interval-ticks', 2, 'CosmeticsConfig.java:75-76');
+    if (updateTicks <= 0) E('update-interval-ticks', 'valeur strictement positive attendue, recu ' + updateTicks, 'CosmeticsConfig.java:75-76, ConfigValues.java:50-57');
+
+    const viewDistance = getDouble(root, 'view-distance', 48);
+    typeWarn(root, 'view-distance', 'view-distance', 48, 'CosmeticsConfig.java:77');
+    if (!(viewDistance > 0) || !Number.isFinite(viewDistance)) E('view-distance', 'distance strictement positive attendue, en blocs, recu ' + javaDouble(viewDistance), 'CosmeticsConfig.java:77-81');
+
+    const showToSelf = getBool(root, 'show-to-self', false);
+
+    const menu = sectionOf(root, 'menu');
+    const titles = {};
+    for (const t of MENU_TITLES) {
+      const rawTitle = getString(menu, t.key, t.def);
+      const colored = translateColors(rawTitle);
+      titles[t.key] = { key: t.key, raw: rawTitle, colored, length: colored.length, ok: colored.length <= MAX_MENU_TITLE, explicit: menu.map.has(t.key) };
+      if (colored.length > MAX_MENU_TITLE) E('menu.' + t.key, 'au plus ' + MAX_MENU_TITLE + ' caracteres, codes couleur compris, recu ' + colored.length, 'CosmeticsConfig.java:255-265 (MAX_MENU_TITLE :33)', { menuKey: t.key });
+    }
+
+    const pack = validatePack(sectionOf(root, 'pack'), E, W);
+
+    const slots = {};
+    const parseSlot = slotKey => {
+      const slot = SLOTS[slotKey];
+      const rawSec = root.map.get(slotKey);
+      const res = { entries: [], keys: [] };
+      if (rawSec !== undefined && !(rawSec instanceof Section)) {
+        E(slotKey, 'bloc attendu (identifiant: reglages)', 'CosmeticsConfig.java:116-118', { slot: slotKey });
+        return res;
+      }
+      const sec = rawSec || new Section(slotKey);
+      for (const [id, v] of sec.map) {
+        res.keys.push(id);
+        const p = slotKey + '.' + id;
+        if (!WING_ID.test(id)) { E(p, 'identifiant attendu en minuscules, chiffres, _ ou -', 'CosmeticsConfig.java:121-126 (WING_ID :36)', { slot: slotKey, id }); continue; }
+        if (!(v instanceof Section)) { E(p, 'bloc attendu (cle: valeur), recu : ' + javaStr(v), 'CosmeticsConfig.java:127, ConfigValues.java:130-147', { slot: slotKey, id }); continue; }
+        res.entries.push(parseWing(id, v, p, slot, E, W));
+      }
+      return res;
+    };
+    slots.wings = parseSlot('wings');
+    slots.auras = parseSlot('auras');
+    const wingIds = new Set(slots.wings.entries.map(e => e.id));
+    for (const e of slots.auras.entries) {
+      if (wingIds.has(e.id)) E('auras.' + e.id, "deja le nom d'une paire d'ailes : le pack les reconnait par le meme marqueur", 'CosmeticsConfig.java:98-106', { slot: 'auras', id: e.id });
+    }
+    slots.trails = parseSlot('trails');
+
+    // What Bukkit does before BC sees anything (text-level).
+    if (isMap(raw)) {
+      for (const slotKey of SLOT_ORDER) {
+        const rs = raw[slotKey];
+        if (!isMap(rs)) continue;
+        for (const id of Object.keys(rs)) {
+          if (rs[id] === null) W(slotKey + '.' + id, "entrée vide : Bukkit retire une clé sans valeur au chargement, elle n'apparaît pas dans le menu - donnez-lui au moins name:", 'YamlConfiguration.java:86-95, MemorySection.java:186-191 (API)', { slot: slotKey, id, dropped: true });
+        }
+      }
+    }
+    if (ix) {
+      for (const d of ix.dups) W(d.second.path.join('.'), 'clé en double (lignes ' + (d.first.line + 1) + ' et ' + (d.second.line + 1) + ') : la seconde valeur remplace la première', 'YamlConfiguration.java:36-43 (SnakeYAML 1.33, doublons permis)', { slot: d.second.path.length === 2 ? d.second.path[0] : undefined, id: d.second.path.length === 2 ? d.second.path[1] : undefined });
+    }
+    const empty = !slots.wings.entries.length && !slots.auras.entries.length && !slots.trails.entries.length;
+    if (empty) I('', 'aucune entrée sous wings:, auras: ni trails: : le plugin se considère désactivé', 'CosmeticsConfig.java:286-289');
+    else if (enabledRaw === false) I('enabled', 'enabled: false : les cosmétiques sont éteints (le pack reste servi)', 'CosmeticsConfig.java:61, 91-94, 286-289');
+
+    const report = {
+      errors, warnings, slots,
+      settings: { enabled, markerKey, baseMaterial: base, baseMaterialRaw: baseName, updateTicks, viewDistance, showToSelf, titles, pack },
+      consoleLine: errors.length ? 'config.yml invalide, plugin desactive : ' + errors[0].message : null
+    };
+    report.pack = opts.pack ? crossCheck(report, opts.pack, raw) : [];
+    return report;
+  }
+
+  /** PackConfig.java:73-119. */
+  function validatePack(sec, E, W) {
+    const enabled = getBool(sec, 'enabled', true);
+    const sendOnJoin = getBool(sec, 'send-on-join', true);
+    const sendDelayTicks = getInt(sec, 'send-delay-ticks', DEFAULT_DELAY_TICKS);
+    if (sendDelayTicks < 0) E('pack.send-delay-ticks', 'delai negatif : ' + sendDelayTicks, 'PackConfig.java:79-83');
+    const required = getBool(sec, 'required', true);
+    const declined = translateColors(getString(sectionOf(sec, 'kick-messages'), 'declined', DEFAULT_DECLINED));
+    const hostingRaw = getString(sec, 'hosting', 'SELF');
+    const h = hostingRaw.trim().toUpperCase();
+    const hosting = h === 'SELF' || h === 'EXTERNAL' ? h : null;
+    if (!hosting) E('pack.hosting', 'valeur inconnue pour Hosting : ' + hostingRaw, 'PackConfig.java:90-92, ConfigValues.java:185-194');
+    const self = sectionOf(sec, 'self');
+    const port = getInt(self, 'port', DEFAULT_PORT);
+    if (hosting === 'SELF' && (port < 1 || port > MAX_PORT)) E('pack.self.port', 'port entre 1 et ' + MAX_PORT + ' attendu, recu ' + port, 'PackConfig.java:95-99');
+    const publicAddress = getString(self, 'public-address', '').trim();
+    const externalUrl = getString(sectionOf(sec, 'external'), 'url', '').trim();
+    if (hosting === 'EXTERNAL') {
+      if (!externalUrl) E('pack.external.url', 'URL attendue avec hosting: external', 'PackConfig.java:105-111');
+      else if (!externalUrl.startsWith('http://') && !externalUrl.startsWith('https://')) E('pack.external.url', 'URL http:// ou https:// attendue, recu ' + externalUrl, 'PackConfig.java:112-117');
+    }
+    if (hosting === 'SELF' && enabled && !publicAddress) W('pack.self.public-address', "vide : l'adresse d'écoute puis celle de la machine sont annoncées - suffisant en local, jamais derrière un NAT", 'PackConfig.java:100, config.yml:148-152');
+    return { enabled, sendOnJoin, sendDelayTicks, required, declined, hosting, port, publicAddress, externalUrl };
+  }
+
+  /** parseWing (CosmeticsConfig.java:133-179) + Wing's constructor (Wing.java:47-73). */
+  function parseWing(id, sec, p, slot, E, W) {
+    const at = { slot: slot.key, id };
+    const name = translateColors(getString(sec, 'name', id));                               // :135
+    let icon = null;
+    const iconName = getString(sec, 'icon', null);                                           // :139
+    if (iconName != null && iconName !== '') {
+      const m = matchMaterial(iconName);
+      if (!m) E(p + '.icon', 'matiere inconnue : ' + iconName, 'CosmeticsConfig.java:138-142, ConfigValues.java:149-158, API Material.java:670-686', at);
+      else if (m.id === 0) E(p + '.icon', "l'air n'a pas d'icone", 'CosmeticsConfig.java:143-145', at);
+      else icon = m;
+    }
+    const iconData = getInt(sec, 'icon-data', 0);                                            // :147
+    if (sec.map.has('icon-data') && typeof sec.map.get('icon-data') !== 'number') W(p + '.icon-data', 'nombre attendu, reçu « ' + javaStr(sec.map.get('icon-data')) + ' » : BC lit 0', 'CosmeticsConfig.java:147, API MemorySection.java:299-302', at);
+    if (iconData < 0 || iconData > SHORT_MAX) E(p + '.icon-data', 'valeur entre 0 et ' + SHORT_MAX + ' attendue, recu ' + iconData, 'CosmeticsConfig.java:147-151', at);
+    const lore = resolveLore(sec, p + '.lore', W, at);                                        // :152-156
+    const permission = getString(sec, 'permission', defaultPermission(slot.key, id));        // :157-158
+    if (permission === '') E(p + '.permission', 'noeud de permission vide', 'CosmeticsConfig.java:157-162', at);
+    let swarms = [];
+    if (slot.carriesModel) {
+      if (sec.map.has('motes')) E(p + '.motes', 'les objets volants se declarent sous trails:, pas sous ' + slot.key + ':', 'CosmeticsConfig.java:163-170', at);
+    } else {
+      const r = parseSwarms(sec, p + '.motes', E, W, at);
+      swarms = r.swarms;
+      if (!r.listed) E(p + '.motes', "une trainee a besoin d'au moins un essaim (- model: ...)", 'CosmeticsConfig.java:173-177', at);
+    }
+    for (const k of sec.map.keys()) {
+      if (ENTRY_KEYS.indexOf(k) < 0) W(p + '.' + k, 'clé inconnue : BC ne la lit pas' + (k === 'icon_data' || k === 'icondata' ? ' (vouliez-vous icon-data ?)' : ''), 'CosmeticsConfig.java:133-179', at);
+    }
+    if (name === '') E('', 'Nom vide pour les ailes ' + id, 'Wing.java:52-54 (IllegalArgumentException sans chemin, BeltariaContent.java:146-148)', Object.assign({ at: p + '.name' }, at));
+    return { id, slot: slot.key, path: p, name, icon, iconData, lore, permission, customPermission: sec.map.has('permission'), swarms, model: swarms.length ? swarms[0].model : id };
+  }
+  /** ConfigValues.stringList (ConfigValues.java:95-101) over MemorySection.getStringList (API :372-402), defaults included. */
+  function resolveLore(sec, fullPath, W, at) {
+    const v = sec.map.get('lore');
+    const def = DEFAULT_LISTS.get(fullPath);
+    let list;
+    if (Array.isArray(v)) list = v;
+    else if (v === undefined) {
+      list = def || [];
+      if (def) W(fullPath, 'absente : BC affiche celle du config.yml livré dans le jar (« ' + def.join(' / ') + ' ») - écrivez lore: [] pour aucune', 'ConfigValues.java:95-101, API MemorySection.java:105-107, 372-380, config.yml:176-187', at);
+    } else {
+      list = def || [];
+      W(fullPath, 'liste attendue (- "texte"), reçu « ' + javaStr(v) + ' » : BC ' + (def ? 'affiche la lore du config.yml livré' : "n'affiche aucune ligne"), 'API MemorySection.java:372-402', at);
+    }
+    const out = [];
+    for (const x of list) {
+      if (typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean') out.push(translateColors(javaStr(x)));
+      else W(fullPath, 'ligne ignorée (ni texte ni nombre) : ' + javaStr(x), 'API MemorySection.java:395-399', at);
+    }
+    return out;
+  }
+  /** parseSwarms / parseSwarm (CosmeticsConfig.java:190-234). listed = the list had at least one item. */
+  function parseSwarms(sec, path, E, W, at) {
+    if (!sec.map.has('motes')) return { swarms: [], listed: false };
+    const raw = sec.map.get('motes');
+    if (!Array.isArray(raw)) { E(path, 'liste attendue (- model: ...)', 'CosmeticsConfig.java:194-197', at); return { swarms: [], listed: true }; }
+    const swarms = [];
+    raw.forEach((item, i) => { const s = parseSwarm(item, path + '[' + i + ']', E, W, at); if (s) swarms.push(s); });
+    return { swarms, listed: raw.length > 0 };
+  }
+  function parseSwarm(item, path, E, W, at) {
+    const where = Object.assign({ swarm: Number(/\[(\d+)\]$/.exec(path)[1]) }, at);
+    if (!isMap(item)) { E(path, 'bloc attendu (cle: valeur), recu : ' + javaStr(item), 'CosmeticsConfig.java:201, ConfigValues.java:109-122', where); return null; }
+    const sec = new Section('');
+    for (const k of Object.keys(item)) setPath(sec, String(k).toLowerCase(), item[k]);       // ConfigValues.java:117-121
+    const model = getString(sec, 'model', '');
+    if (!WING_ID.test(model)) { E(path + '.model', 'identifiant de modele attendu (pack/motes/<modele>), en minuscules, chiffres, _ ou -', 'CosmeticsConfig.java:209-214', where); return null; }
+    const motionRaw = getString(sec, 'motion', 'orbit').toUpperCase();
+    const motion = MOTIONS.indexOf(motionRaw.trim().toUpperCase()) >= 0 ? motionRaw.trim().toUpperCase() : null;
+    if (!motion) { E(path + '.motion', 'valeur inconnue pour Motion : ' + motionRaw, 'CosmeticsConfig.java:215-217, ConfigValues.java:185-194', where); return null; }
+    const triggerRaw = getString(sec, 'trigger', 'land').toUpperCase();
+    const trigger = TRIGGERS.indexOf(triggerRaw.trim().toUpperCase()) >= 0 ? triggerRaw.trim().toUpperCase() : null;
+    if (!trigger) { E(path + '.trigger', 'valeur inconnue pour Trigger : ' + triggerRaw, 'CosmeticsConfig.java:218-220, ConfigValues.java:185-194', where); return null; }
+    const d = SWARM_DEFAULTS[motion];
+    const v = {};
+    SWARM_KEYS.forEach((k, i) => {
+      const isInt = SWARM_INT_KEYS.indexOf(k) >= 0;
+      v[k] = isInt ? getInt(sec, k, d[i]) : getDouble(sec, k, d[i]);
+      const r = sec.map.get(k);
+      if (r !== undefined && typeof r !== 'number') W(path + '.' + k, 'nombre attendu, reçu « ' + javaStr(r) + ' » : BC lit le défaut de ' + motion.toLowerCase() + ', ' + javaStr(d[i]), 'CosmeticsConfig.java:223-230, API MemorySection.java:299-332', where);
+    });
+    for (const k of sec.map.keys()) {
+      if (k !== 'model' && k !== 'motion' && k !== 'trigger' && SWARM_KEYS.indexOf(k) < 0) W(path + '.' + k, 'clé inconnue : BC ne la lit pas', 'CosmeticsConfig.java:208-234', where);
+    }
+    const s = { model, motion, trigger, count: v.count, radius: v.radius, base: v.base, height: v.height, turn: v.turn, spin: v.spin, bob: v.bob, speed: v.speed, lift: v.lift, gravity: v.gravity, lifetimeTicks: v['lifetime-ticks'], intervalTicks: v['interval-ticks'] };
+    const problem = swarmProblem(s);
+    if (problem) { E(path, problem, 'CosmeticsConfig.java:222-233, Swarm.java:113-168', where); return null; }
+    return s;
+  }
+
+  /* ---------- Pack cross-check ---------- */
+  /**
+   * pack: { ids: {wings, auras, motes: Set}, markerKey, baseItem }. The pack offers what its folders and
+   * pack.json declare (PackBuild.java:1341-1372); config.yml decides what the menus propose.
+   */
+  function crossCheck(report, pack, raw) {
+    const out = [];
+    const has = (cat, id) => pack.ids[cat].has(id);
+    for (const slotKey of ['wings', 'auras']) {
+      for (const e of report.slots[slotKey].entries) {
+        if (has(slotKey, e.id)) continue;
+        const other = slotKey === 'wings' ? 'auras' : 'wings';
+        out.push({ level: 'warn', slot: slotKey, id: e.id, path: e.path, kind: 'missing', text: has(other, e.id)
+          ? 'pas de dossier ' + slotKey + '/' + e.id + ' dans le pack, mais ' + other + '/' + e.id + ' existe : même marqueur, le client dessinerait ce modèle-là'
+          : 'aucun modèle ' + slotKey + '/' + e.id + ' dans le pack : en jeu le support reste en pierre, icône du menu comprise' + (e.icon ? ' (sauf l\'icône, ' + e.icon.name + ')' : ''),
+          ref: 'config.yml:14-16, WingsMenu.java:36-40, 207-210, PackBuild.java:1341-1372' });
+      }
+    }
+    for (const e of report.slots.trails.entries) {
+      e.swarms.forEach((s, i) => {
+        if (!has('motes', s.model)) out.push({ level: 'warn', slot: 'trails', id: e.id, path: e.path + '.motes[' + i + '].model', kind: 'missing', text: 'aucun modèle motes/' + s.model + ' dans le pack : ces objets volent en pierre' + (i === 0 && !e.icon ? ", et l'icône du menu aussi (premier essaim)" : ''), ref: 'Swarm.java:93, WingsMenu.java:205-210, PackBuild.java:156' });
+      });
+    }
+    const rawKeys = slotKey => (isMap(raw) && isMap(raw[slotKey]) ? Object.keys(raw[slotKey]) : []);
+    for (const slotKey of ['wings', 'auras']) {
+      const offered = new Set(rawKeys(slotKey));
+      for (const id of [...pack.ids[slotKey]].sort()) {
+        if (!offered.has(id)) out.push({ level: 'info', slot: slotKey, packId: id, kind: 'unoffered', text: slotKey + '/' + id + ' : dans le pack, absent de ' + slotKey + ': - personne ne peut le choisir dans ' + SLOTS[slotKey].command, ref: 'CosmeticsConfig.java:112-131, WingsMenu.java:75' });
+      }
+    }
+    const used = new Set();
+    for (const e of report.slots.trails.entries) for (const s of e.swarms) used.add(s.model);
+    if (isMap(raw) && isMap(raw.trails)) for (const id of Object.keys(raw.trails)) { const m = raw.trails[id] && raw.trails[id].motes; if (Array.isArray(m)) for (const it of m) if (isMap(it) && typeof it.model === 'string') used.add(it.model); }
+    for (const id of [...pack.ids.motes].sort()) if (!used.has(id)) out.push({ level: 'info', slot: 'trails', packId: id, kind: 'unoffered', text: 'motes/' + id + " : modèle d'objet du pack qu'aucune traînée n'utilise", ref: 'CosmeticsConfig.java:208-214, PackBuild.java:156' });
+    for (const [cat, other] of [['auras', 'wings'], ['motes', 'wings'], ['motes', 'auras']]) {
+      for (const id of [...pack.ids[cat]].sort()) if (pack.ids[other].has(id)) out.push({ level: 'error', kind: 'pack', path: cat + '/' + id, text: cat + '/' + id + ' : deja le nom de ' + other + '/' + id + ' ; le pack les reconnait par le meme marqueur (l\'assemblage du pack échoue)', ref: 'PackBuild.java:1286-1288, 1381-1392' });
+    }
+    if (pack.markerKey != null && pack.markerKey !== report.settings.markerKey) out.push({ level: 'warn', kind: 'pack', path: 'marker-key', text: 'pack.json marker-key « ' + pack.markerKey + ' » ≠ config.yml « ' + report.settings.markerKey + ' » : les règles CIT ne reconnaîtraient pas le support', ref: 'PackBuild.java:81, config.yml:20-30' });
+    if (pack.baseItem && report.settings.baseMaterial && String(pack.baseItem).toLowerCase().replace(/^minecraft:/, '') !== report.settings.baseMaterial.name.toLowerCase()) out.push({ level: 'warn', kind: 'pack', path: 'base-material', text: 'pack.json base-item « ' + pack.baseItem + ' » ≠ base-material ' + report.settings.baseMaterial.name + ' : à vérifier, les deux doivent désigner la même matière (les noms 1.8 et Bukkit diffèrent parfois)', ref: 'PackBuild.java:82' });
+    return out;
+  }
+  /** Pack summary from file paths: pack.json (declared entries) + <cat>/<id>/ folders, under the pack root. */
+  function packFromPaths(paths, packJsonText) {
+    const norm = paths.map(p => String(p).replace(/\\/g, '/').replace(/^\/+/, ''));
+    const pj = norm.filter(p => /(^|\/)pack\.json$/.test(p)).sort((a, b) => a.length - b.length)[0];
+    let rootDir = pj !== undefined ? pj.slice(0, pj.length - 'pack.json'.length) : null;
+    if (rootDir === null) {
+      // No pack.json: the root is the folder holding the shallowest wings/, auras/ or motes/.
+      const cands = norm.map(p => { const m = /(^|\/)(wings|auras|motes)\/[^/]+\/./.exec(p); return m ? p.slice(0, m.index + m[1].length) : null; }).filter(x => x !== null);
+      rootDir = cands.sort((a, b) => a.length - b.length)[0] || '';
+    }
+    const folders = { wings: new Set(), auras: new Set(), motes: new Set() };
+    const icons = new Map();
+    for (const p of norm) {
+      if (!p.startsWith(rootDir)) continue;
+      const m = /^(wings|auras|motes)\/([^/]+)\/(.+)$/.exec(p.slice(rootDir.length));
+      if (!m) continue;
+      folders[m[1]].add(m[2]);
+      if (m[3] === 'icon.png') icons.set(m[1] + '/' + m[2], p);           // PackBuild.java:248 (ICON_FILE)
+    }
+    const declared = { wings: new Set(), auras: new Set(), motes: new Set() };
+    let markerKey = null, baseItem = null, jsonError = null;
+    if (packJsonText != null) {
+      try {
+        const j = JSON.parse(packJsonText);
+        if (isMap(j)) {
+          for (const cat of ['wings', 'auras', 'motes']) if (isMap(j[cat])) for (const id of Object.keys(j[cat])) declared[cat].add(id);
+          if (typeof j['marker-key'] === 'string') markerKey = j['marker-key'];
+          if (typeof j['base-item'] === 'string') baseItem = j['base-item'];
+        }
+      } catch (e) { jsonError = e.message; }
+    }
+    const ids = {};
+    for (const cat of ['wings', 'auras', 'motes']) ids[cat] = new Set([...folders[cat], ...declared[cat]]);
+    return { rootDir, packJsonPath: pj || null, ids, folders, declared, icons, markerKey, baseItem, jsonError };
+  }
+
+  /* ---------- Menu: MenuLayout.java + WingsMenu.redraw/icon/removeButton + MenuButtons ---------- */
+  function menuLayout(count, page) {
+    page = page || 0;
+    if (count < 0) throw new Error("Nombre d'entrees negatif : " + count);               // MenuLayout.java:43-45
+    const pages = Math.max(1, Math.floor((count + PER_PAGE - 1) / PER_PAGE));
+    if (page < 0 || page >= pages) throw new Error('Page ' + page + ' hors de 0..' + (pages - 1));
+    const onPage = Math.max(0, Math.min(PER_PAGE, count - page * PER_PAGE));               // :31
+    const rows = Math.max(1, Math.floor((onPage + COLUMNS - 1) / COLUMNS));                // :32
+    const size = pages > 1 ? MAX_ROWS * COLUMNS : (rows + 1) * COLUMNS;                   // :33
+    const removeSlot = size - COLUMNS + Math.floor(COLUMNS / 2);                          // :97-99
+    return { count, page, pages, onPage, rows: size / COLUMNS, size, firstIndex: page * PER_PAGE, removeSlot, optionsSlot: removeSlot + 2, // :109-111
+      previousSlot: page > 0 ? size - COLUMNS : -1, nextSlot: page < pages - 1 ? size - 1 : -1 }; // :117-133
+  }
+  /**
+   * What each slot holds, with the texts BC sets. opts: { page, allowed(entry), chosen: id|null }.
+   */
+  function menuItems(entries, slotKey, opts) {
+    const slot = SLOTS[slotKey];
+    const lay = menuLayout(entries.length, opts.page || 0);
+    const items = new Array(lay.size).fill(null);
+    for (let i = lay.firstIndex; i < lay.firstIndex + lay.onPage; i++) {
+      const e = entries[i];
+      const allowed = !!opts.allowed(e), chosen = opts.chosen != null && e.id === opts.chosen;
+      const lore = e.lore.slice();                                                           // WingsMenu.java:214-225
+      if (lore.length) lore.push('');
+      lore.push(chosen ? '§a' + slot.chosenLore : allowed ? '§eCliquez pour equiper' : '§c' + slot.lockedLore);
+      items[i - lay.firstIndex] = { kind: 'entry', entry: e, index: i, allowed, chosen, glint: chosen, name: e.name, lore, model: e.model, icon: e.icon, iconData: e.iconData };
+    }
+    const wearing = opts.chosen != null;
+    items[lay.removeSlot] = { kind: 'remove', name: '§c' + slot.removeButton, lore: [wearing ? '§7' + slot.removeHint : '§8' + slot.noneWorn] }; // WingsMenu.java:239-248
+    items[lay.optionsSlot] = { kind: 'options', name: '§bPreferences', lore: ['§7Voir ses ailes, voir celles des autres.', '§8Aussi par /wings options.'] }; // MenuButtons.java:34-42
+    if (lay.previousSlot >= 0) items[lay.previousSlot] = { kind: 'previous', name: '§ePage precedente', lore: ['§7Vers la page ' + lay.page + ' sur ' + lay.pages + '.'] }; // WingsMenu.java:194-197, MenuButtons.java:23-31
+    if (lay.nextSlot >= 0) items[lay.nextSlot] = { kind: 'next', name: '§ePage suivante', lore: ['§7Vers la page ' + (lay.page + 2) + ' sur ' + lay.pages + '.'] }; // WingsMenu.java:198-201
+    return { layout: lay, items };
+  }
+  /**
+   * Tooltip lines as the 1.8.9 client builds them: ItemStack.getTooltip puts ITALIC before a custom name
+   * and DARK_PURPLE+ITALIC before each lore line; GuiScreen.renderToolTip prefixes the rarity colour to the
+   * first line (RARE, aqua, when enchanted - the glint of the chosen entry) and GRAY to the others.
+   */
+  function tooltipLines(item) {
+    return [(item.glint ? '§b' : '§f') + '§o' + item.name].concat(item.lore.map(l => '§7§5§o' + l));
+  }
+  /** WingsMenu.click messages (WingsMenu.java:136-175). */
+  function clickMessage(item, slotKey) {
+    const slot = SLOTS[slotKey];
+    if (!item) return null;
+    if (item.kind === 'remove') return '§7' + slot.removed;
+    if (item.kind === 'entry') return item.allowed ? '§6' + slot.equipped + ' : §r' + item.name : '§c' + slot.denied;
+    return null;
+  }
+  /** Who may wear an entry: the node itself, or the slot wildcard every node is attached to (WingsPermissions.java:51-79). */
+  function allowedBy(nodes, entry) {
+    const set = new Set([...nodes].map(n => String(n).trim().toLowerCase()).filter(Boolean)); // Bukkit compares permission names in lower case
+    return set.has(entry.permission.toLowerCase()) || set.has(permissionWildcard(entry.slot));
+  }
+
+  window.CosmeticsLogic = Object.freeze({
+    MAX_MENU_TITLE, WING_ID, PER_PAGE, SLOTS, SLOT_ORDER, MENU_TITLES, SWARM_KEYS, SWARM_INT_KEYS, SWARM_DEFAULTS, MOTIONS, TRIGGERS,
+    DEFAULT_DECLINED, MATERIAL_NAMES, ENTRY_KEYS,
+    matchMaterial, isBlock, javaDouble, javaInt, javaFixed2, javaStr, translateColors, markerProblem, swarmProblem, verticalRange,
+    defaultPermission, permissionWildcard, parseYaml, toSection, indexYaml, orderFromIndex, validate, crossCheck, packFromPaths,
+    setValue, renameKey, moveKey, blockText, serializeKV, yamlKey, yamlScalar, rawAt, deepEqual, isMap,
+    menuLayout, menuItems, tooltipLines, clickMessage, allowedBy
+  });
+})();
+
+/* ============================================================================
+ * 1.8.9 FontRenderer, ported from glyph-checker.html (renderStringAtPos / renderDefaultChar):
+ * exact with the client's ascii.png, a web font approximation otherwise.
+ * ========================================================================== */
+(function () {
+  'use strict';
+  const ASCII_TABLE = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000";
+  const STYLE_CODES = '0123456789abcdefklmnor';
+  function asciiIndex(c) { return ASCII_TABLE.indexOf(String.fromCharCode(c)); }
+  /** FontRenderer constructor colour table: 0-15 normal, 16-31 shadow. */
+  function mcColorTable() {
+    const t = [];
+    for (let i = 0; i < 32; i++) {
+      const j = ((i >> 3) & 1) * 85;
+      let k = ((i >> 2) & 1) * 170 + j, l = ((i >> 1) & 1) * 170 + j, m = (i & 1) * 170 + j;
+      if (i === 6) k += 85;
+      if (i >= 16) { k = (k / 4) | 0; l = (l / 4) | 0; m = (m / 4) | 0; }
+      t.push(((k & 255) << 16) | ((l & 255) << 8) | (m & 255));
+    }
+    return t;
+  }
+  /** readFontTexture: per-char widths of ascii.png (RGBA, w x h). */
+  function asciiWidths(rgba, w, h) {
+    const cw = w / 16, ch = h / 16, f = 8 / cw, out = new Array(256);
+    for (let c = 0; c < 256; c++) {
+      const cx = c % 16, cy = (c / 16) | 0;
+      let col;
+      for (col = cw - 1; col >= 0; col--) {
+        let empty = true;
+        for (let y = 0; y < ch && empty; y++) if (rgba[((cy * ch + y) * w + cx * cw + col) * 4 + 3] !== 0) empty = false;
+        if (!empty) break;
+      }
+      col++;
+      out[c] = Math.trunc(0.5 + col * f) + 1;
+    }
+    return out;
+  }
+  const COLORS = mcColorTable();
+  const F = { ascii: null, quadCache: new Map() };
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  function webCharWidth(ch) { measureCtx.font = '8px MinecraftPreview, monospace'; return Math.max(1, Math.round(measureCtx.measureText(ch).width)); }
+  function charWidth(c) {
+    if (c === 167) return -1;
+    if (c === 32) return 4;
+    const j = asciiIndex(c);
+    if (c > 0 && j !== -1 && F.ascii) return F.ascii.widths[j];
+    return webCharWidth(String.fromCharCode(c));
+  }
+  /** getStringWidth. */
+  function stringWidth(text) {
+    let w = 0, bold = false;
+    for (let i = 0; i < text.length; i++) {
+      let k = charWidth(text.charCodeAt(i));
+      if (k < 0 && i < text.length - 1) {
+        const c = text.charCodeAt(++i);
+        if (c !== 108 && c !== 76) { if (c === 114 || c === 82) bold = false; } else bold = true;
+        k = 0;
+      }
+      w += k;
+      if (bold && k > 0) w++;
+    }
+    return w;
+  }
+  function quad(key, tex, texDim, texPerUnit, u0, v0, k, quadW, italic, rgb, s) {
+    const ck = key + '|' + rgb + '|' + s + '|' + (italic ? 1 : 0);
+    if (F.quadCache.has(ck)) return F.quadCache.get(ck);
+    let res = null;
+    if (quadW > 0) {
+      const f5 = italic ? 1 : 0, h = 7.99;
+      const x0 = Math.floor(-f5 * s) - 1, x1 = Math.ceil((quadW + f5) * s) + 1, H = Math.ceil(h * s), W = x1 - x0;
+      const img = new ImageData(W, H), d = img.data, t = tex;
+      const r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+      let any = false;
+      for (let py = 0; py < H; py++) {
+        const gy = (py + 0.5) / s;
+        if (gy >= h) continue;
+        const xl = f5 - 2 * f5 * (gy / h);
+        const ty = Math.min(texDim - 1, Math.floor((v0 + gy * k) * texPerUnit));
+        for (let px = 0; px < W; px++) {
+          const gx = (x0 + px + 0.5) / s;
+          if (gx < xl || gx >= xl + quadW) continue;
+          const tx = Math.min(texDim - 1, Math.floor((u0 + (gx - xl) * k) * texPerUnit));
+          const si = (ty * texDim + tx) * 4, a = t[si + 3];
+          if (!a) continue;
+          const di = (py * W + px) * 4;
+          d[di] = t[si] * r / 255; d[di + 1] = t[si + 1] * g / 255; d[di + 2] = t[si + 2] * b / 255; d[di + 3] = a;
+          any = true;
+        }
+      }
+      if (any) { const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').putImageData(img, 0, 0); res = { canvas: c, ox: x0 }; }
+    }
+    F.quadCache.set(ck, res);
+    return res;
+  }
+  function webChar(ctx, code, st, s) {
+    const ch = String.fromCharCode(code);
+    ctx.save();
+    ctx.translate(st.x * s, st.y * s);
+    if (st.italic) ctx.transform(1, 0, -0.25, 1, s, 0);
+    ctx.fillStyle = '#' + st.rgb.toString(16).padStart(6, '0');
+    ctx.font = (8 * s) + 'px MinecraftPreview, monospace';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(ch, 0, 7 * s);
+    ctx.restore();
+    return webCharWidth(ch);
+  }
+  function renderChar(ctx, code, j, st, s) {
+    if (code === 32) return 4;
+    if (j !== -1 && F.ascii) {                                   // renderDefaultChar
+      const a = F.ascii, l = a.widths[j], f1 = l - 0.01;
+      const q = quad('a' + j + ':' + a.size, a.data, a.size, a.size / 128, (j % 16) * 8, ((j / 16) | 0) * 8, 1, f1 - 1, st.italic, st.rgb, s);
+      if (q) ctx.drawImage(q.canvas, st.x * s + q.ox, st.y * s);
+      return l;
+    }
+    return webChar(ctx, code, st, s);
+  }
+  /** renderStringAtPos (FontRenderer 1.8.9). Returns the final x. */
+  function renderString(ctx, text, x, y, color, shadow, s) {
+    if (shadow) color = (color & 0xFCFCFC) >> 2;
+    const st = { x, y, rgb: color & 0xFFFFFF, bold: false, italic: false, under: false, strike: false };
+    const base = st.rgb;
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      if (code === 167 && i + 1 < text.length) {
+        let k = STYLE_CODES.indexOf(text[i + 1].toLowerCase());
+        if (k < 16) {
+          st.bold = st.italic = st.under = st.strike = false;
+          if (k < 0 || k > 15) k = 15;
+          if (shadow) k += 16;
+          st.rgb = COLORS[k];
+        } else if (k === 17) st.bold = true;
+        else if (k === 18) st.strike = true;
+        else if (k === 19) st.under = true;
+        else if (k === 20) st.italic = true;
+        else if (k === 21) { st.bold = st.italic = st.under = st.strike = false; st.rgb = base; }
+        i++;
+        continue;
+      }
+      const j = asciiIndex(code);
+      const flag = (code === 0 || j === -1) && shadow;
+      if (flag) { st.x -= 1; st.y -= 1; }
+      let f = renderChar(ctx, code, j, st, s);
+      if (flag) { st.x += 1; st.y += 1; }
+      if (st.bold) {
+        st.x += 1;
+        if (flag) { st.x -= 1; st.y -= 1; }
+        renderChar(ctx, code, j, st, s);
+        st.x -= 1;
+        if (flag) { st.x += 1; st.y += 1; }
+        f++;
+      }
+      const css = '#' + st.rgb.toString(16).padStart(6, '0');
+      if (st.strike) { ctx.fillStyle = css; ctx.fillRect(st.x * s, (st.y + 3) * s, f * s, s); }
+      if (st.under) { ctx.fillStyle = css; ctx.fillRect((st.x - 1) * s, (st.y + 8) * s, (f + 1) * s, s); }
+      st.x += Math.trunc(f);
+    }
+    return st.x;
+  }
+  function drawString(ctx, text, x, y, color, shadow, s) {
+    if (shadow) renderString(ctx, text, x + 1, y + 1, color, true, s);
+    return renderString(ctx, text, x, y, color, false, s);
+  }
+  function setAscii(img, origin) {
+    if (img.width !== img.height || img.width < 128 || (img.width & (img.width - 1))) throw new Error('ascii.png doit être carré, puissance de deux, au moins 128 px (reçu ' + img.width + '×' + img.height + ').');
+    F.ascii = { size: img.width, data: img.data, widths: asciiWidths(img.data, img.width, img.height), origin };
+    F.quadCache.clear();
+  }
+  window.McFont = Object.freeze({ ASCII_TABLE, COLORS, asciiIndex, stringWidth, drawString, renderString, setAscii, get ascii() { return F.ascii; } });
+})();
+
+/* ============================================================================
+ * ZIP reader (central directory + STORE/DEFLATE), ported from glyph-checker.html.
+ * ========================================================================== */
+(function () {
+  'use strict';
+  const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(bytes) { let c = 0xFFFFFFFF; for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function readZipIndex(u8) {
+    if (u8.length < 22) throw new Error('Archive .zip/.jar invalide (fichier trop court).');
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('Archive .zip/.jar invalide (répertoire central introuvable).');
+    const count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true);
+    if (count === 0xFFFF || cdOff === 0xFFFFFFFF) throw new Error('Archive ZIP64 non prise en charge.');
+    if (cdOff >= u8.length) throw new Error('Archive .zip/.jar corrompue (répertoire central hors du fichier).');
+    const dec = new TextDecoder();
+    const entries = new Map();
+    let p = cdOff;
+    for (let i = 0; i < count; i++) {
+      if (p + 46 > u8.length || dv.getUint32(p, true) !== 0x02014b50) throw new Error('Archive .zip/.jar corrompue (entrée ' + (i + 1) + ').');
+      const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+      const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+      entries.set(name, { name, flags: dv.getUint16(p + 8, true), method: dv.getUint16(p + 10, true), crc: dv.getUint32(p + 16, true), compSize: dv.getUint32(p + 20, true), size: dv.getUint32(p + 24, true), offset: dv.getUint32(p + 42, true) });
+      p += 46 + nlen + elen + clen;
+    }
+    return entries;
+  }
+  async function inflateRaw(data) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('Ce navigateur ne sait pas décompresser les zip (DecompressionStream absent).');
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  async function extractZipEntry(u8, e) {
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    if (e.flags & 1) throw new Error("Fichier chiffré dans l'archive : " + e.name);
+    if (e.offset + 30 > u8.length || dv.getUint32(e.offset, true) !== 0x04034b50) throw new Error('En-tête local invalide pour ' + e.name);
+    const start = e.offset + 30 + dv.getUint16(e.offset + 26, true) + dv.getUint16(e.offset + 28, true);
+    const comp = u8.subarray(start, start + e.compSize);
+    let data;
+    if (e.method === 0) data = new Uint8Array(comp);
+    else if (e.method === 8) data = await inflateRaw(comp);
+    else throw new Error('Méthode de compression ' + e.method + ' non prise en charge pour ' + e.name);
+    if (data.length !== e.size || crc32(data) !== e.crc) throw new Error("Fichier corrompu dans l'archive (CRC) : " + e.name);
+    return data;
+  }
+  window.MiniZip = Object.freeze({ crc32, readZipIndex, extractZipEntry });
+})();
+
+/* ============================================================================
+ * UI. Single-threaded: state lives in S and changes only in event handlers. The config text is the
+ * single source of truth: every edit rewrites a few of its lines, then everything is recomputed from it.
+ * ========================================================================== */
+(function () {
+  'use strict';
+  const L = window.CosmeticsLogic, Font = window.McFont, Zip = window.MiniZip;
+  const $ = id => document.getElementById(id);
+  const SEC = '§';
+  const SCALE = 2;
+
+  const EXAMPLE = [
+    '# Exemple abrégé : la partie cosmétiques du config.yml de BeltariaContent.',
+    '# Chargez le vôtre (bouton « config.yml ») : commentaires et ordre sont conservés.',
+    '',
+    'enabled: true',
+    'marker-key: "beltaria:id"',
+    'base-material: STONE',
+    'update-interval-ticks: 2',
+    'view-distance: 48',
+    'show-to-self: false',
+    '',
+    '# Titres des menus : 32 caractères au plus, codes couleur compris.',
+    'menu:',
+    '  title: "&8Ailes"',
+    '  options-title: "&8Preferences d\'affichage"',
+    '  items-title: "&8Items"',
+    '  auras-title: "&8Auras"',
+    '  trails-title: "&8Trainees"',
+    '',
+    'pack:',
+    '  enabled: true',
+    '  send-on-join: true',
+    '  send-delay-ticks: 20',
+    '  required: true',
+    '  kick-messages:',
+    '    declined: |-',
+    '      &cVous avez refuse le pack de ressources de Beltaria.',
+    '      &7Reconnectez-vous et repondez &aOui&7.',
+    '  hosting: self',
+    '  self:',
+    '    port: 8163',
+    '    public-address: "play.example.org" # adresse publique du serveur',
+    '  external:',
+    '    url: ""',
+    '',
+    '# Les ailes proposées, dans l\'ordre du menu : 45 par page.',
+    'wings:',
+    '  fairy_wings:',
+    '    name: "&dAiles de fee"',
+    '    lore:',
+    '      - "&7Legeres et lumineuses."',
+    '  bat_wings:',
+    '    name: "&8Ailes de chauve-souris"',
+    '    lore:',
+    '      - "&7Sombres et silencieuses."',
+    '  # Importées du pack : noms à traduire.',
+    '  angel_wings:',
+    '    name: "&dAngel Wings"',
+    '  demon_wings:',
+    '    name: "&cDemon Wings"',
+    '    icon: FEATHER',
+    '',
+    '# Second emplacement, porté avec les ailes (/aura).',
+    'auras:',
+    '  electric_aura:',
+    '    name: "&bAura electrique"',
+    '',
+    '# Troisième emplacement (/trail) : motes obligatoire.',
+    'trails:',
+    '  rune_trail:',
+    '    name: "&dRunes arcaniques"',
+    '    motes:',
+    '      - model: rune_mote',
+    '        motion: orbit',
+    '        count: 3',
+    '        height: 0.45',
+    '        bob: 0.05',
+    ''
+  ].join('\n');
+  const DEMO_PACK = ['pack.json', 'wings/fairy_wings/model.json', 'wings/bat_wings/model.json', 'wings/angel_wings/model.json', 'wings/horus_wings/model.json', 'auras/frost_aura/model.json', 'motes/rune_mote/model.json', 'motes/star_mote/model.json'];
+  const DEMO_PACK_JSON = '{"marker-key":"beltaria:id","base-item":"stone","folders":{"wings":"beltaria/cosmetiques"},"wings":{"fairy_wings":{}}}';
+
+  const S = {
+    original: '', originName: 'config.yml', text: '', ix: null, parsed: null, parseError: null, report: null,
+    pack: null, packIcons: new Map(), packOrigin: null,
+    slot: 'wings', selected: { wings: null, auras: null, trails: null }, page: 0,
+    viewer: 'op', chosen: { wings: null, auras: null, trails: null }, hover: -1, tipItem: null, chat: null,
+    history: [], editorKey: null
+  };
+
+  /* ---------- status ---------- */
+  function say(msg, kind) { const el = $('status'); el.className = 'st-note' + (kind ? ' st-note-' + kind : ''); el.textContent = msg; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  /** § text as coloured HTML (colours only, for lists). */
+  function mcHtml(text) {
+    let out = '', color = 0xFFFFFF, buf = '';
+    const flush = () => { if (buf) { out += '<span style="color:#' + color.toString(16).padStart(6, '0') + '">' + esc(buf) + '</span>'; buf = ''; } };
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === SEC && i + 1 < text.length) {
+        const k = '0123456789abcdef'.indexOf(text[i + 1].toLowerCase());
+        if (k >= 0) { flush(); color = Font.COLORS[k]; } else if (text[i + 1].toLowerCase() === 'r') { flush(); color = 0xFFFFFF; }
+        i++; continue;
+      }
+      buf += text[i];
+    }
+    flush();
+    return out || '<span class="muted">(vide)</span>';
+  }
+
+  /* ---------- text state ---------- */
+  function setText(text, o) {
+    o = o || {};
+    S.text = text;
+    S.ix = L.indexYaml(text);
+    const p = L.parseYaml(text);
+    if (p.error) { S.parsed = null; S.parseError = p.error; S.report = null; }
+    else { S.parsed = p.data; S.parseError = null; S.report = L.validate(p.data, { index: S.ix, pack: S.pack }); }
+    if (!o.fromSource) $('source').value = text;
+    renderAll(o);
+  }
+  function loadText(text, name) {
+    S.original = text; S.originName = name || 'config.yml'; S.history = []; S.page = 0;
+    S.chosen = { wings: null, auras: null, trails: null };
+    S.selected = { wings: null, auras: null, trails: null };
+    S.editorKey = null;
+    setText(text);
+    const r = S.report;
+    if (S.parseError) say('« ' + S.originName + ' » ne se lit pas comme du YAML : ' + S.parseError.split('\n')[0], 'error');
+    else say('« ' + S.originName + ' » chargé : ' + L.SLOT_ORDER.map(k => r.slots[k].entries.length + ' ' + L.SLOTS[k].label.toLowerCase()).join(', ') + (r.errors.length ? ' - BC refuserait ce fichier (voir Diagnostic).' : ' - BC l\'accepterait.'), r.errors.length ? 'warn' : 'ok');
+  }
+  /** Applies one targeted edit; refused edits leave the text untouched. */
+  function edit(op, o) {
+    const before = S.text;
+    let next;
+    try { next = op(before); } catch (e) { say(e.message, 'error'); return false; }
+    if (next === before) return true;
+    S.history.push(before);
+    if (S.history.length > 200) S.history.shift();
+    setText(next, o);
+    return true;
+  }
+
+  /* ---------- rendering ---------- */
+  function renderAll(o) {
+    o = o || {};
+    $('undoBtn').disabled = !S.history.length;
+    syncSettings();
+    renderTabs();
+    renderCatalogue();
+    renderEditor(o.rebuildEditor);
+    renderPreview();
+    renderDiag();
+    renderPerms();
+    renderOutput();
+  }
+
+  /* ---------- 2: settings ---------- */
+  const SETTINGS = [
+    { group: 'Rendu', path: ['enabled'], type: 'bool', def: false, label: 'enabled', ref: 'CosmeticsConfig.java:61', note: 'absent : false' },
+    { group: 'Rendu', path: ['marker-key'], type: 'str', def: 'beltaria:id', label: 'marker-key', ref: 'CosmeticsConfig.java:62-71' },
+    { group: 'Rendu', path: ['base-material'], type: 'material', def: 'STONE', label: 'base-material', ref: 'CosmeticsConfig.java:72-74' },
+    { group: 'Rendu', path: ['update-interval-ticks'], type: 'int', def: 2, label: 'update-interval-ticks', ref: 'CosmeticsConfig.java:75-76' },
+    { group: 'Rendu', path: ['view-distance'], type: 'num', def: 48, label: 'view-distance (blocs)', ref: 'CosmeticsConfig.java:77-81' },
+    { group: 'Rendu', path: ['show-to-self'], type: 'bool', def: false, label: 'show-to-self', ref: 'CosmeticsConfig.java:82' },
+    { group: 'Pack', path: ['pack', 'enabled'], type: 'bool', def: true, label: 'pack.enabled', ref: 'PackConfig.java:74' },
+    { group: 'Pack', path: ['pack', 'send-on-join'], type: 'bool', def: true, label: 'pack.send-on-join', ref: 'PackConfig.java:75' },
+    { group: 'Pack', path: ['pack', 'send-delay-ticks'], type: 'int', def: 20, label: 'pack.send-delay-ticks', ref: 'PackConfig.java:79-83' },
+    { group: 'Pack', path: ['pack', 'required'], type: 'bool', def: true, label: 'pack.required', ref: 'PackConfig.java:85' },
+    { group: 'Pack', path: ['pack', 'hosting'], type: 'enum', options: ['self', 'external'], def: 'SELF', label: 'pack.hosting', ref: 'PackConfig.java:90-92' },
+    { group: 'Pack', path: ['pack', 'self', 'port'], type: 'int', def: 8163, label: 'pack.self.port', ref: 'PackConfig.java:95-99' },
+    { group: 'Pack', path: ['pack', 'self', 'public-address'], type: 'str', def: '', label: 'pack.self.public-address', ref: 'PackConfig.java:100' },
+    { group: 'Pack', path: ['pack', 'external', 'url'], type: 'str', def: '', label: 'pack.external.url', ref: 'PackConfig.java:105-117' },
+    { group: 'Pack', path: ['pack', 'kick-messages', 'declined'], type: 'text', def: '(message par défaut)', label: 'pack.kick-messages.declined', ref: 'PackConfig.java:54-61, 86-89', wide: true }
+  ];
+  function fieldId(path) { return 'set_' + path.join('__').replace(/[^A-Za-z0-9_]/g, '_'); }
+  function buildSettings() {
+    const box = $('settingsBox');
+    box.innerHTML = '';
+    const titles = document.createElement('div');
+    titles.innerHTML = '<span class="group-label">Titres des menus (32 caractères au plus, codes couleur compris)</span>';
+    const tf = document.createElement('div');
+    tf.className = 'fields';
+    for (const t of L.MENU_TITLES) {
+      const id = fieldId(['menu', t.key]);
+      const f = document.createElement('label');
+      f.className = 'field';
+      f.innerHTML = '<span class="lbl">' + esc(t.label) + '<span class="count" id="' + id + '_n">0/32</span></span>'
+        + '<input class="st-input" id="' + id + '" spellcheck="false" autocomplete="off" placeholder="' + esc(t.def) + '">'
+        + '<canvas class="title-strip" id="' + id + '_c" width="352" height="34" aria-hidden="true"></canvas>'
+        + '<span class="state" id="' + id + '_s"></span><span class="ref">menu.' + esc(t.key) + ' · défaut ' + esc(t.def) + ' · ' + esc(t.ref) + '</span>';
+      const input = f.querySelector('input');
+      input.addEventListener('input', () => edit(tx => L.setValue(tx, ['menu', t.key], input.value === '' ? undefined : input.value)));
+      tf.appendChild(f);
+    }
+    titles.appendChild(tf);
+    box.appendChild(titles);
+    let group = null, grid = null;
+    for (const s of SETTINGS) {
+      if (s.group !== group) {
+        group = s.group;
+        const d = document.createElement(group === 'Pack' ? 'details' : 'div');
+        d.innerHTML = group === 'Pack' ? '<summary>Pack de ressources (PackConfig)</summary>' : '<span class="group-label">Rendu (CosmeticsConfig)</span>';
+        if (group === 'Pack') d.style.marginTop = '14px';
+        grid = document.createElement('div');
+        grid.className = 'fields';
+        if (group === 'Pack') grid.style.marginTop = '8px';
+        d.appendChild(grid);
+        box.appendChild(d);
+      }
+      const id = fieldId(s.path);
+      const f = document.createElement('label');
+      f.className = 'field' + (s.wide ? ' wide' : '');
+      let control;
+      if (s.type === 'bool') control = '<select class="st-select" id="' + id + '"><option value="">(absent : ' + s.def + ')</option><option value="true">true</option><option value="false">false</option></select>';
+      else if (s.type === 'enum') control = '<select class="st-select" id="' + id + '"><option value="">(absent : ' + s.def.toLowerCase() + ')</option>' + s.options.map(o => '<option value="' + o + '">' + o + '</option>').join('') + '</select>';
+      else if (s.type === 'text') control = '<textarea class="st-textarea" id="' + id + '" spellcheck="false" style="min-height:110px" placeholder="' + esc(L.DEFAULT_DECLINED) + '"></textarea>';
+      else control = '<input class="st-input' + (s.type === 'str' || s.type === 'material' ? ' mono' : '') + '" id="' + id + '" spellcheck="false" autocomplete="off"' + (s.type === 'material' ? ' list="materialList"' : '') + (s.type === 'int' || s.type === 'num' ? ' inputmode="decimal"' : '') + ' placeholder="' + esc(String(s.def)) + '">';
+      f.innerHTML = '<span class="lbl">' + esc(s.label) + '</span>' + control + '<span class="state" id="' + id + '_s"></span><span class="ref">' + esc(s.ref) + '</span>';
+      const el = f.querySelector('#' + id);
+      el.addEventListener(s.type === 'bool' || s.type === 'enum' ? 'change' : 'input', () => edit(tx => L.setValue(tx, s.path, settingValue(s, el.value))));
+      grid.appendChild(f);
+    }
+  }
+  function settingValue(s, v) {
+    if (v === '') return undefined;
+    if (s.type === 'bool') return v === 'true';
+    if (s.type === 'int' || s.type === 'num') { const n = Number(v.replace(',', '.')); return v.trim() !== '' && Number.isFinite(n) ? n : v; }
+    return v;
+  }
+  function rawValue(path) { return S.parsed ? L.rawAt(S.parsed, path) : undefined; }
+  function shown(v) { return v === undefined || v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)); }
+  function setIfIdle(el, v) { if (el && document.activeElement !== el && el.value !== v) el.value = v; }
+  function syncSettings() {
+    const rep = S.report;
+    for (const t of L.MENU_TITLES) {
+      const id = fieldId(['menu', t.key]);
+      setIfIdle($(id), shown(rawValue(['menu', t.key])));
+      const info = rep ? rep.settings.titles[t.key] : null;
+      const n = $(id + '_n'), st = $(id + '_s');
+      if (!info) { n.textContent = '?/32'; st.textContent = ''; continue; }
+      n.textContent = info.length + '/32';
+      n.className = 'count' + (info.ok ? '' : ' bad');
+      const w = Font.stringWidth(info.colored);
+      st.className = 'state' + (info.ok ? (w > 160 ? ' warn' : '') : ' bad');
+      st.textContent = !info.ok ? 'Refusé par BC : au-delà de 32 caractères le client 1.8 se déconnecte.' : (info.explicit ? '' : 'Absent : défaut du code « ' + info.raw + ' ». ') + (w > 160 ? 'Dépasse du coffre (' + w + ' px de texte pour 160) : le client ne coupe pas, le titre déborde.' : 'Largeur ' + w + ' px sur 160.');
+      drawTitleStrip($(id + '_c'), info.colored, info.ok);
+    }
+    for (const s of SETTINGS) {
+      const id = fieldId(s.path);
+      const v = rawValue(s.path);
+      const el = $(id);
+      if (s.type === 'bool') setIfIdle(el, typeof v === 'boolean' ? String(v) : '');
+      else if (s.type === 'enum') setIfIdle(el, typeof v === 'string' && s.options.indexOf(v.trim().toLowerCase()) >= 0 ? v.trim().toLowerCase() : '');
+      else setIfIdle(el, shown(v));
+      const st = $(id + '_s');
+      const issue = rep ? rep.errors.find(e => e.path === s.path.join('.')) || rep.warnings.find(w => w.path === s.path.join('.')) : null;
+      st.className = 'state' + (issue ? (issue.level === 'error' ? ' bad' : ' warn') : '');
+      let txt = issue ? (issue.problem || issue.text) : '';
+      if (!issue && s.type === 'bool' && v !== undefined && typeof v !== 'boolean') txt = 'valeur « ' + shown(v) + ' » non booléenne : BC lit ' + s.def;
+      if (!issue && s.type === 'enum' && typeof v === 'string' && s.options.indexOf(v.trim().toLowerCase()) < 0) txt = 'valeur écrite : « ' + v + ' »';
+      st.textContent = txt;
+    }
+  }
+  function drawTitleStrip(cv, title, ok) {
+    const w = Math.max(176, 8 + Font.stringWidth(title) + 4);
+    const ctx = prepCanvas(cv, w, 17, SCALE);
+    ctx.fillStyle = ok ? '#c6c6c6' : '#e8b4b4';
+    ctx.fillRect(0, 0, 176 * SCALE, 17 * SCALE);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 176 * SCALE, SCALE);
+    Font.drawString(ctx, title, 8, 6, 0x404040, false, SCALE);
+  }
+
+  /* ---------- 3: catalogue ---------- */
+  function rawSlotKeys(slotKey) {
+    const rs = rawValue([slotKey]);
+    if (!L.isMap(rs)) return [];
+    const n = S.ix && S.ix.nodes.get(JSON.stringify([slotKey]));
+    const keys = Object.keys(rs);
+    if (!n) return keys;
+    const order = [];
+    for (const c of n.children) if (order.indexOf(c.key) < 0 && keys.indexOf(c.key) >= 0) order.push(c.key);
+    for (const k of keys) if (order.indexOf(k) < 0) order.push(k);
+    return order;
+  }
+  function renderTabs() {
+    const box = $('slotTabs');
+    box.innerHTML = '';
+    for (const k of L.SLOT_ORDER) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tab'; b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(S.slot === k));
+      b.dataset.slot = k;
+      const n = rawSlotKeys(k).length;
+      const bad = S.report && S.report.errors.some(e => e.slot === k);
+      b.textContent = L.SLOTS[k].label + ' (' + n + ')' + (bad ? ' ⚠' : '');
+      b.addEventListener('click', () => { if (S.slot !== k) { S.slot = k; S.page = 0; S.hover = -1; S.tipItem = null; S.chat = null; S.editorKey = null; renderAll({ rebuildEditor: true }); } });
+      box.appendChild(b);
+    }
+    const slot = L.SLOTS[S.slot];
+    $('slotHint').innerHTML = 'Section <code>' + slot.key + ':</code> - menu <code>' + slot.command + '</code>, permission <code>' + L.permissionWildcard(slot.key).replace('*', '&lt;id&gt;') + '</code>' + (slot.carriesModel ? ', modèle <code>pack/' + slot.packFolder + '/&lt;id&gt;/</code>.' : ', essaims <code>motes:</code> obligatoires (modèles <code>pack/motes/&lt;modèle&gt;/</code>).');
+  }
+  function entryIssues(slotKey, id) {
+    const r = S.report;
+    if (!r) return [];
+    return r.errors.filter(e => e.slot === slotKey && e.id === id).concat(r.warnings.filter(w => w.slot === slotKey && w.id === id), r.pack.filter(w => w.slot === slotKey && w.id === id));
+  }
+  function renderCatalogue() {
+    const list = $('entryList');
+    list.innerHTML = '';
+    const keys = rawSlotKeys(S.slot);
+    $('catCount').textContent = String(keys.length);
+    if (S.selected[S.slot] == null || keys.indexOf(S.selected[S.slot]) < 0) S.selected[S.slot] = keys[0] !== undefined ? keys[0] : null;
+    if (S.parseError) { list.innerHTML = '<li class="st-empty">Le YAML ne se lit pas : corrigez-le dans « Texte complet ».</li>'; }
+    else if (!keys.length) list.innerHTML = '<li class="st-empty">Aucune entrée sous <code>' + S.slot + ':</code>. Ajoutez-en une ci-dessous.</li>';
+    const entries = S.report ? S.report.slots[S.slot].entries : [];
+    keys.forEach((id, i) => {
+      const e = entries.find(x => x.id === id);
+      const issues = entryIssues(S.slot, id);
+      const li = document.createElement('li');
+      li.className = 'entry' + (S.selected[S.slot] === id ? ' sel' : '') + (issues.some(x => x.level === 'error') ? ' bad' : '');
+      li.dataset.id = id;
+      const chips = [];
+      if (issues.some(x => x.level === 'error')) chips.push('<span class="chip error">refusée</span>');
+      if (issues.some(x => x.dropped)) chips.push('<span class="chip warn">ignorée</span>');
+      if (e && S.pack) {
+        const missing = issues.some(x => x.kind === 'missing');
+        chips.push(missing ? '<span class="chip warn">pierre</span>' : '<span class="chip ok">modèle</span>');
+      }
+      if (e && e.icon) chips.push('<span class="chip">' + esc(e.icon.name) + (e.iconData ? ':' + e.iconData : '') + '</span>');
+      if (e && e.customPermission) chips.push('<span class="chip">permission</span>');
+      const idx = entries.indexOf(e);
+      if (idx >= L.PER_PAGE) chips.push('<span class="chip">page ' + (Math.floor(idx / L.PER_PAGE) + 1) + '</span>');
+      li.innerHTML = '<span class="ord">' + (i + 1) + '</span>'
+        + '<button type="button" class="main" aria-label="Modifier ' + esc(id) + '"><span class="eid">' + esc(id) + '</span><span class="ename">' + (e ? mcHtml(e.name) : '') + '</span><span class="chips">' + chips.join('') + '</span></button>'
+        + '<span class="moves"><button type="button" data-dir="-1" aria-label="Monter ' + esc(id) + '"' + (i === 0 ? ' disabled' : '') + '>↑</button><button type="button" data-dir="1" aria-label="Descendre ' + esc(id) + '"' + (i === keys.length - 1 ? ' disabled' : '') + '>↓</button></span>';
+      li.querySelector('.main').addEventListener('click', () => selectEntry(S.slot, id));
+      li.querySelectorAll('.moves button').forEach(b => b.addEventListener('click', () => {
+        if (edit(t => L.moveKey(t, [S.slot, id], Number(b.dataset.dir)), { rebuildEditor: true })) {
+          const btn = $('entryList').querySelector('li[data-id="' + CSS.escape(id) + '"] .moves button[data-dir="' + b.dataset.dir + '"]');
+          if (btn && !btn.disabled) btn.focus();
+        }
+      }));
+      list.appendChild(li);
+    });
+    // add form + pack suggestions
+    const addHint = $('addHint');
+    const v = $('addId').value.trim();
+    addHint.textContent = v === '' ? 'Minuscules, chiffres, _ et - : l\'identifiant devient la permission ' + L.defaultPermission(S.slot, '<id>') + '.' : (!L.WING_ID.test(v) ? 'Refusé par BC : identifiant attendu en minuscules, chiffres, _ ou - (CosmeticsConfig.java:121-126).' : keys.indexOf(v) >= 0 ? 'Existe déjà.' : 'Permission : ' + L.defaultPermission(S.slot, v));
+    const sug = $('packSuggest');
+    sug.innerHTML = '';
+    if (S.report && S.pack) {
+      const un = S.report.pack.filter(w => w.kind === 'unoffered' && w.slot === S.slot && S.slot !== 'trails');
+      if (un.length) {
+        const p = document.createElement('div');
+        p.innerHTML = '<span class="group-label">Dans le pack, pas dans le menu (' + un.length + ')</span>';
+        const row = document.createElement('div'); row.className = 'row';
+        for (const w of un) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'chip'; b.textContent = '+ ' + w.packId; b.title = 'Ajouter ' + w.packId + ' sous ' + S.slot + ':';
+          b.addEventListener('click', () => addEntry(w.packId));
+          row.appendChild(b);
+        }
+        p.appendChild(row);
+        sug.appendChild(p);
+      }
+    }
+  }
+  function selectEntry(slotKey, id) {
+    S.selected[slotKey] = id;
+    S.editorKey = null;
+    const e = S.report && S.report.slots[slotKey].entries.find(x => x.id === id);
+    if (e) {
+      const idx = S.report.slots[slotKey].entries.indexOf(e);
+      S.page = Math.floor(idx / L.PER_PAGE);
+      S.tipItem = null; S.hover = -1;
+    }
+    renderAll({ rebuildEditor: true });
+  }
+  function humanize(id) { return id.split(/[_-]+/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || id; }
+  function addEntry(id) {
+    id = String(id || '').trim();
+    if (!id) { say('Donnez un identifiant.', 'warn'); return; }
+    if (rawSlotKeys(S.slot).indexOf(id) >= 0) { say('« ' + id + ' » existe déjà sous ' + S.slot + ':.', 'warn'); return; }
+    const value = { name: '&f' + humanize(id) };
+    if (S.slot === 'trails') {
+      const motes = S.pack ? [...S.pack.ids.motes].sort() : [];
+      value.motes = [{ model: motes[0] || 'rune_mote', motion: 'orbit' }];
+    }
+    if (edit(t => L.setValue(t, [S.slot, id], value), { rebuildEditor: true })) {
+      $('addId').value = '';
+      S.selected[S.slot] = id; S.editorKey = null;
+      renderAll({ rebuildEditor: true });
+      say('« ' + id + ' » ajouté à la fin de ' + S.slot + ': (une ligne name: au moins - une entrée vide serait ignorée par Bukkit).', 'ok');
+    }
+  }
+
+  /* ---------- editor ---------- */
+  function renderEditor(force) {
+    const box = $('entryEditor');
+    const id = S.selected[S.slot];
+    const key = S.slot + '/' + id;
+    const focusInside = box.contains(document.activeElement);
+    if (!force && S.editorKey === key && focusInside) { renderEditorIssues(); return; }
+    if (!force && S.editorKey === key && !focusInside) { syncEditor(); renderEditorIssues(); return; }
+    S.editorKey = key;
+    buildEditor();
+  }
+  function rawEntry(slotKey, id) { const rs = rawValue([slotKey]); return L.isMap(rs) && Object.prototype.hasOwnProperty.call(rs, id) ? rs[id] : undefined; }
+  function buildEditor() {
+    const box = $('entryEditor');
+    box.innerHTML = '';
+    const slotKey = S.slot, id = S.selected[slotKey];
+    if (id == null || S.parseError) { box.innerHTML = '<p class="st-empty">Sélectionnez une entrée.</p>'; return; }
+    const raw = rawEntry(slotKey, id);
+    const head = document.createElement('div');
+    head.className = 'row';
+    head.innerHTML = '<h3 style="margin:0;flex:1 1 auto">Entrée <code>' + esc(slotKey) + '.' + esc(id) + '</code></h3>';
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'st-btn st-btn-danger'; del.textContent = 'Supprimer'; del.id = 'edDelete';
+    del.addEventListener('click', () => { if (edit(t => L.setValue(t, [slotKey, id], undefined), { rebuildEditor: true })) say('« ' + id + ' » supprimé (Annuler pour revenir).', 'ok'); });
+    head.appendChild(del);
+    box.appendChild(head);
+    if (!L.isMap(raw)) {
+      const p = document.createElement('div');
+      p.style.marginTop = '8px';
+      p.innerHTML = '<p class="st-note st-note-warn">' + (raw === null ? 'Entrée sans valeur : Bukkit la retire au chargement.' : 'Ce n\'est pas un bloc (valeur : <code>' + esc(L.javaStr(raw)) + '</code>) : BC la refuse.') + '</p>';
+      const fix = document.createElement('button');
+      fix.type = 'button'; fix.className = 'st-btn st-btn-primary'; fix.style.marginTop = '8px'; fix.textContent = 'En faire une entrée (name:)';
+      fix.addEventListener('click', () => edit(t => L.setValue(t, [slotKey, id], slotKey === 'trails' ? { name: '&f' + humanize(id), motes: [{ model: 'rune_mote', motion: 'orbit' }] } : { name: '&f' + humanize(id) }), { rebuildEditor: true }));
+      p.appendChild(fix);
+      box.appendChild(p);
+      box.appendChild(Object.assign(document.createElement('ul'), { className: 'issues', id: 'edIssues' }));
+      renderEditorIssues();
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.className = 'fields';
+    grid.style.marginTop = '10px';
+    const def = L.defaultPermission(slotKey, id);
+    grid.innerHTML = ''
+      + fieldHtml('edId', 'Identifiant', '<input class="st-input mono" id="edId" spellcheck="false" autocomplete="off">', 'renommer : Entrée ou sortie du champ · CosmeticsConfig.java:121-126')
+      + fieldHtml('edName', 'name', '<input class="st-input" id="edName" spellcheck="false" autocomplete="off" placeholder="' + esc(id) + '">', 'codes & · défaut : l\'identifiant · CosmeticsConfig.java:135')
+      + fieldHtml('edPerm', 'permission', '<input class="st-input mono" id="edPerm" spellcheck="false" autocomplete="off" placeholder="' + esc(def) + '">', 'défaut ' + def + ' · CosmeticsConfig.java:157-162')
+      + fieldHtml('edIcon', 'icon', '<input class="st-input mono" id="edIcon" list="materialList" spellcheck="false" autocomplete="off" placeholder="aucune : ' + (slotKey === 'trails' ? 'le premier objet' : 'le modèle du pack') + '">', 'matière Bukkit 1.8, secours sans pack · CosmeticsConfig.java:138-146')
+      + fieldHtml('edIconData', 'icon-data', '<input class="st-input" id="edIconData" inputmode="numeric" autocomplete="off" placeholder="0">', '0 à 32767 · CosmeticsConfig.java:147-151')
+      + fieldHtml('edLore', 'lore (une ligne par ligne)', '<textarea class="st-textarea" id="edLore" spellcheck="false" style="min-height:80px" placeholder="&amp;7Une ligne de description"></textarea>', 'facultatif · CosmeticsConfig.java:152-156', true);
+    box.appendChild(grid);
+    const q = sel => box.querySelector(sel);
+    q('#edId').addEventListener('change', () => {
+      const nv = q('#edId').value.trim();
+      if (!nv || nv === id) { q('#edId').value = id; return; }
+      if (edit(t => L.renameKey(t, [slotKey, id], nv), { rebuildEditor: true })) {
+        if (S.chosen[slotKey] === id) S.chosen[slotKey] = nv;
+        S.selected[slotKey] = nv; S.editorKey = null; renderAll({ rebuildEditor: true });
+        say('« ' + id + ' » renommé « ' + nv + ' » : la permission par défaut devient ' + L.defaultPermission(slotKey, nv) + ', et le pack doit avoir ' + (slotKey === 'trails' ? 'les mêmes modèles' : slotKey + '/' + nv + '/') + '.', 'ok');
+      }
+    });
+    q('#edId').addEventListener('keydown', ev => { if (ev.key === 'Enter') q('#edId').dispatchEvent(new Event('change')); });
+    const bind = (sel, key, conv) => q(sel).addEventListener('input', () => edit(t => L.setValue(t, [slotKey, id, key], conv(q(sel).value))));
+    bind('#edName', 'name', v => (v === '' ? undefined : v));
+    bind('#edPerm', 'permission', v => (v === '' ? undefined : v));
+    bind('#edIcon', 'icon', v => (v.trim() === '' ? undefined : v.trim()));
+    bind('#edIconData', 'icon-data', v => { if (v.trim() === '') return undefined; const n = Number(v); return Number.isFinite(n) ? n : v; });
+    bind('#edLore', 'lore', v => (v === '' ? undefined : v.split('\n')));
+    if (slotKey === 'trails') {
+      const ms = document.createElement('div');
+      ms.style.marginTop = '12px';
+      ms.innerHTML = '<div class="row"><h3 style="margin:0;flex:1 1 auto">Essaims (motes:)</h3><button type="button" class="st-btn" id="edAddSwarm">+ Essaim</button></div><p class="hint">Champ vide = défaut de la trajectoire (CosmeticsConfig.java:241-253). Le premier essaim donne l\'icône du menu. Rien ne vole devant le corps : sous 0,7 ou au-dessus de 2,1 blocs (Swarm.java:161-168).</p><div id="edMotes"></div>';
+      box.appendChild(ms);
+      q('#edAddSwarm').addEventListener('click', () => {
+        const cur = Array.isArray(rawEntry(slotKey, id).motes) ? rawEntry(slotKey, id).motes.slice() : [];
+        const motes = S.pack ? [...S.pack.ids.motes].sort() : [];
+        cur.push({ model: motes[0] || 'rune_mote', motion: 'orbit' });
+        edit(t => L.setValue(t, [slotKey, id, 'motes'], cur), { rebuildEditor: true });
+      });
+      buildSwarms(q('#edMotes'), slotKey, id);
+    }
+    const ul = document.createElement('ul');
+    ul.className = 'issues'; ul.id = 'edIssues';
+    box.appendChild(ul);
+    syncEditor();
+    renderEditorIssues();
+  }
+  function fieldHtml(id, label, control, ref, wide) {
+    return '<label class="field' + (wide ? ' wide' : '') + '"><span class="lbl">' + esc(label) + '</span>' + control + '<span class="ref">' + esc(ref) + '</span></label>';
+  }
+  function syncEditor() {
+    const slotKey = S.slot, id = S.selected[slotKey];
+    const raw = rawEntry(slotKey, id);
+    if (!L.isMap(raw)) return;
+    const box = $('entryEditor');
+    const q = sel => box.querySelector(sel);
+    if (!q('#edId')) return;
+    setIfIdle(q('#edId'), id);
+    setIfIdle(q('#edName'), shown(raw.name));
+    setIfIdle(q('#edPerm'), shown(raw.permission));
+    setIfIdle(q('#edIcon'), shown(raw.icon));
+    setIfIdle(q('#edIconData'), shown(raw['icon-data']));
+    setIfIdle(q('#edLore'), Array.isArray(raw.lore) ? raw.lore.map(x => (x === null ? '' : typeof x === 'object' ? JSON.stringify(x) : String(x))).join('\n') : shown(raw.lore));
+    const m = q('#edMotes');
+    if (m && !m.contains(document.activeElement)) {
+      const n = Array.isArray(raw.motes) ? raw.motes.length : 0;
+      if (m.querySelectorAll('.swarm').length !== n) buildSwarms(m, slotKey, id); else syncSwarms(m, raw.motes || []);
+    }
+  }
+  const SWARM_FIELDS = ['model', 'motion', 'trigger'].concat(L.SWARM_KEYS);
+  function buildSwarms(container, slotKey, id) {
+    container.innerHTML = '';
+    const raw = rawEntry(slotKey, id);
+    const motes = L.isMap(raw) && Array.isArray(raw.motes) ? raw.motes : [];
+    if (L.isMap(raw) && raw.motes !== undefined && !Array.isArray(raw.motes)) container.innerHTML = '<p class="st-note st-note-error">motes: n\'est pas une liste : BC refuse (CosmeticsConfig.java:194-197). « + Essaim » la remplace.</p>';
+    motes.forEach((sw, i) => {
+      const card = document.createElement('div');
+      card.className = 'swarm'; card.dataset.index = String(i);
+      let html = '<div class="swarm-head"><b>Essaim ' + (i + 1) + (i === 0 ? ' (icône)' : '') + '</b><span class="grow" style="flex:1"></span>'
+        + (i > 0 ? '<button type="button" class="mini" data-act="up" aria-label="Monter l\'essaim ' + (i + 1) + '">↑</button>' : '')
+        + '<button type="button" class="mini" data-act="del" aria-label="Retirer l\'essaim ' + (i + 1) + '">✕</button></div><div class="fields">';
+      html += '<label class="field"><span class="lbl">model</span><input class="st-input mono" data-k="model" list="moteList" spellcheck="false" autocomplete="off"></label>';
+      html += '<label class="field"><span class="lbl">motion</span><select class="st-select" data-k="motion"><option value="">(orbit)</option>' + L.MOTIONS.map(m => '<option value="' + m.toLowerCase() + '">' + m.toLowerCase() + '</option>').join('') + '</select></label>';
+      html += '<label class="field"><span class="lbl">trigger (burst)</span><select class="st-select" data-k="trigger"><option value="">(land)</option>' + L.TRIGGERS.map(m => '<option value="' + m.toLowerCase() + '">' + m.toLowerCase() + '</option>').join('') + '</select></label>';
+      for (const k of L.SWARM_KEYS) html += '<label class="field"><span class="lbl">' + k + '</span><input class="st-input" data-k="' + k + '" inputmode="decimal" autocomplete="off"></label>';
+      html += '</div>';
+      card.innerHTML = html;
+      card.querySelectorAll('[data-k]').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => writeSwarms(container, slotKey, id)));
+      card.querySelector('[data-act="del"]').addEventListener('click', () => {
+        const cur = rawEntry(slotKey, id).motes.slice(); cur.splice(i, 1);
+        edit(t => L.setValue(t, [slotKey, id, 'motes'], cur), { rebuildEditor: true });
+      });
+      const up = card.querySelector('[data-act="up"]');
+      if (up) up.addEventListener('click', () => {
+        const cur = rawEntry(slotKey, id).motes.slice(); const x = cur[i]; cur[i] = cur[i - 1]; cur[i - 1] = x;
+        edit(t => L.setValue(t, [slotKey, id, 'motes'], cur), { rebuildEditor: true });
+      });
+      container.appendChild(card);
+    });
+    syncSwarms(container, motes);
+  }
+  function lowerKeyed(obj) { const o = {}; if (L.isMap(obj)) for (const k of Object.keys(obj)) o[String(k).toLowerCase()] = obj[k]; return o; }
+  function syncSwarms(container, motes) {
+    container.querySelectorAll('.swarm').forEach(card => {
+      const i = Number(card.dataset.index);
+      const sw = lowerKeyed(motes[i]);
+      const motion = String(sw.motion || 'orbit').trim().toUpperCase();
+      const d = L.SWARM_DEFAULTS[motion] || L.SWARM_DEFAULTS.ORBIT;
+      card.querySelectorAll('[data-k]').forEach(el => {
+        const k = el.dataset.k;
+        if (el.tagName === 'SELECT') setIfIdle(el, typeof sw[k] === 'string' && L[k === 'motion' ? 'MOTIONS' : 'TRIGGERS'].indexOf(sw[k].trim().toUpperCase()) >= 0 ? sw[k].trim().toLowerCase() : '');
+        else {
+          setIfIdle(el, shown(sw[k]));
+          const ki = L.SWARM_KEYS.indexOf(k);
+          if (ki >= 0) el.placeholder = String(d[ki]);
+        }
+      });
+    });
+  }
+  function writeSwarms(container, slotKey, id) {
+    const raw = rawEntry(slotKey, id);
+    const cur = L.isMap(raw) && Array.isArray(raw.motes) ? raw.motes : [];
+    const out = [];
+    container.querySelectorAll('.swarm').forEach(card => {
+      const i = Number(card.dataset.index);
+      const base = L.isMap(cur[i]) ? Object.assign({}, cur[i]) : {};
+      card.querySelectorAll('[data-k]').forEach(el => {
+        const k = el.dataset.k;
+        for (const bk of Object.keys(base)) if (bk.toLowerCase() === k && bk !== k) delete base[bk];
+        const v = el.value.trim();
+        if (v === '') { delete base[k]; return; }
+        if (k === 'model' || k === 'motion' || k === 'trigger') base[k] = v;
+        else { const n = Number(v.replace(',', '.')); base[k] = Number.isFinite(n) ? n : v; }
+      });
+      // "model" first, as BC's examples write it
+      const ordered = {};
+      if ('model' in base) ordered.model = base.model;
+      for (const k of Object.keys(base)) if (k !== 'model') ordered[k] = base[k];
+      out.push(ordered);
+    });
+    edit(t => L.setValue(t, [slotKey, id, 'motes'], out));
+  }
+  function renderEditorIssues() {
+    const ul = $('edIssues');
+    if (!ul) return;
+    const id = S.selected[S.slot];
+    ul.innerHTML = '';
+    for (const x of entryIssues(S.slot, id)) ul.appendChild(issueLi(x, false));
+  }
+  function issueLi(x, first) {
+    const li = document.createElement('li');
+    li.className = x.level + (first ? ' first' : '');
+    const path = x.at || x.path;
+    const text = x.level === 'error' ? x.message : x.text;
+    li.innerHTML = (x.level === 'error' ? '' : (path ? '<span class="path">' + esc(path) + '</span> : ' : '')) + esc(text) + (first ? ' <b>← ligne de la console</b>' : '') + '<span class="ref">' + esc(x.ref || '') + '</span>';
+    if (x.slot && x.id) { li.dataset.id = x.id; li.title = 'Ouvrir ' + x.slot + '.' + x.id; li.addEventListener('click', () => { S.slot = x.slot; selectEntry(x.slot, x.id); }); }
+    return li;
+  }
+
+  /* ---------- 4: preview ---------- */
+  function prepCanvas(cv, w, h, s) {
+    cv.width = Math.max(1, Math.ceil(w * s)); cv.height = Math.max(1, Math.ceil(h * s));
+    cv.style.width = cv.width + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    return ctx;
+  }
+  function rect(ctx, s, x0, y0, x1, y1, argb) {
+    const a = ((argb >>> 24) & 255) / 255;
+    ctx.fillStyle = 'rgba(' + ((argb >> 16) & 255) + ',' + ((argb >> 8) & 255) + ',' + (argb & 255) + ',' + a + ')';
+    ctx.fillRect(Math.min(x0, x1) * s, Math.min(y0, y1) * s, Math.abs(x1 - x0) * s, Math.abs(y1 - y0) * s);
+  }
+  function gradRect(ctx, s, x0, y0, x1, y1, top, bottom) {
+    const c = argb => 'rgba(' + ((argb >> 16) & 255) + ',' + ((argb >> 8) & 255) + ',' + (argb & 255) + ',' + (((argb >>> 24) & 255) / 255) + ')';
+    const g = ctx.createLinearGradient(0, y0 * s, 0, y1 * s);
+    g.addColorStop(0, c(top)); g.addColorStop(1, c(bottom));
+    ctx.fillStyle = g;
+    ctx.fillRect(x0 * s, y0 * s, (x1 - x0) * s, (y1 - y0) * s);
+  }
+  /** generic_54.png look: grey panel, black rim, light top-left and dark bottom-right bevels. */
+  function drawPanel(ctx, s, w, h) {
+    rect(ctx, s, 2, 0, w - 3, 1, 0xFF000000); rect(ctx, s, 0, 2, 1, h - 3, 0xFF000000);
+    rect(ctx, s, w - 1, 3, w, h - 2, 0xFF000000); rect(ctx, s, 3, h - 1, w - 2, h, 0xFF000000);
+    rect(ctx, s, 1, 1, 2, 2, 0xFF000000); rect(ctx, s, w - 3, 1, w - 2, 2, 0xFF000000); rect(ctx, s, w - 2, 2, w - 1, 3, 0xFF000000);
+    rect(ctx, s, 1, h - 3, 2, h - 2, 0xFF000000); rect(ctx, s, 2, h - 2, 3, h - 1, 0xFF000000); rect(ctx, s, w - 2, h - 2, w - 1, h - 1, 0xFF000000);
+    rect(ctx, s, 1, 2, w - 1, h - 2, 0xFFC6C6C6); rect(ctx, s, 2, 1, w - 2, h - 1, 0xFFC6C6C6);
+    rect(ctx, s, 2, 1, w - 3, 3, 0xFFFFFFFF); rect(ctx, s, 1, 2, 3, h - 3, 0xFFFFFFFF);
+    rect(ctx, s, 3, h - 3, w - 2, h - 1, 0xFF555555); rect(ctx, s, w - 3, 3, w - 1, h - 2, 0xFF555555);
+    rect(ctx, s, 3, 3, w - 3, h - 3, 0xFFC6C6C6);
+  }
+  function drawSlotFrame(ctx, s, x, y) {
+    rect(ctx, s, x, y, x + 18, y + 18, 0xFF8B8B8B);
+    rect(ctx, s, x, y, x + 17, y + 1, 0xFF373737); rect(ctx, s, x, y, x + 1, y + 17, 0xFF373737);
+    rect(ctx, s, x + 1, y + 17, x + 18, y + 18, 0xFFFFFFFF); rect(ctx, s, x + 17, y + 1, x + 18, y + 18, 0xFFFFFFFF);
+  }
+  function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function px(ctx, s, x, y, css) { ctx.fillStyle = css; ctx.fillRect(x * s, y * s, s, s); }
+  function drawStone(ctx, s, x, y) {
+    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) { const v = hash('st' + i + ',' + j) % 3; px(ctx, s, x + i, y + j, ['#7f7f7f', '#747474', '#8c8c8c'][v]); }
+  }
+  function drawModelTile(ctx, s, x, y, known) {
+    drawStone(ctx, s, x, y);
+    // a pair of wings, light violet: "the pack draws the model here"
+    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) {
+      const dx = Math.abs(i - 7.5), wing = j >= 3 && j <= 12 && dx >= 1.5 && dx <= 7.5 && (j - 3) >= (dx - 1.5) * 0.9 - 1 && (j - 3) <= 9 - (dx - 1.5) * 0.6;
+      if (wing) px(ctx, s, x + i, y + j, known ? ((i + j) % 3 ? '#d8b4fe' : '#a855f7') : '#9ca3af');
+    }
+    if (!known) Font.drawString(ctx, '?', x + 10, y + 8, 0xFFFF55, true, s);
+  }
+  function drawBarrier(ctx, s, x, y) {
+    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) {
+      const d = Math.hypot(i - 7.5, j - 7.5);
+      if ((d >= 5.2 && d <= 7.4) || (Math.abs(i - j) <= 0.9 && d < 6)) px(ctx, s, x + i, y + j, d > 6.6 ? '#9b0000' : '#e00000');
+    }
+  }
+  function drawArrow(ctx, s, x, y) {
+    for (let t = 2; t <= 12; t++) px(ctx, s, x + t, y + 15 - t, '#6b4a2b');
+    [[12, 2], [13, 2], [13, 3], [11, 2], [13, 4], [12, 3]].forEach(([i, j]) => px(ctx, s, x + i, y + j, '#c0c0c0'));
+    [[2, 13], [3, 13], [2, 12], [1, 14], [3, 14], [1, 12]].forEach(([i, j]) => px(ctx, s, x + i, y + j, '#f0f0f0'));
+  }
+  function drawComparator(ctx, s, x, y) {
+    for (let j = 10; j < 15; j++) for (let i = 1; i < 15; i++) px(ctx, s, x + i, y + j, j === 10 ? '#c8c8c8' : (hash('c' + i + j) % 2 ? '#a0a0a0' : '#969696'));
+    [[3, 7], [12, 7], [7, 4], [8, 4]].forEach(([i, j]) => { px(ctx, s, x + i, y + j, '#ff3030'); px(ctx, s, x + i, y + j + 1, '#7a2020'); px(ctx, s, x + i, y + j + 2, '#6b4a2b'); });
+  }
+  function drawMaterial(ctx, s, x, y, m) {
+    const h = hash(m.name);
+    const col = 'hsl(' + (h % 360) + ',45%,' + (35 + (h >> 9) % 20) + '%)';
+    ctx.fillStyle = '#1b1b1b'; ctx.fillRect((x + 1) * s, (y + 1) * s, 14 * s, 14 * s);
+    ctx.fillStyle = col; ctx.fillRect((x + 2) * s, (y + 2) * s, 12 * s, 12 * s);
+    const ab = m.name.replace(/_/g, '').slice(0, 2);
+    Font.drawString(ctx, ab[0] + ab[1].toLowerCase(), x + 3, y + 4, 0xFFFFFF, true, s);
+  }
+  function drawItem(ctx, s, x, y, item) {
+    if (item.kind === 'remove') drawBarrier(ctx, s, x, y);
+    else if (item.kind === 'options') drawComparator(ctx, s, x, y);
+    else if (item.kind === 'previous' || item.kind === 'next') drawArrow(ctx, s, x, y);
+    else if (item.icon) drawMaterial(ctx, s, x, y, item.icon);
+    else {
+      const folder = item.entry.slot === 'trails' ? 'motes' : item.entry.slot;
+      const img = S.packIcons.get(folder + '/' + item.model);
+      if (img) { ctx.imageSmoothingEnabled = false; ctx.drawImage(img, x * s, y * s, 16 * s, 16 * s); }
+      else if (S.pack) { if (S.pack.ids[folder].has(item.model)) drawModelTile(ctx, s, x, y, true); else drawStone(ctx, s, x, y); }
+      else drawModelTile(ctx, s, x, y, false);
+    }
+    if (item.glint) { ctx.fillStyle = 'rgba(150, 80, 255, 0.38)'; ctx.fillRect(x * s, y * s, 16 * s, 16 * s); }
+  }
+  function viewerNodes() { return $('viewerNodes').value.split('\n'); }
+  function allowedFn() {
+    if (S.viewer === 'op') return () => true;            // op default of every declared node (WingsPermissions.java:19-21, 68-71)
+    if (S.viewer === 'none') return () => false;
+    const nodes = viewerNodes();
+    return e => L.allowedBy(nodes, e);
+  }
+  function currentMenu() {
+    const entries = S.report ? S.report.slots[S.slot].entries : [];
+    const pages = Math.max(1, Math.ceil(entries.length / L.PER_PAGE));
+    if (S.page >= pages) S.page = pages - 1;
+    if (S.page < 0) S.page = 0;
+    const chosen = S.chosen[S.slot];
+    if (chosen != null && !entries.some(e => e.id === chosen)) S.chosen[S.slot] = null;
+    return L.menuItems(entries, S.slot, { page: S.page, allowed: allowedFn(), chosen: S.chosen[S.slot] });
+  }
+  function menuTitle() {
+    const r = S.report;
+    const key = L.SLOTS[S.slot].menuKey;
+    return r ? r.settings.titles[key] : { colored: '', ok: true, length: 0 };
+  }
+  function renderPreview() {
+    const cv = $('chest');
+    const menu = currentMenu();
+    S.menu = menu;
+    const lay = menu.layout;
+    const rows = lay.rows, W = 176, H = 114 + rows * 18;      // GuiChest: ySize = 114 + rows * 18
+    const t = menuTitle();
+    const tw = Font.stringWidth(t.colored);
+    const ctx = prepCanvas(cv, Math.max(W, 8 + tw + 2), H, SCALE);
+    drawPanel(ctx, SCALE, W, H);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < 9; c++) drawSlotFrame(ctx, SCALE, 7 + c * 18, 17 + r * 18);
+    const invTop = 31 + rows * 18;                              // ContainerChest: 103 + (rows - 4) * 18
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 9; c++) drawSlotFrame(ctx, SCALE, 7 + c * 18, invTop - 1 + r * 18);
+    for (let c = 0; c < 9; c++) drawSlotFrame(ctx, SCALE, 7 + c * 18, invTop + 57);  // hotbar: 161 + (rows - 4) * 18
+    Font.drawString(ctx, t.colored, 8, 6, 0x404040, false, SCALE);   // GuiChest.drawGuiContainerForegroundLayer
+    Font.drawString(ctx, 'Inventaire', 8, H - 96 + 2, 0x404040, false, SCALE);
+    menu.items.forEach((it, k) => {
+      if (!it) return;
+      const x = 8 + (k % 9) * 18, y = 18 + Math.floor(k / 9) * 18;
+      drawItem(ctx, SCALE, x, y, it);
+      if (k === S.hover) rect(ctx, SCALE, x, y, x + 16, y + 16, 0x80FFFFFF);
+    });
+    $('pgInfo').textContent = 'page ' + (lay.page + 1) + ' / ' + lay.pages;
+    $('pgPrev').disabled = lay.page <= 0;
+    $('pgNext').disabled = lay.page >= lay.pages - 1;
+    const note = $('titleNote');
+    if (!t.ok) { note.hidden = false; note.className = 'st-note st-note-error'; note.style.marginBottom = '10px'; note.textContent = 'Titre de ' + t.length + ' caractères : BC refuse le fichier (au-delà de 32, le client 1.8 se déconnecte). Aperçu donné pour mémoire.'; }
+    else if (S.report && S.report.errors.length) { note.hidden = false; note.className = 'st-note st-note-warn'; note.style.marginBottom = '10px'; note.textContent = 'BC refuserait ce config.yml : le plugin se désactive et le menu ne s\'ouvre pas. Aperçu des entrées valides seulement.'; }
+    else note.hidden = true;
+    // tooltip: hovered slot, else the selected entry
+    let tipItem = S.hover >= 0 ? menu.items[S.hover] : null;
+    if (!tipItem) { const selId = S.selected[S.slot]; tipItem = menu.items.find(i => i && i.kind === 'entry' && i.entry.id === selId) || menu.items.find(i => i && i.kind === 'entry') || null; }
+    S.tipItem = tipItem;
+    renderTooltip(tipItem);
+    renderChat();
+    const entries = S.report ? S.report.slots[S.slot].entries : [];
+    $('legend').innerHTML = esc(entries.length + ' entrée(s) valide(s), coffre de ' + lay.size + ' cases (' + rows + ' rangées) : ' + L.PER_PAGE + ' par page, barrière case ' + lay.removeSlot + ', préférences case ' + lay.optionsSlot + (lay.pages > 1 ? ', flèches cases ' + (lay.previousSlot >= 0 ? lay.previousSlot : '-') + ' / ' + (lay.nextSlot >= 0 ? lay.nextSlot : '-') : '') + '. ')
+      + '<span class="sw" style="background:#a855f7"></span>modèle du pack (non rendu ici' + (S.pack ? '' : ' ; chargez le pack pour savoir s\'il existe') + '), <span class="sw" style="background:#7f7f7f"></span>pierre : aucun modèle. '
+      + (Font.ascii ? 'Texte rendu avec ascii.png (exact).' : 'Texte latin approché (police web) : chargez le .jar 1.8.9 pour l\'exact.');
+  }
+  function renderTooltip(item) {
+    const cv = $('tip');
+    if (!item) { const ctx = prepCanvas(cv, 120, 16, SCALE); Font.drawString(ctx, '(aucune case)', 2, 4, 0xAAAAAA, true, SCALE); return; }
+    const lines = L.tooltipLines(item);
+    let w = 0; for (const l of lines) w = Math.max(w, Font.stringWidth(l));
+    let h = 8; if (lines.length > 1) h += 2 + (lines.length - 1) * 10;
+    const ox = 4, oy = 4;
+    const ctx = prepCanvas(cv, w + 8, h + 8, SCALE);
+    const x = ox, y = oy, bg = 0xF0100010, b1 = 0x505000FF, b2 = ((b1 & 0xFEFEFE) >> 1) | (b1 & 0xFF000000); // GuiScreen.drawHoveringText
+    rect(ctx, SCALE, x - 3, y - 4, x + w + 3, y - 3, bg);
+    rect(ctx, SCALE, x - 3, y + h + 3, x + w + 3, y + h + 4, bg);
+    rect(ctx, SCALE, x - 3, y - 3, x + w + 3, y + h + 3, bg);
+    rect(ctx, SCALE, x - 4, y - 3, x - 3, y + h + 3, bg);
+    rect(ctx, SCALE, x + w + 3, y - 3, x + w + 4, y + h + 3, bg);
+    gradRect(ctx, SCALE, x - 3, y - 2, x - 2, y + h + 2, b1, b2 >>> 0);
+    gradRect(ctx, SCALE, x + w + 2, y - 2, x + w + 3, y + h + 2, b1, b2 >>> 0);
+    rect(ctx, SCALE, x - 3, y - 3, x + w + 3, y - 2, b1);
+    rect(ctx, SCALE, x - 3, y + h + 2, x + w + 3, y + h + 3, b2 >>> 0);
+    let yy = y;
+    lines.forEach((l, i) => { Font.drawString(ctx, l, x, yy, 0xFFFFFF, true, SCALE); if (i === 0) yy += 2; yy += 10; });
+  }
+  function renderChat() {
+    const cv = $('chat');
+    if (!S.chat) { cv.hidden = true; return; }
+    cv.hidden = false;
+    const w = Font.stringWidth(S.chat) + 4;
+    const ctx = prepCanvas(cv, Math.max(120, w), 9, SCALE);
+    rect(ctx, SCALE, 0, 0, Math.max(120, w), 9, 0x80000000);
+    Font.drawString(ctx, S.chat, 2, 1, 0xFFFFFF, true, SCALE);
+  }
+  function slotAt(ev) {
+    const cv = $('chest'), r = cv.getBoundingClientRect();
+    const gx = (ev.clientX - r.left) / r.width * (cv.width / SCALE), gy = (ev.clientY - r.top) / r.height * (cv.height / SCALE);
+    const c = Math.floor((gx - 7) / 18), row = Math.floor((gy - 17) / 18);
+    if (!S.menu || c < 0 || c > 8 || row < 0 || row >= S.menu.layout.rows || gx > 7 + 9 * 18) return -1;
+    return row * 9 + c;
+  }
+  function clickSlot(k) {
+    const it = S.menu && S.menu.items[k];
+    if (!it) return;
+    if (it.kind === 'previous') { S.page--; S.hover = -1; }
+    else if (it.kind === 'next') { S.page++; S.hover = -1; }
+    else if (it.kind === 'remove') S.chosen[S.slot] = null;
+    else if (it.kind === 'entry') { if (it.allowed) S.chosen[S.slot] = it.entry.id; S.selected[S.slot] = it.entry.id; }
+    S.chat = it.kind === 'options' ? '§7(ouvre les préférences d\'affichage)' : L.clickMessage(it, S.slot);
+    if (it.kind === 'entry') { S.editorKey = null; renderAll({ rebuildEditor: true }); } else renderPreview();
+  }
+
+  /* ---------- 5: diagnostic ---------- */
+  function renderDiag() {
+    const box = $('consoleLine'), ul = $('issueList');
+    ul.innerHTML = '';
+    if (S.parseError) {
+      box.className = 'st-note st-note-error';
+      box.textContent = 'YAML illisible : Bukkit ne charge pas le fichier (InvalidConfigurationException, YamlConfiguration.java:64-74) - ' + S.parseError.split('\n')[0];
+      $('diagCount').textContent = '1';
+      return;
+    }
+    const r = S.report;
+    if (!r) return;
+    box.className = 'st-note ' + (r.errors.length ? 'st-note-error' : 'st-note-ok');
+    box.textContent = r.errors.length ? 'Console du serveur : « ' + r.consoleLine + ' » (BeltariaContent.java:146-148). BC s\'arrête à la première erreur ; l\'outil les liste toutes.' : 'BC accepte ce config.yml (aucune ConfigException).';
+    const all = r.errors.concat(r.warnings.filter(w => w.level === 'warn'), r.pack.filter(w => w.level !== 'info'), r.warnings.filter(w => w.level === 'info'), r.pack.filter(w => w.level === 'info'));
+    $('diagCount').textContent = String(r.errors.length + r.warnings.filter(w => w.level === 'warn').length + r.pack.filter(w => w.level !== 'info').length);
+    all.forEach((x, i) => ul.appendChild(issueLi(x, i === 0 && x.level === 'error')));
+    if (!all.length) ul.innerHTML = '<li class="info">Rien à signaler.' + (S.pack ? '' : ' Chargez le pack pour croiser les modèles.') + '</li>';
+  }
+
+  /* ---------- 6: permissions ---------- */
+  function permsText() {
+    const r = S.report;
+    if (!r) return '';
+    const out = [];
+    for (const k of L.SLOT_ORDER) {
+      const es = r.slots[k].entries;
+      out.push('# ' + L.SLOTS[k].label + ' (' + es.length + ')', L.permissionWildcard(k));
+      for (const e of es) out.push(e.permission);
+      out.push('');
+    }
+    return out.join('\n');
+  }
+  function renderPerms() {
+    const box = $('permsBox');
+    box.innerHTML = '';
+    const r = S.report;
+    if (!r) { box.innerHTML = '<p class="st-empty">Rien à afficher.</p>'; return; }
+    for (const k of L.SLOT_ORDER) {
+      const es = r.slots[k].entries;
+      const g = document.createElement('div');
+      g.className = 'perm-group';
+      let html = '<span class="sub">' + esc(L.SLOTS[k].label) + ' - ' + esc(L.SLOTS[k].command) + '</span><ul class="perm-list">';
+      html += '<li>' + esc(L.permissionWildcard(k)) + ' <span class="why">- tout l\'emplacement (joker, défaut op ; chaque nœud y est rattaché)</span></li>';
+      for (const e of es) html += '<li>' + esc(e.permission) + (e.customPermission ? ' <span class="why">- nœud personnalisé de ' + esc(e.id) + (e.permission === L.defaultPermission(k, e.id) ? '' : ' ; s\'il appartient déjà à un autre plugin, BC ne le recrée pas et son défaut reste celui de cet autre plugin') + '</span>' : '') + '</li>';
+      if (!es.length) html += '<li class="why">aucune entrée</li>';
+      html += '</ul>';
+      g.innerHTML = html;
+      box.appendChild(g);
+    }
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = 'Déclarés au démarrage avec le défaut op (WingsPermissions.java:51-79, README « Permissions ») : les opérateurs portent tout, les autres joueurs reçoivent chaque nœud ou le joker de leur gestionnaire de permissions.';
+    box.appendChild(p);
+  }
+
+  /* ---------- 7: output ---------- */
+  function lineDiff(a, b) {
+    let s = 0; while (s < a.length && s < b.length && a[s] === b[s]) s++;
+    let ea = a.length, eb = b.length; while (ea > s && eb > s && a[ea - 1] === b[eb - 1]) { ea--; eb--; }
+    const A = a.slice(s, ea), B = b.slice(s, eb), ops = [];
+    for (let i = 0; i < s; i++) ops.push({ t: ' ', a: i, b: i, line: a[i] });
+    if (A.length * B.length <= 4e6) {
+      const n = A.length, m = B.length, dp = new Uint32Array((n + 1) * (m + 1));
+      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i * (m + 1) + j] = A[i] === B[j] ? dp[(i + 1) * (m + 1) + j + 1] + 1 : Math.max(dp[(i + 1) * (m + 1) + j], dp[i * (m + 1) + j + 1]);
+      let i = 0, j = 0;
+      while (i < n || j < m) {
+        if (i < n && j < m && A[i] === B[j]) { ops.push({ t: ' ', a: s + i, b: s + j, line: A[i] }); i++; j++; }
+        else if (j < m && (i >= n || dp[i * (m + 1) + j + 1] >= dp[(i + 1) * (m + 1) + j])) { ops.push({ t: '+', b: s + j, line: B[j] }); j++; }
+        else { ops.push({ t: '-', a: s + i, line: A[i] }); i++; }
+      }
+    } else {
+      A.forEach((l, i) => ops.push({ t: '-', a: s + i, line: l }));
+      B.forEach((l, j) => ops.push({ t: '+', b: s + j, line: l }));
+    }
+    for (let i = ea, j = eb; i < a.length; i++, j++) ops.push({ t: ' ', a: i, b: j, line: a[i] });
+    return ops;
+  }
+  function renderOutput() {
+    const a = S.original.split(/\r?\n/), b = S.text.split(/\r?\n/);
+    const ops = lineDiff(a, b);
+    const changed = ops.filter(o => o.t !== ' ').length;
+    $('diffCount').textContent = changed + ' ligne(s)';
+    const box = $('diffBox');
+    if (!changed) box.innerHTML = '<span class="ctx">Aucune modification : le fichier ressort identique, octet pour octet.</span>';
+    else {
+      const keep = new Array(ops.length).fill(false);
+      ops.forEach((o, i) => { if (o.t !== ' ') for (let k = Math.max(0, i - 2); k <= Math.min(ops.length - 1, i + 2); k++) keep[k] = true; });
+      let html = '', gap = false;
+      ops.forEach((o, i) => {
+        if (!keep[i]) { gap = true; return; }
+        if (gap || i === 0) html += '<span class="hunk">@@ ligne ' + ((o.b !== undefined ? o.b : o.a) + 1) + '</span>';
+        gap = false;
+        html += '<span class="' + (o.t === '+' ? 'add' : o.t === '-' ? 'del' : 'ctx') + '">' + esc(o.t + ' ' + o.line) + '</span>';
+      });
+      box.innerHTML = html;
+    }
+    const id = S.selected[S.slot];
+    const lines = id != null && !S.parseError ? L.blockText(S.text, [S.slot, id]) : null;
+    $('snippetBox').textContent = lines ? S.slot + ':\n' + lines.join('\n') : '(aucune entrée sélectionnée)';
+  }
+
+  /* ---------- files ---------- */
+  function filesSummary() {
+    const items = [];
+    items.push(['ok', 'config.yml : « ' + S.originName + ' »']);
+    if (S.pack) {
+      const p = S.pack;
+      items.push([p.jsonError ? 'warn' : 'ok', 'Pack « ' + S.packOrigin + ' » : ' + p.ids.wings.size + ' ailes, ' + p.ids.auras.size + ' auras, ' + p.ids.motes.size + ' modèles d\'objets' + (p.packJsonPath ? ' (pack.json lu)' : ' (sans pack.json)') + (p.icons.size ? ', ' + p.icons.size + ' icon.png' : '') + (p.jsonError ? ' - pack.json illisible : ' + p.jsonError : '')]);
+    } else items.push(['', 'Pack : non chargé (croisement des modèles désactivé)']);
+    items.push([Font.ascii ? 'ok' : '', 'Texte : ' + (Font.ascii ? 'ascii.png de « ' + Font.ascii.origin + ' » (exact)' : 'police web approchée')]);
+    $('filesList').innerHTML = items.map(([k, t]) => '<li><span class="dot ' + k + '"></span>' + esc(t) + '</li>').join('');
+    $('clearPackBtn').hidden = !S.pack;
+    const ml = $('moteList');
+    ml.innerHTML = S.pack ? [...S.pack.ids.motes].sort().map(m => '<option value="' + esc(m) + '">').join('') : '';
+  }
+  async function decodeImage(bytes) {
+    try {
+      const bmp = await createImageBitmap(new Blob([bytes]), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+      const c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(bmp, 0, 0);
+      return { bmp, image: ctx.getImageData(0, 0, c.width, c.height) };
+    } catch (e) { return null; }
+  }
+  /** items: [{path, read: async () => Uint8Array}] */
+  async function loadPack(items, origin) {
+    const paths = items.map(i => i.path);
+    const pjPath = paths.map(p => p.replace(/\\/g, '/')).filter(p => /(^|\/)pack\.json$/.test(p)).sort((x, y) => x.length - y.length)[0];
+    let pjText = null;
+    if (pjPath !== undefined) { const it = items.find(i => i.path.replace(/\\/g, '/') === pjPath); pjText = it.text !== undefined ? it.text : new TextDecoder().decode(await it.read()); }
+    const pack = L.packFromPaths(paths, pjText);
+    if (!pack.ids.wings.size && !pack.ids.auras.size && !pack.ids.motes.size && pjText === null) throw new Error('Aucun dossier wings/, auras/ ou motes/ ni pack.json trouvé dans « ' + origin + ' ».');
+    S.pack = pack; S.packOrigin = origin; S.packIcons = new Map();
+    for (const [key, p] of pack.icons) {
+      const it = items.find(i => i.path.replace(/\\/g, '/').replace(/^\/+/, '') === p);
+      if (!it || !it.read) continue;
+      const d = await decodeImage(await it.read());
+      if (d) S.packIcons.set(key, d.bmp);
+    }
+    filesSummary();
+    setText(S.text, { rebuildEditor: true });
+    const r = S.report;
+    const miss = r ? r.pack.filter(w => w.kind === 'missing').length : 0, un = r ? r.pack.filter(w => w.kind === 'unoffered').length : 0;
+    say('Pack « ' + origin + ' » chargé : ' + pack.ids.wings.size + ' ailes, ' + pack.ids.auras.size + ' auras, ' + pack.ids.motes.size + ' modèles d\'objets. ' + miss + ' entrée(s) sans modèle, ' + un + ' contenu(s) du pack non proposé(s).', miss ? 'warn' : 'ok');
+  }
+  async function loadFont(file) {
+    const name = file.name.toLowerCase();
+    let bytes = new Uint8Array(await file.arrayBuffer());
+    if (name.endsWith('.jar') || name.endsWith('.zip')) {
+      const idx = Zip.readZipIndex(bytes);
+      const e = idx.get('assets/minecraft/textures/font/ascii.png');
+      if (!e) throw new Error('Pas de assets/minecraft/textures/font/ascii.png dans « ' + file.name + ' ».');
+      bytes = await Zip.extractZipEntry(bytes, e);
+    }
+    const d = await decodeImage(bytes);
+    if (!d) throw new Error('ascii.png illisible.');
+    Font.setAscii({ width: d.image.width, height: d.image.height, data: d.image.data }, file.name);
+    filesSummary();
+    renderAll();
+    say('Police du client chargée (« ' + file.name + ' ») : titres, noms et infobulles au pixel près.', 'ok');
+  }
+
+  /* ---------- wiring ---------- */
+  function download(name, text) {
+    const blob = new Blob([text], { type: 'text/yaml;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  async function copy(text, label) {
+    try { await navigator.clipboard.writeText(text); say(label + ' copié.', 'ok'); }
+    catch (e) { say('Copie impossible ici : sélectionnez le texte à la main.', 'warn'); }
+  }
+  function wire() {
+    $('materialList').innerHTML = L.MATERIAL_NAMES.filter(n => n !== 'AIR').map(n => '<option value="' + n + '">').join('');
+    $('fileConfig').addEventListener('change', async ev => {
+      const f = ev.target.files[0]; if (!f) return;
+      loadText(await f.text(), f.name); ev.target.value = '';
+      filesSummary();
+    });
+    $('exampleBtn').addEventListener('click', () => { loadText(EXAMPLE, 'exemple'); filesSummary(); });
+    $('pasteBtn').addEventListener('click', () => { const t = $('pasteArea').value; if (!t.trim()) { say('Collez d\'abord le texte.', 'warn'); return; } loadText(t, 'texte collé'); filesSummary(); });
+    $('filePackDir').addEventListener('change', async ev => {
+      const files = [...ev.target.files]; if (!files.length) return;
+      const top = (files[0].webkitRelativePath || files[0].name).split('/')[0];
+      try { await loadPack(files.map(f => ({ path: f.webkitRelativePath || f.name, read: async () => new Uint8Array(await f.arrayBuffer()) })), top + '/'); }
+      catch (e) { say(e.message, 'error'); }
+      ev.target.value = '';
+    });
+    $('filePackZip').addEventListener('change', async ev => {
+      const f = ev.target.files[0]; if (!f) return;
+      try {
+        const bytes = new Uint8Array(await f.arrayBuffer());
+        const idx = Zip.readZipIndex(bytes);
+        // A directory entry ("wings/x/") counts as a folder even when empty: mapped to a placeholder file name.
+        await loadPack([...idx.values()].map(e => ({ path: e.name.endsWith('/') ? e.name + '.dir' : e.name, read: () => Zip.extractZipEntry(bytes, e) })), f.name);
+      } catch (e) { say(e.message, 'error'); }
+      ev.target.value = '';
+    });
+    $('demoPackBtn').addEventListener('click', () => loadPack(DEMO_PACK.map(p => (p === 'pack.json' ? { path: 'pack-demo/' + p, text: DEMO_PACK_JSON } : { path: 'pack-demo/' + p })), "pack d'exemple").catch(e => say(e.message, 'error')));
+    $('clearPackBtn').addEventListener('click', () => { S.pack = null; S.packIcons = new Map(); filesSummary(); setText(S.text, { rebuildEditor: true }); say('Pack retiré.', 'ok'); });
+    $('fileFont').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; try { await loadFont(f); } catch (e) { say(e.message, 'error'); } ev.target.value = ''; });
+    $('addId').addEventListener('input', () => renderCatalogue());
+    $('addId').addEventListener('keydown', ev => { if (ev.key === 'Enter') addEntry($('addId').value); });
+    $('addBtn').addEventListener('click', () => addEntry($('addId').value));
+    $('viewer').addEventListener('change', () => { S.viewer = $('viewer').value; $('viewerNodesBox').hidden = S.viewer !== 'custom'; renderPreview(); });
+    $('viewerNodes').addEventListener('input', () => renderPreview());
+    $('pgPrev').addEventListener('click', () => { S.page--; S.hover = -1; renderPreview(); });
+    $('pgNext').addEventListener('click', () => { S.page++; S.hover = -1; renderPreview(); });
+    const chest = $('chest');
+    chest.addEventListener('pointermove', ev => { const k = slotAt(ev); if (k !== S.hover) { S.hover = k; renderPreview(); } });
+    chest.addEventListener('pointerleave', () => { if (S.hover !== -1) { S.hover = -1; renderPreview(); } });
+    chest.addEventListener('click', ev => { const k = slotAt(ev); if (k >= 0) { S.hover = k; clickSlot(k); } });
+    $('undoBtn').addEventListener('click', () => { if (!S.history.length) return; const prev = S.history.pop(); S.editorKey = null; setText(prev, { rebuildEditor: true }); say('Modification annulée.', 'ok'); });
+    $('resetBtn').addEventListener('click', () => { if (S.text === S.original) return; S.history.push(S.text); S.editorKey = null; setText(S.original, { rebuildEditor: true }); say('Retour au fichier chargé.', 'ok'); });
+    $('downloadBtn').addEventListener('click', () => download(/\.ya?ml$/i.test(S.originName) ? S.originName : 'config.yml', S.text));
+    $('copyBtn').addEventListener('click', () => copy(S.text, 'config.yml'));
+    $('copySnippetBtn').addEventListener('click', () => copy($('snippetBox').textContent, "L'extrait"));
+    $('copyPermsBtn').addEventListener('click', () => copy(permsText(), 'La liste des permissions'));
+    let srcTimer = null;
+    $('source').addEventListener('input', () => {
+      clearTimeout(srcTimer);
+      srcTimer = setTimeout(() => { if ($('source').value !== S.text) { S.history.push(S.text); setText($('source').value, { fromSource: true }); } }, 250);
+    });
+    if (document.fonts && document.fonts.load) document.fonts.load('8px MinecraftPreview').then(() => renderAll()).catch(() => {});
+  }
+
+  buildSettings();
+  wire();
+  if (!window.jsyaml) {
+    say("js-yaml n'a pas pu être chargé (cdnjs injoignable ?) : l'outil ne peut pas lire le YAML.", 'error');
+  } else {
+    loadText(EXAMPLE, 'exemple');
+    filesSummary();
+    say('Exemple chargé. Chargez votre config.yml (bouton 1) pour le vérifier et le modifier.', 'ok');
+  }
+
+  window.CosmeticsApp = Object.freeze({
+    state: S,
+    loadText(text, name) { loadText(text, name || 'config.yml'); filesSummary(); },
+    loadPackPaths(paths, packJson) { return loadPack(paths.map(p => (p.endsWith('pack.json') && packJson != null ? { path: p, text: packJson } : { path: p })), 'test'); },
+    edit(fn) { return edit(t => fn(t, L), { rebuildEditor: true }); },
+    text() { return S.text; },
+    report() { return S.report; },
+    selectSlot(k) { S.slot = k; S.page = 0; S.editorKey = null; renderAll({ rebuildEditor: true }); },
+    select(slotKey, id) { S.slot = slotKey; selectEntry(slotKey, id); },
+    menu() { return S.menu; },
+    tooltip() { return S.tipItem ? L.tooltipLines(S.tipItem) : null; },
+    clickSlot(k) { clickSlot(k); },
+    setPage(p) { S.page = p; renderPreview(); }
+  });
+})();
+</script>
+</body>
+</html>
