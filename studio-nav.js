@@ -21,7 +21,6 @@
       { href: 'glyph-checker.html', name: "Vérificateur d'icônes", hint: 'Comme BeltariaContent les assemble' },
     ] },
     { title: 'Configuration BeltariaContent', tools: [
-      { href: 'lore-preview.html', name: "Éditeur d'items", hint: 'items.yml, infobulle 1.8.9' },
       { href: 'ores-editor.html', name: 'Minerais', hint: 'ores.yml : hôtes, butin, génération' },
     ] },
   ];

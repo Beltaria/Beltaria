@@ -46,13 +46,13 @@ test('the shared tools menu lists exactly the index cards, in the same order', a
 });
 
 test('tools menu: opens, marks the current tool, navigates, closes on Escape', async ({ page }) => {
-  await page.goto('/lore-preview.html');
+  await page.goto('/ores-editor.html');
   const toggle = page.locator('#stNavToggle');
   await expect(toggle).toBeVisible();
   await toggle.click();
   const menu = page.locator('#stNavMenu');
   await expect(menu).toBeVisible();
-  await expect(menu.locator('[aria-current="page"]')).toHaveAttribute('href', 'lore-preview.html');
+  await expect(menu.locator('[aria-current="page"]')).toHaveAttribute('href', 'ores-editor.html');
   await expect(menu.locator('[aria-current="page"]')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
