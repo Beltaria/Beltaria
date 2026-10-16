@@ -20,8 +20,10 @@
       { href: 'rank-generator.html', name: 'Générateur de grades', hint: 'Badges de grade et de niveau' },
       { href: 'glyph-checker.html', name: "Vérificateur d'icônes", hint: 'Comme BeltariaContent les assemble' },
     ] },
-    { title: 'Texte & items', tools: [
-      { href: 'lore-preview.html', name: 'Lore & tooltips', hint: 'Nom, lore, codes couleur' },
+    { title: 'Configuration BeltariaContent', tools: [
+      { href: 'lore-preview.html', name: "Éditeur d'items", hint: 'items.yml, infobulle 1.8.9' },
+      { href: 'cosmetics-config.html', name: 'Menus des cosmétiques', hint: 'config.yml : ailes, auras, traînées' },
+      { href: 'ores-editor.html', name: 'Minerais', hint: 'ores.yml : hôtes, butin, génération' },
     ] },
   ];
 
