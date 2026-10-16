@@ -4,136 +4,157 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extracteur de GIF & Générateur de SpriteSheet</title>
-    
-    <!-- Tailwind CSS pour un design moderne et responsive -->
+
+    <!-- Tailwind CSS (mise en page) + thème commun Beltaria Studio -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Configuration personnalisée pour Tailwind -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            bg: '#121212',
-                            panel: '#1E1E1E',
-                            border: '#2C2C2C',
-                            accent: '#4F46E5', // Indigo 600
-                            hover: '#6366F1'  // Indigo 500
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="studio.css">
+    <script src="studio-nav.js" defer></script>
 
     <style>
-        body {
-            background-color: theme('colors.dark.bg');
-            color: #E5E7EB;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        }
-
-        /* Damier pour visualiser la transparence des PNG */
-        .checkerboard {
-            background-color: #1E1E1E;
-            background-image: 
-                linear-gradient(45deg, #2C2C2C 25%, transparent 25%), 
-                linear-gradient(-45deg, #2C2C2C 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #2C2C2C 75%), 
-                linear-gradient(-45deg, transparent 75%, #2C2C2C 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            border-radius: 0.5rem;
-        }
-
-        /* Scrollbar stylisée */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: theme('colors.dark.panel'); 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4B5563; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6B7280; 
-        }
+        /* Zone de dépôt : fichier chargé / survol pendant un glisser-déposer */
+        #drop-zone.is-loaded { border-color: var(--st-accent-line); }
+        #drop-zone.is-dragover { border-color: var(--st-accent-hover); background-color: var(--st-accent-soft); }
+        #drop-zone:focus-within { border-color: var(--st-accent-hover); }
+        /* États vides : visibles tant que la section correspondante est masquée */
+        #settings-panel:not(.hidden) ~ #settings-empty,
+        #result-section:not(.hidden) ~ #result-empty { display: none; }
 
         /* Animation de chargement */
         .loader {
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top: 3px solid theme('colors.dark.accent');
+            border-top: 3px solid var(--st-accent-hover);
             width: 24px;
             height: 24px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* En-tête commun : titre sur une ligne (coupé proprement si l'écran est trop étroit) */
+        .st-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Téléphone et tablette étroite : en-tête non collant pour ne pas masquer les contrôles,
+           cibles tactiles >= 36 px (ajouts proposés pour studio.css) */
+        @media (max-width: 767px) {
+            .st-header { position: static; }
+        }
+        @media (max-width: 640px) {
+            main button, main select, .st-actions button, .st-actions label { min-height: 36px; }
+            main button.w-5, main button.w-6, main button.w-7, main button.w-8 { width: 36px; height: 36px; }
+        }
+        @media (max-width: 480px) {
+            .st-logo { display: none; }
+        }
     </style>
 </head>
 
-<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
-    <div class="w-full max-w-4xl bg-dark-panel border border-dark-border rounded-2xl shadow-2xl p-6 md:p-8 space-y-8">
-        
-        <!-- En-tête -->
-        <div class="text-center">
-            <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;margin-bottom:16px">← Beltaria Studio</a>
-            <h1 class="text-3xl font-bold text-white mb-2">Extracteur de GIF vers SpriteSheet</h1>
-            <p class="text-gray-400 text-sm">Découpez, redimensionnez (Pixel Art) et compilez les images d'un GIF de haut en bas.</p>
-        </div>
+<body class="min-h-screen flex flex-col">
 
-        <!-- Zone d'importation du fichier -->
-        <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-dark-hover transition-colors cursor-pointer relative bg-[#181818]">
-            <input type="file" id="file-input" accept=".gif" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-            <svg class="w-12 h-12 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            <p class="text-gray-300 font-medium">Glissez & déposez votre GIF ici</p>
-            <p class="text-gray-500 text-sm mt-1">ou cliquez pour parcourir</p>
-            <p id="file-name" class="text-dark-accent font-semibold mt-3 text-sm hidden"></p>
-        </div>
-
-        <!-- Indicateur de chargement & Erreur -->
-        <div id="loading-indicator" class="hidden flex items-center justify-center space-x-3 text-gray-300">
-            <div class="loader"></div>
-            <span>Analyse du GIF en cours...</span>
-        </div>
-        <div id="error-message" class="hidden bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm text-center"></div>
-
-        <div id="settings-panel" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-[#1a1a1a] p-5 rounded-xl border border-dark-border">
-            <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Nouvelle Largeur (px)</label>
-                <input type="number" id="width-input" min="1" class="w-full bg-dark-bg border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-dark-accent focus:ring-1 focus:ring-dark-accent transition-all">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Nouvelle Hauteur (px)</label>
-                <input type="number" id="height-input" min="1" class="w-full bg-dark-bg border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-dark-accent focus:ring-1 focus:ring-dark-accent transition-all">
-            </div>
-            <div>
-                <button id="convert-btn" class="w-full bg-dark-accent hover:bg-dark-hover text-white font-semibold py-2.5 px-4 rounded-lg shadow-lg transform hover:-translate-y-0.5 transition-all focus:outline-none">
-                    Générer le SpriteSheet
-                </button>
-            </div>
-        </div>
-
-        <div id="result-section" class="hidden flex-col items-center space-y-6">
-            <div class="w-full text-center">
-                <a id="download-btn" class="inline-flex items-center justify-center bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transform hover:-translate-y-0.5 transition-all text-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Télécharger l'image (.png)
-                </a>
-            </div>
-            
-            <div class="w-full bg-[#181818] border border-dark-border rounded-xl p-4">
-                <p class="text-xs text-gray-500 mb-3 text-center uppercase tracking-wider">Aperçu du SpriteSheet généré</p>
-                <div class="max-h-[600px] overflow-auto checkerboard border border-gray-700 flex justify-center p-4">
-                    <img id="preview-img" class="max-w-none shadow-2xl" alt="Aperçu du sprite">
+    <header class="st-header">
+        <div class="st-header-inner">
+            <div class="st-brand">
+                <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+                <div class="st-logo"><span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h14a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z"></path></svg>
+                </span></div>
+                <div class="min-w-0">
+                    <h1 class="st-title">GIF vers SpriteSheet</h1>
+                    <p class="st-subtitle">Découpe un GIF et empile ses frames de haut en bas (pixel art net)</p>
                 </div>
             </div>
+            <div class="st-actions">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Bande verticale PNG</span>
+            </div>
         </div>
-    </div>
+    </header>
+
+    <main class="st-main flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+        <!-- Colonne gauche : import puis réglages -->
+        <div class="lg:col-span-5 flex flex-col gap-4 min-w-0">
+
+            <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
+                <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                    <span class="st-step">1</span>
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Fichier GIF</h2>
+                        <p class="text-[11px] text-slate-400">Les frames sont recomposées comme dans le GIF animé</p>
+                    </div>
+                </div>
+
+                <!-- Zone d'importation du fichier -->
+                <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-purple-500/60 rounded-xl px-4 py-8 text-center transition-colors cursor-pointer relative st-checker">
+                    <input type="file" id="file-input" accept=".gif" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Choisir un fichier GIF" />
+                    <div class="relative pointer-events-none inline-flex flex-col items-center bg-slate-950/70 rounded-xl px-5 py-4">
+                        <svg class="w-10 h-10 text-purple-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <p class="text-slate-200 font-semibold text-sm">Glissez &amp; déposez votre GIF ici</p>
+                        <p class="text-slate-400 text-xs mt-1">ou touchez pour parcourir</p>
+                        <p id="file-name" class="text-purple-300 font-semibold mt-3 text-xs break-all hidden"></p>
+                    </div>
+                </div>
+
+                <!-- Indicateur de chargement & Erreur -->
+                <div id="loading-indicator" class="hidden flex items-center justify-center gap-3 text-sm text-slate-300">
+                    <div class="loader"></div>
+                    <span>Analyse du GIF en cours...</span>
+                </div>
+                <div id="error-message" role="alert" class="hidden st-note st-note-error text-center"></div>
+            </section>
+
+            <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
+                <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                    <span class="st-step">2</span>
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Taille d'une frame</h2>
+                        <p class="text-[11px] text-slate-400">Redimensionnement au plus proche voisin (aucun flou)</p>
+                    </div>
+                </div>
+
+                <div id="settings-panel" class="hidden grid grid-cols-2 gap-3 items-end bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+                    <p id="gif-info" class="col-span-2 text-[11px] text-slate-400 st-mono"></p>
+                    <label class="flex flex-col gap-1.5 min-w-0">
+                        <span class="text-xs font-medium text-slate-300">Largeur (px)</span>
+                        <input type="number" id="width-input" min="1" inputmode="numeric" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition">
+                    </label>
+                    <label class="flex flex-col gap-1.5 min-w-0">
+                        <span class="text-xs font-medium text-slate-300">Hauteur (px)</span>
+                        <input type="number" id="height-input" min="1" inputmode="numeric" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition">
+                    </label>
+                    <button id="convert-btn" type="button" class="col-span-2 w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow-lg shadow-purple-600/25 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400">
+                        Générer le SpriteSheet
+                    </button>
+                </div>
+                <p id="settings-empty" class="text-xs text-slate-500 bg-slate-950/60 border border-dashed border-slate-800 rounded-xl p-3 text-center">Importez un GIF (1) pour régler la taille des frames.</p>
+            </section>
+        </div>
+
+        <!-- Colonne droite : résultat & export -->
+        <section class="lg:col-span-7 min-w-0 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                <span class="st-step">3</span>
+                <div>
+                    <h2 class="font-bold text-sm text-white">SpriteSheet généré</h2>
+                    <p class="text-[11px] text-slate-400">Frames alignées de haut en bas, sans écart</p>
+                </div>
+            </div>
+
+            <div id="result-section" class="hidden flex-col gap-3.5">
+                <a id="download-btn" class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Télécharger l'image (.png)
+                </a>
+
+                <div class="max-h-[600px] overflow-auto st-checker rounded-xl border-2 border-slate-800 flex items-start p-4">
+                    <img id="preview-img" class="max-w-none mx-auto shadow-2xl st-pixelated" alt="Aperçu du sprite">
+                </div>
+            </div>
+            <div id="result-empty" class="st-checker rounded-xl border-2 border-slate-800 min-h-[240px] lg:min-h-[420px] flex items-center justify-center p-6">
+                <div class="text-center bg-slate-950/70 rounded-xl px-5 py-4">
+                    <svg class="w-12 h-12 text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <p class="text-slate-300 text-sm font-semibold">Aucun spritesheet pour l'instant</p>
+                    <p class="text-slate-500 text-xs mt-1">Importez un GIF puis cliquez sur « Générer le SpriteSheet ».</p>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script type="module">
         // Import de la librairie gifuct-js via ESM pour décoder le GIF nativement dans le navigateur
@@ -158,6 +179,16 @@
         const downloadBtn = document.getElementById('download-btn');
         const errorMessage = document.getElementById('error-message');
         const dropZone = document.getElementById('drop-zone');
+        const gifInfo = document.getElementById('gif-info');
+
+        // Résumé : nombre de frames et taille de la bande générée
+        function updateGifInfo() {
+            const w = parseInt(widthInput.value) > 0 ? parseInt(widthInput.value) : originalWidth;
+            const h = parseInt(heightInput.value) > 0 ? parseInt(heightInput.value) : originalHeight;
+            gifInfo.textContent = `${parsedFrames.length} frame(s) · ${originalWidth}×${originalHeight} px → sortie ${w}×${h * parsedFrames.length} px`;
+        }
+        widthInput.addEventListener('input', updateGifInfo);
+        heightInput.addEventListener('input', updateGifInfo);
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -172,7 +203,7 @@
             gifFileName = file.name.replace(/\.[^/.]+$/, "");
             fileNameDisplay.textContent = "Fichier sélectionné : " + file.name;
             fileNameDisplay.classList.remove('hidden');
-            dropZone.classList.add('border-dark-accent');
+            dropZone.classList.add('is-loaded');
 
             try {
                 // Lecture du fichier brut
@@ -193,6 +224,7 @@
                 widthInput.value = originalWidth;
                 heightInput.value = originalHeight;
 
+                updateGifInfo();
                 settingsPanel.classList.remove('hidden');
             } catch (err) {
                 console.error("Erreur lors de la lecture du GIF", err);
@@ -303,11 +335,11 @@
         }
 
         ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('border-dark-hover', 'bg-gray-800'), false);
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('is-dragover'), false);
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-dark-hover', 'bg-gray-800'), false);
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('is-dragover'), false);
         });
 
         // Le preventDefault ci-dessus annule le dépôt natif sur l'input : on transmet le fichier nous-mêmes
