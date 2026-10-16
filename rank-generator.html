@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Générateur de grades Beltaria (icônes du texte)</title>
 <!--
   Badge de grade pour les icônes du texte de BeltariaContent (pack/glyphs/<id>/texture.png).
@@ -19,74 +20,146 @@
   entière et un trou la sépare de la suivante. Et une largeur paire : le client tronque l'avance
   au pixel d'interface entier, et une pièce impaire perdrait sa dernière colonne.
 -->
+<link rel="stylesheet" href="studio.css">
+<script src="studio-nav.js" defer></script>
 <style>
-  :root { color-scheme: dark; }
-  body { font-family: system-ui, sans-serif; background: #1d1f23; color: #e6e6e6; margin: 0; }
-  main { max-width: 980px; margin: 0 auto; padding: 24px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  p.lead { margin: 0 0 20px; color: #a8adb5; }
-  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
-  fieldset { border: 1px solid #3a3e45; border-radius: 6px; padding: 12px 14px; margin: 0 0 14px; }
-  legend { color: #a8adb5; padding: 0 6px; }
-  label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
-  input[type=text] { width: 100%; box-sizing: border-box; padding: 8px; font-size: 16px;
-    background: #2a2d33; color: #fff; border: 1px solid #454a52; border-radius: 4px; }
-  select { background: #2a2d33; color: #fff; border: 1px solid #454a52; border-radius: 4px; padding: 4px; }
-  button { background: #3d6bd9; color: #fff; border: 0; border-radius: 4px; padding: 10px 16px;
-    font-size: 15px; cursor: pointer; }
-  button:hover { background: #4b78e6; }
+  /* Habillage Beltaria Studio (studio.css) ; la logique du générateur reste celle de BeltariaContent. */
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font-size: 14px; line-height: 1.5; }
+  .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  p.lead { margin: 0 0 14px; color: var(--st-muted); font-size: 13.5px; max-width: 96ch; }
+
+  /* Réglages à gauche, aperçu + téléchargement collants à droite ; une colonne sur téléphone
+     dans l'ordre icône -> aperçu -> réglages -> téléchargement. */
+  .grid { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .side { align-self: stretch; }
+  .side .card[data-order="2"] { position: sticky; top: 84px; }
+  .card .st-panel-head { justify-content: flex-start; }
+  .card .st-panel-head .grow { flex: 1; }
+  .sub { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--st-border); }
+
+  /* Lignes de réglage : libellé à gauche, contrôle à droite */
+  .card label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0; min-height: 36px; font-size: 13px; color: var(--st-text); }
+  .card label > span { display: inline-flex; align-items: center; gap: 8px; }
+  .card label.stack { flex-direction: column; align-items: stretch; gap: 6px; }
+  input[type=text] { width: 100%; min-height: 36px; padding: 6px 10px; font: 400 15px/1.4 var(--st-font);
+    background: var(--st-inset); color: var(--st-text); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); }
+  label input[type=text] { flex: 1 1 auto; min-width: 0; max-width: 220px; }
+  .card label.stack input[type=text] { max-width: none; }
+  select { min-height: 32px; padding: 4px 8px; font: 400 13px/1.3 var(--st-font); max-width: 60%;
+    background: var(--st-inset); color: var(--st-text); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); }
+  input[type=text]:focus, select:focus { outline: none; border-color: var(--st-accent-hover); }
+  input:focus-visible, select:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+  input[type=color] { flex: none; width: 44px; height: 30px; padding: 2px; cursor: pointer;
+    background: var(--st-inset); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: 0; border-radius: 4px; }
+  input[type=range] { flex: 1 1 auto; min-width: 0; max-width: 170px; }
+  input[type=checkbox] { width: 16px; height: 16px; margin: 0; }
+  output { flex: none; min-width: 3.2em; text-align: right; font: 600 12px/1 var(--st-mono); color: var(--st-accent-text); }
+  small { display: block; color: var(--st-faint); font-size: 12px; line-height: 1.45; margin: 2px 0 4px; }
+
+  /* Aperçu : damier gris neutre (badges clairs comme foncés restent lisibles), image au pixel près */
   .stage { background: #6b6f76 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='8' height='8' fill='%23777b82'/><rect x='8' y='8' width='8' height='8' fill='%23777b82'/></svg>");
-    border-radius: 6px; padding: 18px; margin-bottom: 12px; overflow-x: auto; }
+    border: 1px solid var(--st-border-strong); border-radius: 12px; padding: 18px; margin-bottom: 12px; overflow-x: auto; }
+  .stage-lbl { display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--st-faint); margin: 0 0 6px; }
   canvas { image-rendering: pixelated; display: block; }
-  .facts { font-size: 14px; line-height: 1.6; color: #c9ccd1; }
-  .facts b { color: #fff; }
-  .warn { color: #ffcf66; }
-  .bad { color: #ff7070; }
-  code { background: #2a2d33; padding: 1px 5px; border-radius: 3px; }
-  small { color: #8c919a; }
-  .grid > div { min-width: 0; }
-  @media (max-width: 720px) {
-    main { padding: 16px; }
-    .grid { grid-template-columns: 1fr; }
+  .preview-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 0 0 12px; }
+  .preview-opts label { margin: 0; }
+  .preview-opts select { max-width: none; }
+
+  /* Ce qu'il faut savoir : avertissements rendus en .st-note */
+  .facts { font-size: 13.5px; line-height: 1.6; color: var(--st-text); overflow-wrap: anywhere; }
+  .facts > div + div { margin-top: 6px; }
+  .facts b { color: var(--st-text-strong); }
+  .facts .warn, .facts .bad { display: block; padding: 8px 10px; border-radius: var(--st-radius-sm); border: 1px solid; font-size: 13px; }
+  .warn { color: var(--st-warn); background: var(--st-warn-soft); border-color: var(--st-warn-line); }
+  .bad { color: var(--st-error); background: var(--st-error-soft); border-color: var(--st-error-line); }
+  code { font-family: var(--st-mono); font-size: .88em; color: var(--st-accent-text); background: var(--st-inset); padding: 1px 5px; border-radius: 4px; }
+  .facts .warn code, .facts .bad code { color: inherit; background: rgba(0, 0, 0, .25); }
+
+  /* Téléchargement et étape suivante du parcours */
+  .dl-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dl-row .st-btn { min-height: 40px; padding: 8px 16px; font-size: 14px; }
+  .flow-card {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+    margin-top: 12px; padding: 12px 14px; border-radius: 12px; font-size: 13px;
+    background: linear-gradient(135deg, var(--st-accent-soft), rgba(232, 121, 249, 0.08));
+    border: 1px solid var(--st-accent-line);
+  }
+  .flow-card p { margin: 0; flex: 1 1 220px; }
+  .flow-kicker { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--st-accent-text); margin-bottom: 2px; }
+  .flow-btn { min-height: 36px; padding: 8px 14px; }
+  .flow-btn::after { content: '→'; font-size: 15px; }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .col { display: contents; }
+    .side .card[data-order="2"] { position: static; }
+    .card[data-order="1"] { order: 1; } .card[data-order="2"] { order: 2; } .card[data-order="3"] { order: 3; }
+    .card[data-order="4"] { order: 4; } .card[data-order="5"] { order: 5; } .card[data-order="6"] { order: 6; }
+  }
+  @media (max-width: 640px) {
+    .title-row .st-badge { display: none; }
+    .stage { padding: 12px; }
+    select { min-height: 36px; }
+    input[type=color] { height: 36px; }
+    .dl-row .st-btn, .flow-btn { flex: 1 1 100%; }
   }
 </style>
 </head>
 <body>
-<main>
-  <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;margin-bottom:12px">← Beltaria Studio</a>
-  <h1>Générateur de grades — icônes du texte</h1>
+<header class="st-header">
+  <div class="st-header-inner">
+    <div class="st-brand">
+      <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+      <div class="st-logo"><span><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2"/><path stroke-linecap="round" d="M7 12h3M13 12h4"/></svg></span></div>
+      <div>
+        <div class="title-row">
+          <h1 class="st-title">Générateur de grades</h1>
+          <span class="st-badge st-badge-accent" title="Parcours icônes du texte : 1. dessiner, 2. vérifier">Étape 1 / 2</span>
+        </div>
+        <p class="st-subtitle">Icônes du texte BeltariaContent : badges de grade et de niveau, 16 px de haut</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="st-main">
   <p class="lead">Badge en 16 px de haut sur toute la hauteur, pour <code>pack/glyphs/&lt;id&gt;/texture.png</code>.
     Aperçu dessiné comme le client 1.8 : hauteur d'une lettre, ombre du texte comprise.</p>
 
   <div class="grid">
-    <div>
-      <fieldset>
-        <legend>Icône</legend>
+    <div class="col">
+      <section class="st-panel card" data-order="1" aria-labelledby="h-icon">
+        <div class="st-panel-head"><span class="st-step">1</span><h2 class="st-panel-title" id="h-icon">Icône</h2></div>
         <label>Type
           <select id="mode"><option value="rank" selected>Grade (texte en entier)</option><option value="level">Niveau (12 pièces)</option></select>
         </label>
-      </fieldset>
 
-      <fieldset id="textBox">
-        <legend>Texte</legend>
-        <input id="text" type="text" value="Légendaire" maxlength="40" spellcheck="false">
-        <small>Majuscules, chiffres et <code>- + ! ? . : [ ] ' *</code>. Accents retirés.</small>
-        <label>Identifiant <input id="rankId" type="text" value="" maxlength="40" spellcheck="false"
-          placeholder="d'après le texte"></label>
-        <small>Le dossier <code>pack/glyphs/&lt;id&gt;</code> : minuscules, chiffres, <code>_ . -</code>,
-          sans <code>raw_</code> au début. Vide : tiré du texte.</small>
-      </fieldset>
+        <div id="textBox" class="sub">
+          <label class="stack">Texte
+            <input id="text" type="text" value="Légendaire" maxlength="40" spellcheck="false">
+          </label>
+          <small>Majuscules, chiffres et <code>- + ! ? . : [ ] ' *</code>. Accents retirés.</small>
+          <label>Identifiant <input id="rankId" type="text" value="" maxlength="40" spellcheck="false"
+            placeholder="d'après le texte"></label>
+          <small>Le dossier <code>pack/glyphs/&lt;id&gt;</code> : minuscules, chiffres, <code>_ . -</code>,
+            sans <code>raw_</code> au début. Vide : tiré du texte.</small>
+        </div>
 
-      <fieldset id="levelBox" hidden>
-        <legend>Niveau</legend>
-        <label>Style <input id="style" type="text" value="niveau" maxlength="24" spellcheck="false"></label>
-        <label>Niveau d'aperçu <input id="sample" type="text" value="475" maxlength="9" spellcheck="false"></label>
-        <small>Le style nomme les pièces : <code>&lt;style&gt;_left</code>, <code>_0</code> à <code>_9</code>,
-          <code>_right</code>. Un style par couleur.</small>
-      </fieldset>
+        <div id="levelBox" class="sub" hidden>
+          <label>Style <input id="style" type="text" value="niveau" maxlength="24" spellcheck="false"></label>
+          <label>Niveau d'aperçu <input id="sample" type="text" value="475" maxlength="9" spellcheck="false"></label>
+          <small>Le style nomme les pièces : <code>&lt;style&gt;_left</code>, <code>_0</code> à <code>_9</code>,
+            <code>_right</code>. Un style par couleur.</small>
+        </div>
+      </section>
 
-      <fieldset>
-        <legend>Couleurs</legend>
+      <section class="st-panel card" data-order="3" aria-labelledby="h-colors">
+        <div class="st-panel-head"><span class="st-step">2</span><h2 class="st-panel-title" id="h-colors">Couleurs</h2></div>
         <label>Préréglage
           <select id="preset"></select>
         </label>
@@ -105,10 +178,10 @@
         <label>Seconde couleur du fond <input id="bg2" type="color" value="#140707"></label>
         <label><span><input id="bevelOn" type="checkbox"> Relief (biseau)</span>
           <input id="bevel" type="range" min="1" max="5" value="2"></label>
-      </fieldset>
+      </section>
 
-      <fieldset>
-        <legend>Lettres</legend>
+      <section class="st-panel card" data-order="4" aria-labelledby="h-letters">
+        <div class="st-panel-head"><span class="st-step">3</span><h2 class="st-panel-title" id="h-letters">Lettres</h2></div>
         <label>Hauteur des lettres <input id="rows" type="range" min="5" max="14" value="9"><output id="rowsOut"></output></label>
         <small>9 lignes : le dessin d'origine. En dessous de 7, certains signes et chiffres s'abîment.</small>
         <label>Largeur
@@ -125,10 +198,10 @@
         <label>Décalage de l'ombre
           <select id="shadowDir"><option value="1,1" selected>Bas-droite</option><option value="0,1">Bas</option><option value="1,0">Droite</option></select>
         </label>
-      </fieldset>
+      </section>
 
-      <fieldset>
-        <legend>Bordure et forme</legend>
+      <section class="st-panel card" data-order="5" aria-labelledby="h-border">
+        <div class="st-panel-head"><span class="st-step">4</span><h2 class="st-panel-title" id="h-border">Bordure et forme</h2></div>
         <label>Épaisseur de bordure <input id="borderWidth" type="range" min="0" max="3" value="1"><output id="borderWidthOut"></output></label>
         <label>Couleur de bordure <input id="border" type="color" value="#952525"></label>
         <label><span><input id="innerOn" type="checkbox"> Liseré intérieur</span>
@@ -137,25 +210,37 @@
           <select id="corners"><option value="0" selected>Carrés</option><option value="1">Arrondis</option><option value="2">Très arrondis</option></select>
         </label>
         <label>Marge gauche / droite <input id="padX" type="range" min="0" max="8" value="2"><output id="padXOut"></output></label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Aperçu</legend>
-        <label>Échelle d'interface
-          <select id="gui"><option>2</option><option selected>3</option><option>4</option></select>
-        </label>
-        <label><span><input id="cuts" type="checkbox"> Montrer les coupures en cases</span></label>
-      </fieldset>
-
-      <button id="download">Télécharger texture.png</button>
-      <button id="downloadLevel" hidden>Télécharger les 12 pièces (.zip)</button>
-      <p><small><a href="glyph-checker.html" style="color:#8fb3ff">Vérifier l'icône → glyph-checker.html</a></small></p>
+      </section>
     </div>
 
-    <div>
-      <div class="stage"><canvas id="game"></canvas></div>
-      <div class="stage"><canvas id="zoom"></canvas></div>
-      <div class="facts" id="facts"></div>
+    <div class="col side">
+      <section class="st-panel card" data-order="6" aria-labelledby="h-download">
+        <div class="st-panel-head"><span class="st-step">5</span><h2 class="st-panel-title" id="h-download">Télécharger</h2></div>
+        <div class="dl-row">
+          <button id="download" type="button" class="st-btn st-btn-primary">Télécharger texture.png</button>
+          <button id="downloadLevel" type="button" class="st-btn st-btn-primary" hidden>Télécharger les 12 pièces (.zip)</button>
+        </div>
+        <div class="flow-card">
+          <p><span class="flow-kicker">Étape suivante</span>Déposez l'image (ou le .zip) dans le vérificateur : caractères, rendu en jeu, texte à coller.</p>
+          <a class="st-btn st-btn-primary flow-btn" href="glyph-checker.html">Vérifier l'icône</a>
+        </div>
+      </section>
+
+      <section class="st-panel card" data-order="2" aria-labelledby="h-preview">
+        <div class="st-panel-head"><h2 class="st-panel-title grow" id="h-preview">Aperçu en jeu</h2><span class="st-badge st-badge-accent">Client 1.8</span></div>
+        <div class="preview-opts">
+          <label>Échelle d'interface
+            <select id="gui"><option>2</option><option selected>3</option><option>4</option></select>
+          </label>
+          <label><span><input id="cuts" type="checkbox"> Montrer les coupures en cases</span></label>
+        </div>
+        <span class="stage-lbl">Dans le texte</span>
+        <div class="stage"><canvas id="game"></canvas></div>
+        <span class="stage-lbl">Image agrandie (×8)</span>
+        <div class="stage"><canvas id="zoom"></canvas></div>
+        <div class="facts" id="facts"></div>
+      </section>
+
     </div>
   </div>
 </main>

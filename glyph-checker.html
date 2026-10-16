@@ -7,173 +7,224 @@
 <meta name="description" content="Vérifie les icônes du texte de BeltariaContent (glyphs/<id>/texture.png) : validation, caractères prédits, largeurs et rendu du client 1.8.9, placeholders et séquences à coller.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%231a1426'/%3E%3Cpath fill='%23c084fc' d='M1 1h6v1H1zM1 2h1v4H1zM6 2h1v4H6zM1 6h6v1H1zM3 3h2v2H3z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="studio.css">
+<script src="studio-nav.js" defer></script>
 <style>
   @font-face {
     font-family: 'MinecraftPreview';
     src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft@1.0.0/files/minecraft.woff2') format('woff2');
     font-display: swap;
   }
-  :root {
-    --bg: #0d0b14;
-    --surface: #16121f;
-    --surface-2: #1d1829;
-    --border: #2a2338;
-    --border-hover: #6d4fa3;
-    --text: #ece8f4;
-    --muted: #9a92ad;
-    --accent: #c084fc;
-    --accent-2: #e879f9;
-    --tag: #241d33;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --err: #f87171;
-  }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    min-height: 100vh;
+  [hidden] { display: none !important; }
+  body { font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  /* En-tête : titre + étape du parcours grade -> icône */
+  .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+  /* Introduction */
+  .lead { color: var(--st-muted); margin: 0 0 12px; max-width: 96ch; font-size: 13.5px; }
+  .callouts { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; margin: 0 0 14px; }
+  .callout { padding: 12px 14px; border-radius: 12px; background: var(--st-surface); border: 1px solid var(--st-border-strong); font-size: 13px; overflow-wrap: anywhere; }
+  .callout b { color: var(--st-text-strong); }
+
+  /* Carte « parcours » : l'étape voisine du générateur de grades, en action principale */
+  .flow-card {
+    display: flex; flex-direction: column; gap: 10px; justify-content: space-between;
+    padding: 12px 14px; border-radius: 12px; font-size: 13px;
+    background: linear-gradient(135deg, var(--st-accent-soft), rgba(232, 121, 249, 0.08));
+    border: 1px solid var(--st-accent-line);
   }
-  .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }
-  header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 6px; }
-  h1 {
-    margin: 0; font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -0.02em;
-    background: linear-gradient(90deg, #fff, #e9d5ff 55%, var(--accent-2));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .lead { color: var(--muted); margin: 0 0 12px; max-width: 86ch; font-size: 14px; }
-  .callouts { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; margin: 0 0 14px; }
-  @media (max-width: 900px) { .callouts { grid-template-columns: minmax(0, 1fr); } }
-  .callout { padding: 10px 12px; border-radius: 10px; background: #1a1426; border: 1px solid #3b2a5c; font-size: 13.5px; overflow-wrap: anywhere; }
-  .callout.alt { background: #141a26; border-color: #2a3d5c; }
-  .callout a { color: #c4b5fd; font-weight: 700; }
+  .flow-card p { margin: 0; }
+  .flow-kicker { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--st-accent-text); }
+  .flow-btn { align-self: flex-start; min-height: 36px; padding: 8px 14px; }
+  .flow-btn::before { content: '✎'; font-size: 14px; }
+
+  /* Grille : deux colonnes ; une seule sur téléphone, ordre fichiers -> icônes -> aperçu -> utiliser -> rapport -> export */
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   @media (max-width: 900px) {
+    .callouts { grid-template-columns: minmax(0, 1fr); }
     .layout { grid-template-columns: minmax(0, 1fr); }
     .col { display: contents; }
     .card[data-order="1"] { order: 1; } .card[data-order="2"] { order: 2; } .card[data-order="3"] { order: 3; }
     .card[data-order="4"] { order: 4; } .card[data-order="5"] { order: 5; } .card[data-order="6"] { order: 6; }
   }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
-  .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .card h2 .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--tag); color: var(--accent); font-size: 12px; flex: none; }
+  .card .st-panel-head { justify-content: flex-start; }
+  .card h2 { margin: 0; }
+  .card h3 { font-size: 13px; font-weight: 700; color: var(--st-text-strong); margin: 16px 0 4px; }
+  .group-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--st-faint); margin: 12px 0 6px; }
+  .group-label:first-of-type { margin-top: 0; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .row + .row { margin-top: 8px; }
-  .muted { color: var(--muted); font-size: 13px; }
+  .muted { color: var(--st-muted); font-size: 13px; }
   .small { font-size: 12px; }
-  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--st-muted); min-width: 0; }
   input[type="text"], input[type="number"], select {
-    background: #100d18; border: 1px solid var(--border); border-radius: 8px; color: var(--text);
-    padding: 7px 9px; font: inherit; font-size: 14px; min-width: 0; max-width: 100%;
+    background: var(--st-inset); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); color: var(--st-text);
+    padding: 6px 10px; font: 400 14px/1.4 var(--st-font); min-height: 36px; min-width: 0; max-width: 100%;
   }
-  input:focus-visible, select:focus-visible, button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus { outline: none; border-color: var(--st-accent-hover); }
+  input:focus-visible, select:focus-visible, button:focus-visible, .btn:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+
+  /* Boutons créés par le script (.btn / .btn.small) : même rendu que .st-btn */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    background: var(--tag); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
-    padding: 7px 12px; font: 600 13px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer;
-    transition: border-color .15s, background-color .15s;
+    min-height: 32px; padding: 6px 12px; border-radius: var(--st-radius-sm);
+    background: var(--st-surface-2); border: 1px solid var(--st-border-strong); color: var(--st-text);
+    font: 500 13px/1.2 var(--st-font); cursor: pointer;
+    transition: background-color .15s, border-color .15s;
   }
-  .btn:hover { border-color: var(--border-hover); background: var(--surface-2); }
-  .btn.primary { background: #5b21b6; border-color: #7c3aed; }
-  .btn.primary:hover { background: #6d28d9; }
-  .btn.small { padding: 4px 8px; font-size: 12px; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn:hover { background: var(--st-surface-3); }
+  .btn.small { min-height: 28px; padding: 4px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
   .file-btn { position: relative; overflow: hidden; }
   .file-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-  .status { min-height: 22px; margin: 0 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; overflow-wrap: anywhere; }
-  .status.ok { border-color: #166534; color: var(--ok); }
-  .status.warn { border-color: #854d0e; color: var(--warn); }
-  .status.error { border-color: #991b1b; color: var(--err); }
+  .file-btn:focus-within { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+  .file-btn::before { content: '＋'; font-size: 12px; opacity: .8; }
+  .drop-hint {
+    margin: 12px 0 0; padding: 10px 12px; border: 1px dashed var(--st-border-strong); border-radius: var(--st-radius-sm);
+    color: var(--st-muted); font-size: 12.5px; text-align: center;
+  }
+
+  /* Bandeau d'état (rendu .st-note) */
+  .status {
+    min-height: 22px; margin: 0 0 14px; padding: 10px 12px; border-radius: var(--st-radius-sm);
+    background: var(--st-surface-2); border: 1px solid var(--st-border-strong); font-size: 13.5px; overflow-wrap: anywhere;
+  }
+  .status.ok { background: var(--st-ok-soft); border-color: var(--st-ok-line); color: var(--st-ok); }
+  .status.warn { background: var(--st-warn-soft); border-color: var(--st-warn-line); color: var(--st-warn); }
+  .status.error { background: var(--st-error-soft); border-color: var(--st-error-line); color: var(--st-error); }
+
   .notes { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
-  .notes li { font-size: 13px; padding: 6px 10px; border-radius: 8px; background: #1a1524; border-left: 3px solid var(--border-hover); overflow-wrap: anywhere; }
-  .notes li.warn { border-left-color: var(--warn); }
-  .notes li.error { border-left-color: var(--err); }
-  .notes li.ok { border-left-color: var(--ok); }
-  .notes li .bc { display: block; font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #cbbfe0; margin-top: 2px; }
+  .notes li { font-size: 13px; padding: 7px 10px; border-radius: var(--st-radius-sm); background: var(--st-inset); border: 1px solid var(--st-border); border-left: 3px solid var(--st-accent-line); overflow-wrap: anywhere; }
+  .notes li.warn { border-left-color: var(--st-warn); }
+  .notes li.error { border-left-color: var(--st-error); }
+  .notes li.ok { border-left-color: var(--st-ok); }
+  .notes li .bc { display: block; font-family: var(--st-mono); font-size: 12px; color: var(--st-muted); margin-top: 2px; }
   canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
-  .files-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+  .files-list { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
   .files-list li { overflow-wrap: anywhere; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
-  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.error { background: var(--err); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--st-faint); }
+  .dot.ok { background: var(--st-ok); } .dot.warn { background: var(--st-warn); } .dot.error { background: var(--st-error); }
+
+  /* Liste des icônes : défile dans sa carte sur grand écran pour garder l'aperçu à portée */
   .icons { display: flex; flex-direction: column; gap: 10px; }
-  .icon { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #120f1a; min-width: 0; }
-  .icon.bad { border-color: #7f1d1d; }
-  .icon.sel { border-color: var(--accent); }
+  @media (min-width: 901px) { .icons { max-height: min(1100px, 80vh); overflow-y: auto; padding-right: 4px; } }
+  .icon { border: 1px solid var(--st-border-strong); border-radius: 12px; padding: 10px; background: var(--st-inset); min-width: 0; transition: border-color .15s; }
+  .icon.bad { border-color: var(--st-error-line); }
+  .icon.sel { border-color: var(--st-accent-hover); box-shadow: 0 0 0 3px var(--st-accent-soft); }
   .icon-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .thumb { flex: none; max-width: 100%; height: auto; border-radius: 4px; background:
-    repeating-conic-gradient(#2a2338 0% 25%, #1a1524 0% 50%) 0 0 / 8px 8px; cursor: pointer; }
+    repeating-conic-gradient(var(--st-surface-3) 0% 25%, var(--st-surface-2) 0% 50%) 0 0 / 8px 8px; cursor: pointer; }
   .icon-id { display: flex; align-items: center; gap: 6px; flex: 1 1 180px; min-width: 0; }
-  .icon-id input { width: 100%; font-family: ui-monospace, Consolas, monospace; }
+  .icon-id input { width: 100%; font-family: var(--st-mono); font-size: 13px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--tag); color: #cbbfe0; font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
-  .chip.ok { background: #12301f; color: var(--ok); }
-  .chip.error { background: #3a1414; color: var(--err); }
-  .chip.warn { background: #3a2a0c; color: var(--warn); }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--st-surface-2); border: 1px solid var(--st-border-strong); color: var(--st-text); font-family: var(--st-mono); overflow-wrap: anywhere; }
+  .chip.ok { background: var(--st-ok-soft); border-color: var(--st-ok-line); color: var(--st-ok); }
+  .chip.error { background: var(--st-error-soft); border-color: var(--st-error-line); color: var(--st-error); }
+  .chip.warn { background: var(--st-warn-soft); border-color: var(--st-warn-line); color: var(--st-warn); }
   .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; margin-top: 8px; }
-  .kv dt { color: var(--muted); }
-  .kv dd { margin: 0; font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+  .kv dt { color: var(--st-muted); }
+  .kv dd { margin: 0; font-family: var(--st-mono); overflow-wrap: anywhere; }
+
+  /* Scène de jeu : ciel et herbe du client, couleurs du jeu */
   .stage {
     background: linear-gradient(#5a86c5, #87b2e6 55%, #5f9a3b 55%, #4c7d2e);
-    border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; overflow-x: auto; border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; overflow-x: auto; border: 1px solid var(--st-border-strong);
   }
   .stage canvas { max-width: none; }
   .stage .lbl { font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; }
   .stage .lbl:first-child { margin-top: 0; }
   .stage .info { font-size: 12px; color: #fff; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere; }
   .stage .info.over { color: #fecaca; font-weight: 700; }
-  pre.snippet { margin: 8px 0 0; padding: 10px; background: #0b0911; border: 1px solid var(--border); border-radius: 8px; font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; max-width: 100%; white-space: pre; color: #e9d5ff; }
+
+  pre.snippet { margin: 8px 0 0; padding: 10px 12px; background: var(--st-inset); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); font: 12.5px/1.55 var(--st-mono); overflow-x: auto; max-width: 100%; white-space: pre; color: var(--st-accent-text); }
   table.forms { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-  table.forms th, table.forms td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
-  table.forms th { color: var(--muted); font-weight: 600; }
+  table.forms th, table.forms td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--st-border); vertical-align: top; overflow-wrap: anywhere; }
+  table.forms th { color: var(--st-muted); font-weight: 600; font-size: 12px; }
   table.forms td.c { width: 5.5em; }
-  table.forms td.a { width: 4.6em; }
+  table.forms td.a { width: 5em; }
   @media (max-width: 520px) { table.forms td.c { width: 4.4em; } }
-  code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: .92em; color: #e9d5ff; overflow-wrap: anywhere; }
-  details { margin-top: 10px; font-size: 13px; color: var(--muted); }
-  details summary { cursor: pointer; color: var(--text); }
+  code, .mono { font-family: var(--st-mono); font-size: .9em; color: var(--st-accent-text); overflow-wrap: anywhere; }
+  details { margin-top: 12px; font-size: 13px; color: var(--st-muted); }
+  details summary { cursor: pointer; color: var(--st-text); font-weight: 600; padding: 4px 0; }
+  details summary:hover { color: var(--st-accent-text); }
   .pages { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
   .pages figure { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-  .pages canvas { width: 160px; height: 160px; background: repeating-conic-gradient(#2a2338 0% 25%, #1a1524 0% 50%) 0 0 / 10px 10px; border: 1px solid var(--border); border-radius: 6px; }
+  .pages canvas { width: 160px; height: 160px; background: repeating-conic-gradient(var(--st-surface-3) 0% 25%, var(--st-surface-2) 0% 50%) 0 0 / 10px 10px; border: 1px solid var(--st-border-strong); border-radius: 6px; }
   .pages figcaption { font-size: 12px; overflow-wrap: anywhere; max-width: 160px; }
-  .empty { color: var(--muted); font-size: 13px; padding: 10px; border: 1px dashed var(--border); border-radius: 8px; }
-  body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
+  .empty { margin: 0; color: var(--st-muted); font-size: 13px; padding: 14px 12px; border: 1px dashed var(--st-border-strong); border-radius: var(--st-radius-sm); text-align: center; }
+  .check-label { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
+
+  /* Glisser-déposer : contour et invite plein écran */
+  body.dragging .wrap { outline: 2px dashed var(--st-accent-hover); outline-offset: -8px; border-radius: var(--st-radius); }
+  body.dragging::after {
+    content: 'Déposez vos PNG, dossiers ou zips'; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 40;
+    padding: 10px 16px; border-radius: 999px; background: var(--st-accent); color: #fff; font-weight: 600; font-size: 14px;
+    box-shadow: var(--st-shadow); pointer-events: none;
+  }
+
+  @media (max-width: 640px) {
+    .title-row .st-badge { display: none; }
+    .btn.small { min-height: 36px; }
+    .flow-btn { align-self: stretch; }
+    .lead { font-size: 13px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn, .icon { transition: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap">← Beltaria Studio</a>
-    <h1>Vérificateur d'icônes</h1>
-  </header>
+<header class="st-header">
+  <div class="st-header-inner">
+    <div class="st-brand">
+      <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+      <div class="st-logo"><span><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20l6-16h2l6 16M7 14h8"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l2 2 4-4"/></svg></span></div>
+      <div>
+        <div class="title-row">
+          <h1 class="st-title">Vérificateur d'icônes</h1>
+          <span class="st-badge st-badge-accent" title="Parcours icônes du texte : 1. dessiner, 2. vérifier">Étape 2 / 2</span>
+        </div>
+        <p class="st-subtitle">Valide et prévisualise les icônes du texte comme BeltariaContent les assemble</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="st-main wrap">
   <p class="lead">Déposez vos icônes du texte (<code>glyphs/&lt;id&gt;/texture.png</code>) : l'outil les valide et prédit leurs caractères exactement comme BeltariaContent les assemble, montre le rendu du client 1.8.9 (chat, tab, nametag, scoreboard, lore) et donne le texte à coller dans vos configurations. Tout reste dans votre navigateur.</p>
   <div class="callouts">
     <div class="callout" id="bcBuilds"><b>C'est BeltariaContent qui construit la police</b> : <code>/content pack</code> génère les pages et la table des largeurs, <code>/content glyphs</code> donne placeholders et séquences. Cet outil vérifie et prévisualise seulement : il ne produit jamais <code>glyph_sizes.bin</code> ni <code>unicode_page_*.png</code> — un tel fichier déposé sous <code>assets/</code> ferait échouer l'assemblage.</div>
-    <div class="callout alt"><a href="rank-generator.html">Dessiner un grade</a> ou un badge de niveau avec le générateur, puis <b>vérifier ici</b> : déposez son <code>texture.png</code> ou le <code>.zip</code> des 12 pièces.</div>
+    <div class="flow-card">
+      <span class="flow-kicker">Parcours icônes · étape 2 sur 2</span>
+      <p>Pas encore d'icône ? Dessinez un grade ou un badge de niveau avec le générateur, puis <b>vérifiez-le ici</b> : déposez son <code>texture.png</code> ou le <code>.zip</code> des 12 pièces.</p>
+      <a class="st-btn st-btn-primary flow-btn" href="rank-generator.html">Dessiner un grade</a>
+    </div>
   </div>
 
   <div id="status" class="status" role="status" aria-live="polite">Prêt. Déposez des PNG, un dossier <code>glyphs/</code> ou un zip — et le <code>chars.json</code> du dépôt pour une prédiction exacte.</div>
 
   <div class="layout">
     <div class="col">
-      <section class="card" data-order="1" aria-labelledby="h-files">
-        <h2 id="h-files"><span class="n">1</span>Fichiers</h2>
+      <section class="st-panel card" data-order="1" aria-labelledby="h-files">
+        <div class="st-panel-head"><span class="st-step">1</span><h2 id="h-files" class="st-panel-title">Fichiers</h2></div>
+        <span class="group-label">Icônes</span>
         <div class="row">
-          <span class="btn file-btn primary">Images PNG<input id="filePngs" type="file" accept="image/png,.png" multiple aria-label="Charger des images d'icône PNG"></span>
-          <span class="btn file-btn">Dossier glyphs/<input id="fileFolder" type="file" webkitdirectory multiple aria-label="Charger un dossier glyphs ou pack-src"></span>
-          <span class="btn file-btn">Archive .zip<input id="fileZip" type="file" accept=".zip,application/zip" multiple aria-label="Charger un zip : pack-src, dossier glyphs ou pièces de niveau"></span>
+          <span class="st-btn st-btn-primary file-btn">Images PNG<input id="filePngs" type="file" accept="image/png,.png" multiple aria-label="Charger des images d'icône PNG"></span>
+          <span class="st-btn file-btn">Dossier glyphs/<input id="fileFolder" type="file" webkitdirectory multiple aria-label="Charger un dossier glyphs ou pack-src"></span>
+          <span class="st-btn file-btn">Archive .zip<input id="fileZip" type="file" accept=".zip,application/zip" multiple aria-label="Charger un zip : pack-src, dossier glyphs ou pièces de niveau"></span>
         </div>
+        <span class="group-label">Fichiers du dépôt (facultatifs, pour un résultat exact)</span>
         <div class="row">
-          <span class="btn file-btn">chars.json<input id="fileChars" type="file" accept=".json,application/json" aria-label="Charger glyphs/chars.json"></span>
-          <span class="btn file-btn">pack.json<input id="filePackJson" type="file" accept=".json,application/json" aria-label="Charger pack.json"></span>
-          <span class="btn file-btn">Client 1.8.9 .jar / ascii.png<input id="fileFont" type="file" accept=".jar,.png,application/java-archive,image/png" aria-label="Charger le client 1.8.9 ou ascii.png pour un texte exact"></span>
+          <span class="st-btn file-btn">chars.json<input id="fileChars" type="file" accept=".json,application/json" aria-label="Charger glyphs/chars.json"></span>
+          <span class="st-btn file-btn">pack.json<input id="filePackJson" type="file" accept=".json,application/json" aria-label="Charger pack.json"></span>
+          <span class="st-btn file-btn">Client 1.8.9 .jar / ascii.png<input id="fileFont" type="file" accept=".jar,.png,application/java-archive,image/png" aria-label="Charger le client 1.8.9 ou ascii.png pour un texte exact"></span>
         </div>
-        <div class="row">
-          <button id="demoBtn" type="button" class="btn small">Charger un exemple</button>
-          <button id="clearBtn" type="button" class="btn small">Tout retirer</button>
+        <div class="row" style="margin-top:12px">
+          <button id="demoBtn" type="button" class="st-btn st-btn-soft">Charger un exemple</button>
+          <button id="clearBtn" type="button" class="st-btn">Tout retirer</button>
         </div>
+        <p class="drop-hint">Ou glissez-déposez fichiers, dossiers et zips n'importe où sur la page.</p>
         <ul id="filesList" class="files-list"></ul>
         <details>
           <summary>Ce que l'outil lit</summary>
@@ -182,16 +233,16 @@
         </details>
       </section>
 
-      <section class="card" data-order="2" aria-labelledby="h-icons">
-        <h2 id="h-icons"><span class="n">2</span>Icônes</h2>
-        <div id="iconList" class="icons"><p class="empty">Aucune icône chargée.</p></div>
+      <section class="st-panel card" data-order="2" aria-labelledby="h-icons">
+        <div class="st-panel-head"><span class="st-step">2</span><h2 id="h-icons" class="st-panel-title">Icônes</h2></div>
+        <div id="iconList" class="icons"><p class="empty">Aucune icône chargée. Déposez des PNG ou cliquez sur « Charger un exemple ».</p></div>
       </section>
 
-      <section class="card" data-order="5" aria-labelledby="h-report">
-        <h2 id="h-report"><span class="n">5</span>Assemblage prévu</h2>
+      <section class="st-panel card" data-order="5" aria-labelledby="h-report">
+        <div class="st-panel-head"><span class="st-step">5</span><h2 id="h-report" class="st-panel-title">Assemblage prévu</h2></div>
         <p class="muted" style="margin:0">Ce que <code>/content pack</code> dirait et écrirait, calculé avec la logique de BeltariaContent (GlyphChars, GlyphAtlas).</p>
         <ul id="reportNotes" class="notes"></ul>
-        <h3 style="font-size:14px;margin:14px 0 4px">chars.json que BeltariaContent écrirait</h3>
+        <h3>chars.json que BeltariaContent écrirait</h3>
         <p id="charsState" class="muted small" style="margin:0"></p>
         <pre id="charsOut" class="snippet" data-testid="chars-out"></pre>
         <details>
@@ -200,11 +251,11 @@
         </details>
       </section>
 
-      <section class="card" data-order="6" aria-labelledby="h-export">
-        <h2 id="h-export"><span class="n">6</span>Télécharger</h2>
+      <section class="st-panel card" data-order="6" aria-labelledby="h-export">
+        <div class="st-panel-head"><span class="st-step">6</span><h2 id="h-export" class="st-panel-title">Télécharger</h2></div>
         <div class="row">
-          <button id="exportZip" type="button" class="btn primary">glyphs.zip (images d'origine)</button>
-          <label class="row muted small" style="gap:6px"><input id="withChars" type="checkbox" checked> avec le chars.json prédit</label>
+          <button id="exportZip" type="button" class="st-btn st-btn-primary">glyphs.zip (images d'origine)</button>
+          <label class="check-label muted small"><input id="withChars" type="checkbox" checked> avec le chars.json prédit</label>
         </div>
         <ul class="notes">
           <li>Le zip contient uniquement <code>glyphs/&lt;id&gt;/texture.png</code> (les images telles que déposées, octet pour octet : BeltariaContent retire lui-même les marges) et, si coché, <code>glyphs/chars.json</code>. À décompresser dans <code>pack-src/</code>, puis <code>/content pack</code>.</li>
@@ -215,8 +266,8 @@
     </div>
 
     <div class="col">
-      <section class="card" data-order="3" aria-labelledby="h-preview">
-        <h2 id="h-preview"><span class="n">3</span>Aperçu en jeu (client 1.8.9)</h2>
+      <section class="st-panel card" data-order="3" aria-labelledby="h-preview">
+        <div class="st-panel-head"><span class="st-step">3</span><h2 id="h-preview" class="st-panel-title">Aperçu en jeu (client 1.8.9)</h2></div>
         <div class="row">
           <label class="field" style="flex:1 1 200px">Icône ou badge
             <select id="pvSubject" aria-label="Icône ou badge à prévisualiser"></select>
@@ -233,7 +284,7 @@
             <input id="pvLevel" type="text" value="475" inputmode="numeric" style="width:7em" aria-label="Niveau du badge">
           </label>
         </div>
-        <div id="stage" class="stage" style="margin-top:10px">
+        <div id="stage" class="stage" style="margin-top:12px">
           <span class="lbl">Chat</span><canvas id="pvChat" class="pixel"></canvas>
           <span class="lbl">Tab</span><canvas id="pvTab" class="pixel"></canvas>
           <span class="lbl">Nametag</span><canvas id="pvTag" class="pixel"></canvas><span id="pvTagInfo" class="info"></span>
@@ -243,13 +294,13 @@
         <p id="pvNote" class="muted small" style="margin:8px 0 0"></p>
       </section>
 
-      <section class="card" data-order="4" aria-labelledby="h-use">
-        <h2 id="h-use"><span class="n">4</span>Utiliser</h2>
+      <section class="st-panel card" data-order="4" aria-labelledby="h-use">
+        <div class="st-panel-head"><span class="st-step">4</span><h2 id="h-use" class="st-panel-title">Utiliser</h2></div>
         <div id="useBox"><p class="empty">Choisissez une icône valide.</p></div>
       </section>
     </div>
   </div>
-</div>
+</main>
 
 <script>
 /* ============================================================================
@@ -1433,7 +1484,7 @@
     const r = S.result;
     const entries = S.icons.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     const orphanFolders = [...S.folders.keys()].filter(id => !S.icons.some(e => e.id === id)).sort();
-    if (!entries.length && !orphanFolders.length) { box.innerHTML = '<p class="empty">Aucune icône chargée.</p>'; return; }
+    if (!entries.length && !orphanFolders.length) { box.innerHTML = '<p class="empty">Aucune icône chargée. Déposez des PNG ou cliquez sur « Charger un exemple ».</p>'; return; }
     for (const entry of entries) {
       const a = iconAnalysis(entry);
       const div = document.createElement('div');

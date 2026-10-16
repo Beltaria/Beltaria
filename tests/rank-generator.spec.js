@@ -168,6 +168,6 @@ test('phone width: no horizontal scroll, no console errors, back link visible', 
     expect(overflow, mode).toBeLessThanOrEqual(1);
   }
   await expect(page.locator('a[href="index.html"]').first()).toBeVisible();
-  await expect(page.locator('a[href="glyph-checker.html"]')).toBeVisible();
+  await expect(page.locator('main a[href="glyph-checker.html"]')).toBeVisible();   // the "Outils" menu links it too
   expect(errors).toEqual([]);
 });
