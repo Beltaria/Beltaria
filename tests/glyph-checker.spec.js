@@ -840,8 +840,9 @@ test.describe('UI', () => {
   test('page states BC builds the font, links back, links to the rank generator, no console errors, demo loads', async ({ page }) => {
     const errors = collectErrors(page);
     await open(page);
-    await expect(page.locator('header a[href="index.html"]')).toHaveText('← Beltaria Studio');
-    await expect(page.locator('a[href="rank-generator.html"]')).toHaveText('Dessiner un grade');
+    // Scoped: the shared "Outils" menu (studio-nav.js) also links every tool from the header.
+    await expect(page.locator('header a.st-back[href="index.html"]')).toHaveText('← Beltaria Studio');
+    await expect(page.locator('main a[href="rank-generator.html"]')).toHaveText('Dessiner un grade');
     await expect(page.locator('#bcBuilds')).toContainText('/content pack');
     await expect(page.locator('#bcBuilds')).toContainText('/content glyphs');
     await expect(page.locator('#bcBuilds')).toContainText('glyph_sizes.bin');

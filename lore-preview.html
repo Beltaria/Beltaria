@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Item & Lore Tooltip Generator</title>
-  
+  <title>Lore &amp; tooltips — Aperçu d'objet Minecraft</title>
+  <link rel="stylesheet" href="studio.css">
+  <script src="studio-nav.js" defer></script>
   <style>
+    /* Police du jeu : uniquement pour l'infobulle Minecraft */
     @font-face {
       font-family: 'Minecraftia';
       src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft/files/minecraft.woff2') format('woff2'),
@@ -14,168 +16,92 @@
       font-style: normal;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
 
-    body {
-      background-color: #141419;
-      color: #dcdce6;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px 15px;
-      min-height: 100vh;
-    }
-
-    h1 {
-      margin-bottom: 25px;
-      font-size: 1.8rem;
-      color: #ffffff;
-      text-shadow: 2px 2px #000;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 850px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* Panneau de configuration */
-    .editor-card {
-      background: #23232c;
-      border: 1px solid #363644;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-      display: flex;
-      flex-direction: column;
+    /* Mise en page : éditeur à gauche, aperçu collant à droite ; une colonne sur téléphone */
+    .lp-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 16px;
+      align-items: start;
     }
+    .lp-editor { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .lp-side { position: sticky; top: 84px; }
+    .lp-panel-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .lp-hint { margin: 2px 0 0; font-size: 11px; color: var(--st-muted); }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .form-group { display: flex; flex-direction: column; min-width: 0; }
+    .row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
+    .st-input, .st-select, .st-textarea { width: 100%; min-height: 36px; font-size: 14px; }
+    .st-textarea { height: 120px; resize: vertical; line-height: 1.5; }
 
-    label {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #9ea0b8;
-    }
-
-    input[type="text"], select, textarea {
-      background: #14141b;
-      border: 1px solid #3c3c4e;
-      border-radius: 5px;
-      color: #ffffff;
-      padding: 9px 12px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input[type="text"]:focus, select:focus, textarea:focus {
-      border-color: #7a52cc;
-    }
-
-    .row {
-      display: flex;
-      gap: 12px;
-    }
-
-    .row > * {
-      flex: 1;
-      min-width: 0;
-    }
-
-    /* Section Enchantements */
-    .enchants-builder {
-      background: #191922;
-      border: 1px solid #2e2e3d;
-      border-radius: 6px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
+    /* Enchantements */
     .enchants-actions {
-      display: flex;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 76px auto;
+      gap: 8px;
     }
-
-    .enchants-actions select {
-      min-width: 0;
-    }
-
-    .btn {
-      background: #5d35b0;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 14px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 0.85rem;
-      transition: background 0.2s;
-    }
-
-    .btn:hover {
-      background: #7345d6;
-    }
-
-    .btn-danger {
-      background: #8b2525;
-      padding: 4px 8px;
-      font-size: 0.8rem;
-    }
-
-    .btn-danger:hover {
-      background: #b13333;
-    }
-
     .enchants-list {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      max-height: 150px;
+      margin-top: 10px;
+      max-height: 220px;
       overflow-y: auto;
     }
-
     .enchant-chip {
-      background: #242433;
-      padding: 6px 10px;
-      border-radius: 4px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.85rem;
-      border: 1px solid #38384d;
+      gap: 8px;
+      padding: 4px 4px 4px 12px;
+      border-radius: var(--st-radius-sm);
+      background: var(--st-inset);
+      border: 1px solid var(--st-border-strong);
+      font-size: 13px;
+    }
+    #addEnchantBtn { white-space: nowrap; }
+    .enchant-chip .st-btn { min-height: 28px; min-width: 28px; padding: 2px 8px; font-size: 15px; line-height: 1; }
+    .lp-empty {
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px dashed var(--st-border-strong);
+      border-radius: var(--st-radius-sm);
+      color: var(--st-muted);
+      font-size: 13px;
     }
 
-    textarea {
-      height: 100px;
-      font-family: monospace;
-      resize: vertical;
+    /* Codes de format : les pastilles gardent les couleurs exactes du jeu */
+    .codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .code-btn {
+      width: 32px; height: 32px; padding: 0;
+      border-radius: 6px;
+      border: 1px solid var(--st-border-strong);
+      background: var(--st-surface-2);
+      color: var(--st-text);
+      font: 700 12px/1 var(--st-mono);
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: transform .1s, border-color .15s;
     }
+    .code-btn:hover { border-color: var(--st-accent-hover); transform: translateY(-1px); }
+    .code-btn:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+    .code-btn.swatch { text-shadow: 1px 1px 0 rgba(0, 0, 0, .7); color: #fff; }
+    .code-btn.swatch.light { text-shadow: none; color: #000; }
+    .codes-sep { width: 1px; align-self: stretch; background: var(--st-border-strong); margin: 0 2px; }
 
-    /* Zone Tooltip Minecraft */
+    /* Zone d'aperçu */
     .preview-container {
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 250px;
-      background: radial-gradient(circle, #252233 0%, #0d0d12 100%);
-      border: 2px dashed #3a384d;
-      border-radius: 8px;
-      padding: 40px 15px;
+      min-height: 280px;
+      background: radial-gradient(circle at 50% 40%, var(--st-surface-2) 0%, var(--st-inset) 100%);
+      border: 1px solid var(--st-border);
+      border-radius: 12px;
+      padding: 40px 16px;
+      overflow: hidden;
     }
 
     /* Boîte de Tooltip fidèle à Minecraft */
@@ -190,7 +116,7 @@
       font-size: 16px;
       line-height: 1.4;
       user-select: none;
-      max-width: 90%;
+      max-width: 100%;
       image-rendering: pixelated;
     }
 
@@ -222,79 +148,146 @@
     .mc-underline { text-decoration: underline; }
     .mc-strikethrough { text-decoration: line-through; }
     .mc-underline.mc-strikethrough { text-decoration: underline line-through; }
+
+    .lp-legend { margin: 12px 0 0; font-size: 12px; color: var(--st-muted); line-height: 1.5; }
+    .lp-legend code { color: var(--st-accent-text); }
+
+    @media (max-width: 900px) {
+      .lp-layout { grid-template-columns: minmax(0, 1fr); }
+      .lp-side { position: static; }
+    }
+    @media (max-width: 640px) {
+      .row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+      .enchants-actions { grid-template-columns: minmax(0, 1fr) auto; }
+      .enchants-actions select:first-child { grid-column: 1 / -1; }
+      .codes { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+      .code-btn { width: auto; height: 36px; }
+      .codes-sep { display: none; }
+      .enchant-chip .st-btn { min-height: 36px; min-width: 36px; }
+      .preview-container { min-height: 220px; padding: 24px 10px; }
+      .mc-tooltip { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
-  <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;margin-bottom:12px">← Beltaria Studio</a>
-
-  <h1>Minecraft Lore Previewer</h1>
-
-  <div class="container">
-    <div class="editor-card">
-      
-      <div class="row">
-        <div class="form-group" style="flex: 2;">
-          <label for="itemName">Nom de l'item (supporte &c, &6, etc.) :</label>
-          <input type="text" id="itemName" value="&bÉpée en diamant">
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label for="itemRarity">Style par défaut :</label>
-          <select id="itemRarity">
-            <option value="&f">Normal (&f Blanc)</option>
-            <option value="&e">Inhabituel (&e Jaune)</option>
-            <option value="&b" selected>Rare (&b Aqua)</option>
-            <option value="&d">Épique (&d Magenta)</option>
-            <option value="&6">Légendaire (&6 Or)</option>
-          </select>
+  <header class="st-header">
+    <div class="st-header-inner">
+      <div class="st-brand">
+        <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+        <div class="st-logo"><span><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg></span></div>
+        <div>
+          <h1 class="st-title">Lore &amp; tooltips</h1>
+          <p class="st-subtitle">Nom, enchantements et lore d'un objet, rendus comme l'infobulle du client 1.8.9</p>
         </div>
       </div>
+      <div class="st-actions">
+        <button type="button" class="st-btn" id="exampleBtn" title="Remettre l'épée d'exemple">Charger l'exemple</button>
+        <button type="button" class="st-btn" id="clearAllBtn" title="Vider le nom, les enchantements et le lore">Tout effacer</button>
+      </div>
+    </div>
+  </header>
 
-      <div class="form-group">
-        <label>Enchantements Minecraft :</label>
-        <div class="enchants-builder">
-          <div class="enchants-actions">
-            <select id="enchantSelect" style="flex: 2;">
-              <option value="Tranchant">Tranchant (Sharpness)</option>
-              <option value="Châtiment">Châtiment (Smite)</option>
-              <option value="Fléau des arthropodes">Fléau des arthropodes (Bane of Arthropods)</option>
-              <option value="Aura de feu">Aura de feu (Fire Aspect)</option>
-              <option value="Recul">Recul (Knockback)</option>
-              <option value="Butin">Butin (Looting)</option>
-              <option value="Balayage">Balayage (Sweeping Edge)</option>
-              <option value="Solidité">Solidité (Unbreaking)</option>
-              <option value="Raccommodage">Raccommodage (Mending)</option>
-              <option value="Efficacité">Efficacité (Efficiency)</option>
-              <option value="Fortune">Fortune</option>
-              <option value="Toucher de soie">Toucher de soie (Silk Touch)</option>
-            </select>
-            
-            <select id="enchantLevel" style="flex: 1;">
-              <option value="I">I</option>
-              <option value="II">II</option>
-              <option value="III">III</option>
-              <option value="IV">IV</option>
-              <option value="V" selected>V</option>
-            </select>
-
-            <button type="button" class="btn" id="addEnchantBtn">+ Ajouter</button>
-          </div>
-
-          <div class="enchants-list" id="enchantsList">
+  <main class="st-main lp-layout">
+    <div class="lp-editor">
+      <section class="st-panel" aria-labelledby="h-name">
+        <div class="st-panel-head">
+          <div class="lp-panel-head-left">
+            <span class="st-step">1</span>
+            <div>
+              <h2 class="st-panel-title" id="h-name">Nom de l'objet</h2>
+              <p class="lp-hint">Codes <code>&amp;c</code>, <code>&amp;6</code>, <code>§l</code>… acceptés</p>
             </div>
+          </div>
         </div>
-      </div>
+        <div class="row">
+          <div class="form-group">
+            <label class="st-label" for="itemName">Nom de l'item</label>
+            <input type="text" class="st-input" id="itemName" value="&bÉpée en diamant" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label class="st-label" for="itemRarity">Style par défaut</label>
+            <select class="st-select" id="itemRarity">
+              <option value="&f">Normal (&f Blanc)</option>
+              <option value="&e">Inhabituel (&e Jaune)</option>
+              <option value="&b" selected>Rare (&b Aqua)</option>
+              <option value="&d">Épique (&d Magenta)</option>
+              <option value="&6">Légendaire (&6 Or)</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
-      <div class="form-group">
-        <label for="customLore">Lore personnalisé (& codes de style autorisés) :</label>
-        <textarea id="customLore" placeholder="&7Dégâts d'attaque : &2+7&#10;&d&oForgée au sommet des cieux">&7Dégâts d'attaque : &2+7&#10;&7Vitesse d'attaque : &21.6&#10;&#10;&d&oForgée par les dieux anciens.</textarea>
-      </div>
+      <section class="st-panel" aria-labelledby="h-enchants">
+        <div class="st-panel-head">
+          <div class="lp-panel-head-left">
+            <span class="st-step">2</span>
+            <div>
+              <h2 class="st-panel-title" id="h-enchants">Enchantements</h2>
+              <p class="lp-hint">Affichés en gris sous le nom, dans l'ordre d'ajout</p>
+            </div>
+          </div>
+          <span class="st-badge" id="enchantCount">0</span>
+        </div>
+        <div class="enchants-actions">
+          <select class="st-select" id="enchantSelect" aria-label="Enchantement">
+            <option value="Tranchant">Tranchant (Sharpness)</option>
+            <option value="Châtiment">Châtiment (Smite)</option>
+            <option value="Fléau des arthropodes">Fléau des arthropodes (Bane of Arthropods)</option>
+            <option value="Aura de feu">Aura de feu (Fire Aspect)</option>
+            <option value="Recul">Recul (Knockback)</option>
+            <option value="Butin">Butin (Looting)</option>
+            <option value="Balayage">Balayage (Sweeping Edge)</option>
+            <option value="Solidité">Solidité (Unbreaking)</option>
+            <option value="Raccommodage">Raccommodage (Mending)</option>
+            <option value="Efficacité">Efficacité (Efficiency)</option>
+            <option value="Fortune">Fortune</option>
+            <option value="Toucher de soie">Toucher de soie (Silk Touch)</option>
+          </select>
 
+          <select class="st-select" id="enchantLevel" aria-label="Niveau">
+            <option value="I">I</option>
+            <option value="II">II</option>
+            <option value="III">III</option>
+            <option value="IV">IV</option>
+            <option value="V" selected>V</option>
+          </select>
+
+          <button type="button" class="st-btn st-btn-primary" id="addEnchantBtn">+ Ajouter</button>
+        </div>
+
+        <div class="enchants-list" id="enchantsList"></div>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-lore">
+        <div class="st-panel-head">
+          <div class="lp-panel-head-left">
+            <span class="st-step">3</span>
+            <div>
+              <h2 class="st-panel-title" id="h-lore">Lore personnalisé</h2>
+              <p class="lp-hint">Une ligne par ligne de lore ; violet italique par défaut, comme en jeu</p>
+            </div>
+          </div>
+        </div>
+        <label class="st-label" for="customLore">Texte du lore</label>
+        <textarea class="st-textarea" id="customLore" spellcheck="false" placeholder="&7Dégâts d'attaque : &2+7&#10;&d&oForgée au sommet des cieux">&7Dégâts d'attaque : &2+7&#10;&7Vitesse d'attaque : &21.6&#10;&#10;&d&oForgée par les dieux anciens.</textarea>
+        <span class="st-label" style="margin:12px 0 0">Insérer un code dans le champ actif</span>
+        <div class="codes" id="codePalette" role="group" aria-label="Codes de couleur et de format"></div>
+      </section>
     </div>
 
-    <div class="preview-container">
-      <div class="mc-tooltip" id="tooltipDisplay"></div>
-    </div>
-  </div>
+    <section class="st-panel lp-side" aria-labelledby="h-preview">
+      <div class="st-panel-head">
+        <div class="lp-panel-head-left">
+          <h2 class="st-panel-title" id="h-preview">Aperçu en jeu</h2>
+        </div>
+        <span class="st-badge st-badge-accent">Client 1.8.9</span>
+      </div>
+      <div class="preview-container">
+        <div class="mc-tooltip" id="tooltipDisplay"></div>
+      </div>
+      <p class="lp-legend">Ordre vanilla : nom (couleur de rareté + italique d'un nom personnalisé), enchantements en <code>&amp;7</code>, puis lore préfixé de <code>§5§o</code>. <code>&amp;r</code> revient au blanc ; <code>&amp;k</code> brouille le texte.</p>
+    </section>
+  </main>
 
   <script>
     // Codes couleurs Minecraft RGB exacts et leurs ombres
@@ -351,7 +344,7 @@
 
         const classAttr = classes.length ? ` class="${classes.join(' ')}"` : '';
         const styleAttr = ` style="color: ${currentColor.hex}; text-shadow: 2px 2px 0px ${currentColor.shadow};"`;
-        
+
         const safeText = buffer
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -425,13 +418,18 @@
     function renderEnchantList() {
       const container = document.getElementById('enchantsList');
       container.innerHTML = '';
+      document.getElementById('enchantCount').textContent = activeEnchants.length;
+
+      if (!activeEnchants.length) {
+        container.innerHTML = '<p class="lp-empty">Aucun enchantement : choisissez-en un puis « + Ajouter ».</p>';
+      }
 
       activeEnchants.forEach((ench, index) => {
         const item = document.createElement('div');
         item.className = 'enchant-chip';
         item.innerHTML = `
           <span>${ench.name} ${ench.level}</span>
-          <button class="btn btn-danger" onclick="removeEnchant(${index})">×</button>
+          <button type="button" class="st-btn st-btn-danger" title="Retirer" aria-label="Retirer ${ench.name} ${ench.level}" onclick="removeEnchant(${index})">×</button>
         `;
         container.appendChild(item);
       });
@@ -458,7 +456,7 @@
       // 1. Nom de l'item (Ligne 1)
       let rawName = document.getElementById('itemName').value || 'Épée';
       const defaultRarity = document.getElementById('itemRarity').value;
-      
+
       // Vanilla 1.8 : couleur de rareté + italique (nom personnalisé) devant le nom ; un code couleur de l'utilisateur les remplace
       rawName = defaultRarity + '&o' + rawName;
       lines.push(parseMinecraftCodes(rawName, 'b'));
@@ -501,6 +499,71 @@
         el.textContent = randomStr;
       });
     }, 50);
+
+    // Palette de codes : insère &x au curseur du dernier champ utilisé (lore par défaut)
+    const CODE_NAMES = {
+      '0': 'Noir', '1': 'Bleu foncé', '2': 'Vert foncé', '3': 'Cyan foncé', '4': 'Rouge foncé', '5': 'Violet',
+      '6': 'Or', '7': 'Gris', '8': 'Gris foncé', '9': 'Bleu', 'a': 'Vert', 'b': 'Aqua', 'c': 'Rouge',
+      'd': 'Rose', 'e': 'Jaune', 'f': 'Blanc'
+    };
+    const FORMAT_CODES = [['l', 'Gras'], ['o', 'Italique'], ['n', 'Souligné'], ['m', 'Barré'], ['k', 'Brouillé'], ['r', 'Réinitialiser']];
+    let codeTarget = document.getElementById('customLore');
+    ['itemName', 'customLore'].forEach(id => {
+      document.getElementById(id).addEventListener('focus', e => { codeTarget = e.target; });
+    });
+
+    function insertCode(code) {
+      const field = codeTarget;
+      const start = field.selectionStart ?? field.value.length;
+      const end = field.selectionEnd ?? start;
+      field.value = field.value.slice(0, start) + '&' + code + field.value.slice(end);
+      field.focus();
+      field.setSelectionRange(start + 2, start + 2);
+      updateTooltip();
+    }
+
+    (function buildPalette() {
+      const palette = document.getElementById('codePalette');
+      const add = (code, label, swatch) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'code-btn' + (swatch ? ' swatch' : '') + (swatch && '7abef'.includes(code) ? ' light' : '');
+        b.textContent = code;
+        b.title = `&${code} — ${label}`;
+        b.setAttribute('aria-label', `Insérer &${code} (${label})`);
+        if (swatch) b.style.background = swatch;
+        b.addEventListener('mousedown', e => e.preventDefault()); // garde le curseur dans le champ
+        b.addEventListener('click', () => insertCode(code));
+        palette.appendChild(b);
+      };
+      Object.keys(MC_COLORS).forEach(c => add(c, CODE_NAMES[c], MC_COLORS[c].hex));
+      const sep = document.createElement('span');
+      sep.className = 'codes-sep';
+      palette.appendChild(sep);
+      FORMAT_CODES.forEach(([c, label]) => add(c, label, null));
+    })();
+
+    // Exemple et remise à zéro
+    const EXAMPLE = {
+      name: document.getElementById('itemName').value,
+      rarity: document.getElementById('itemRarity').value,
+      lore: document.getElementById('customLore').value,
+      enchants: activeEnchants.map(e => ({ ...e }))
+    };
+    document.getElementById('exampleBtn').addEventListener('click', () => {
+      document.getElementById('itemName').value = EXAMPLE.name;
+      document.getElementById('itemRarity').value = EXAMPLE.rarity;
+      document.getElementById('customLore').value = EXAMPLE.lore;
+      activeEnchants = EXAMPLE.enchants.map(e => ({ ...e }));
+      renderEnchantList();
+    });
+    document.getElementById('clearAllBtn').addEventListener('click', () => {
+      document.getElementById('itemName').value = '';
+      document.getElementById('customLore').value = '';
+      activeEnchants = [];
+      renderEnchantList();
+      document.getElementById('itemName').focus();
+    });
 
     // Initialisation
     renderEnchantList();
