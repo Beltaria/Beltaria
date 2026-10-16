@@ -1160,3 +1160,180 @@ test.describe('mannequin : peau et armure 1.8', () => {
     await context.close();
   });
 });
+
+// --- Minerais : section « ores » de pack.json (item du minerai) ---------------------------------
+// Réglages synthétiques passés à l'assembleur de BC (gradlew buildPack sur une copie de
+// BeltariaContent, pack-src réel + cette section ores) ; BC_ORE_BUILT = display des modèles
+// mcpatcher/cit/beltaria/minerais/<hôte>.json qu'il a écrits. La vue 3e personne par défaut est celle
+// de models/item/stone.json (PackBuild.ORE_THIRD_PERSON).
+const ORE_SETTINGS = {
+  smooth_stone: { thirdperson: { scale: [0.3, 0.3, 0.3], translation: [0, 2, -2] } },
+  smooth_sandstone: { gui: { front: true, fit: 14 }, head: { translation: [0, -4, 0], scale: [1.2, 1.2, 1.2] } },
+  smooth_quartz: { thirdperson: { turn: [0, 0, -45] }, ground: { scale: [0.5, 0.5, 0.5] }, fixed: { rotation: [0, 90, 0], translation: [0, 0, -1] } },
+  smooth_red_sandstone: { shift: [0, -2, 0], firstperson: { rotation: [0, 45, 0], translation: [1, 2, 3], scale: [0.4, 0.4, 0.4] }, gui: { rotation: [30, 45, 0], fit: 16, turn: [[0, 90, 0], [0, 0, -45]] } },
+  oak_wood: { thirdperson: { rotation: [75, 45, 0] } },
+  spruce_wood: {},
+  birch_wood: { gui: { fit: 10 } }
+};
+const STONE_TP = { rotation: [10, -45, 170], translation: [0, 1.5, -2.75], scale: [0.375, 0.375, 0.375] };
+const BC_ORE_BUILT = {
+  smooth_stone: { thirdperson: { rotation: [10, -45, 170], translation: [0, 2, -2], scale: [0.3, 0.3, 0.3] } },
+  smooth_sandstone: { thirdperson: STONE_TP, head: { rotation: [0, 0, 0], translation: [0, -4, 0], scale: [1.2, 1.2, 1.2] }, gui: { rotation: [-30, 135, 0], translation: [0, 0, 0], scale: [0.8368038, 0.8368038, 0.8368038] } },
+  smooth_quartz: { thirdperson: { rotation: [10, -45, 125], translation: [0, 1.5, -2.75], scale: [0.375, 0.375, 0.375] }, ground: { rotation: [0, 0, 0], translation: [0, 0, 0], scale: [0.5, 0.5, 0.5] }, fixed: { rotation: [0, 90, 0], translation: [0, 0, -1], scale: [1, 1, 1] } },
+  smooth_red_sandstone: { thirdperson: STONE_TP, firstperson: { rotation: [0, 45, 0], translation: [1, 2, 3], scale: [0.4, 0.4, 0.4] }, gui: { rotation: [37.761, 161.565, 39.232], translation: [0.69575506, 0.56808156, -0.23191835], scale: [0.9276734, 0.9276734, 0.9276734] } },
+  oak_wood: { thirdperson: { rotation: [75, 45, 0], translation: [0, 1.5, -2.75], scale: [0.375, 0.375, 0.375] } },
+  spruce_wood: { thirdperson: STONE_TP },
+  birch_wood: { thirdperson: STONE_TP, gui: { rotation: [0, 0, 0], translation: [0, 0, 0], scale: [1, 1, 1] } }
+};
+const ORE_HOSTS_LIST = 'smooth_stone, smooth_sandstone, smooth_quartz, smooth_red_sandstone, oak_wood, spruce_wood, birch_wood, jungle_wood, acacia_wood, dark_oak_wood';
+
+test.describe('minerais : section ores de pack.json', () => {
+  test.beforeEach(async ({ page }) => { await page.goto(PAGE, { waitUntil: 'load' }); });
+
+  test('PARITÉ : display des items de minerai identique à celui que l\'assembleur de BC écrit', async ({ page }) => {
+    const res = await evalM(page, (settings) => Object.keys(settings).map(id => {
+      const r = ItemModel.buildOreEntry({ id, entry: settings[id], declared: true, folders: { ores: 'beltaria/minerais' }, files: ['texture.png'] });
+      return { id, ok: r.ok, errors: r.errors, written: r.written, display: r.merged && r.merged.display, from: r.merged && r.merged.elements[0].from, to: r.merged && r.merged.elements[0].to };
+    }), ORE_SETTINGS);
+    let compared = 0;
+    for (const r of res) {
+      expect(r.errors, r.id).toEqual([]);
+      expect(r.written, r.id).toEqual(Object.keys(BC_ORE_BUILT[r.id]));
+      for (const ctx of Object.keys(BC_ORE_BUILT[r.id])) for (const k of ['rotation', 'translation', 'scale']) for (let i = 0; i < 3; i++) {
+        expect(Math.abs(r.display[ctx][k][i] - BC_ORE_BUILT[r.id][ctx][k][i]), `${r.id} ${ctx}.${k}[${i}]`).toBeLessThanOrEqual(1e-4);
+        compared++;
+      }
+    }
+    expect(compared).toBe(14 * 9);
+    // shift : la géométrie du cube bouge comme dans le modèle écrit par BC ([0, -2, 0] -> [16, 14, 16])
+    const red = res.find(r => r.id === 'smooth_red_sandstone');
+    expect(red.from).toEqual([0, -2, 0]);
+    expect(red.to).toEqual([16, 14, 16]);
+  });
+
+  test('règles de BC : hôte inconnu (tout le pack), objet attendu, casse, dossier sans texture, translation > 24', async ({ page }) => {
+    const r = await evalM(page, () => {
+      const M = ItemModel;
+      const b = (id, entry, extra) => M.buildOreEntry(Object.assign({ id, entry, declared: true, folders: {}, files: ['texture.png'] }, extra || {}));
+      return {
+        unknown: b('mithril_ore', {}),
+        notObj: b('smooth_stone', 5),
+        caseKey: b('Smooth_Stone', { thirdperson: { scale: [0.2, 0.2, 0.2] } }),
+        noTexture: b('jungle_wood', {}, { files: ['notes.txt'] }),
+        folderOnly: b('mithril', {}, { declared: false }),
+        tooFar: b('smooth_stone', { head: { translation: [0, 30, 0] } }),
+        badFolder: b('oak_wood', {}, { folders: { ores: '' } }),
+        whole: M.orePackProblems({ ores: { smooth_stone: {}, mithril_ore: {}, oak_wood: [] } }, null),
+        model: M.oreItemModel('oak_wood')
+      };
+    });
+    expect(r.unknown.ok).toBe(false);
+    expect(r.unknown.errors[0].text).toContain(`pack.json : ores.mithril_ore : aucun bloc hôte de ce nom. Hôtes possibles : ${ORE_HOSTS_LIST}`);
+    expect(r.unknown.errors[0].text).toContain('refuse l\'assemblage du pack ENTIER');
+    expect(r.unknown.errors[0].ref).toBe('PackBuild.java:1310-1314');
+    expect(r.notObj.errors[0].ref).toBe('PackBuild.java:1315-1317');
+    // clé écrite avec une autre casse : acceptée par BC, jamais appliquée (vérifié sur l'assembleur)
+    expect(r.caseKey.ok).toBe(true);
+    expect(r.caseKey.warnings[0].text).toContain('il n\'est jamais appliqué');
+    expect(r.caseKey.merged.display.thirdperson.scale).toEqual([0.375, 0.375, 0.375]);
+    expect(r.noTexture.warnings[0].text).toContain('texture.png absente, dossier saute.');
+    expect(r.folderOnly.errors).toEqual([]); // un dossier mal nommé n'est qu'une note du pack
+    expect(r.folderOnly.warnings[0].ref).toBe('PackBuild.java:904-908');
+    expect(r.tooFar.ok).toBe(false);
+    expect(r.tooFar.errors[0].text).toContain('ores.smooth_stone : display.head.translation[1] = 30 hors de [-24 ; 24]');
+    expect(r.badFolder.errors[0].ref).toBe('PackBuild.java:1295 ; :1470-1478');
+    expect(r.whole.map(x => x.ref)).toEqual(['PackBuild.java:1310-1314', 'PackBuild.java:1315-1317']);
+    expect(r.model.textures).toEqual({ all: './oak_wood' });
+    expect(r.model.elements[0]).toMatchObject({ from: [0, 0, 0], to: [16, 16, 16] });
+    expect(Object.keys(r.model.elements[0].faces).sort()).toEqual(['down', 'east', 'north', 'south', 'up', 'west']);
+    expect(r.model.display).toEqual({ thirdperson: STONE_TP });
+  });
+
+  async function orePack(page, extraOres) {
+    const pack = JSON.parse(PACK);
+    pack.folders.ores = 'beltaria/minerais';
+    pack.ores = Object.assign({ smooth_stone: { thirdperson: { scale: [0.3, 0.3, 0.3] } } }, extraOres || {});
+    const text = JSON.stringify(pack, null, 2) + '\n';
+    return { text, files: [...await packSrcFiles(page)].map(f => (f.name === 'pack-src/pack.json' ? { name: f.name, data: text } : f)).concat([
+      { name: 'pack-src/ores/smooth_stone/texture.png', data: await pngBuffer(page, 16, 16, 2), store: true },
+      { name: 'pack-src/ores/smooth_stone/texture.png.mcmeta', data: '{"animation":{"frametime":2}}' },
+      { name: 'pack-src/ores/oak_wood/texture.png', data: await pngBuffer(page, 16, 16, 1) }]) };
+  }
+
+  test('interface : entrées ores/<hôte>, six contextes, curseurs, poignée, cube texturé et export pack.json', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    const { text, files } = await orePack(page);
+    await page.setInputFiles('#bcFiles', { name: 'pack-src.zip', mimeType: 'application/zip', buffer: makeZip(files) });
+    await settled(page);
+    await expect(page.locator('#bcEntry')).toHaveValue('wings/test_wings'); // les entrées à modèle d'abord
+    let s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.entries.filter(e => e.category === 'ores').map(e => e.key)).toEqual(['ores/oak_wood', 'ores/smooth_stone']);
+    await page.selectOption('#bcEntry', 'ores/smooth_stone');
+    await settled(page);
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.ok, JSON.stringify(s.errors)).toBe(true);
+    expect(s.current).toMatchObject({ category: 'ores', id: 'smooth_stone' });
+    const r6 = t => ({ rotation: t.rotation, translation: t.translation, scale: t.scale.map(v => Math.round(v * 1e6) / 1e6) }); // flottants Java (Math.fround)
+    expect(r6(s.display.thirdperson)).toEqual({ rotation: [10, -45, 170], translation: [0, 1.5, -2.75], scale: [0.3, 0.3, 0.3] });
+    await expect(page.locator('#bcTable tr[data-ctx="thirdperson"]')).toContainText('pack.json impose scale');
+    await expect(page.locator('#bcTable tr[data-ctx="gui"]')).toContainText('non écrit');
+    await expect(page.locator('#bcMsg')).toContainText('Accepté par BC');
+    await expect(page.locator('#bcMsg')).toContainText('SANS son .mcmeta');
+    // six contextes : chaque onglet dessine l'item
+    for (const ctx of ['thirdperson', 'firstperson', 'head', 'gui', 'ground', 'fixed']) {
+      await page.click(`#bcTabs button[data-ctx="${ctx}"]`);
+      expect((await page.evaluate(() => ItemModelUI.getState())).itemMatrix, ctx).not.toBeNull();
+    }
+    // inventaire : la vignette 16 px montre la texture (1re image : rouge en haut, bleu en bas), jamais le vert
+    await page.click('#bcTabs button[data-ctx="gui"]');
+    await page.waitForFunction(() => {
+      const d = document.getElementById('bcSlot16').getContext('2d').getImageData(0, 0, 16, 16).data;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 120 && d[i + 1] < 90) return true;
+      return false;
+    });
+    const green = await page.evaluate(() => { const d = document.getElementById('bcSlot16').getContext('2d').getImageData(0, 0, 16, 16).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 1] > 150 && d[i] < 90) n++; return n; });
+    expect(green).toBe(0);
+    // curseur : tête, translation Y -> la section ores est réécrite, rien d'autre
+    const r = await page.evaluate(() => ItemModelUI.setSlider('head', 'translation', 1, -4));
+    expect(r.ok).toBe(true);
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry).toEqual({ thirdperson: { scale: [0.3, 0.3, 0.3] }, head: { translation: [0, -4, 0] } });
+    const exported = await page.evaluate(() => ItemModelUI.exportPack());
+    expect(JSON.parse(exported).ores.smooth_stone).toEqual({ thirdperson: { scale: [0.3, 0.3, 0.3] }, head: { translation: [0, -4, 0] } });
+    expect(exported.slice(0, text.indexOf('"ores"'))).toBe(text.slice(0, text.indexOf('"ores"')));
+    // poignée : 3e personne, déplacement exact (inverse de la chaîne de rendu), annulable
+    await page.click('#bcTabs button[data-ctx="thirdperson"]');
+    const g = await page.evaluate(() => ItemModelUI.gizmoDrag('translate', [0, 0.05, 0], { snap: false }));
+    expect(g.ok).toBe(true);
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.thirdperson.translation).toBeDefined();
+    await page.evaluate(() => ItemModelUI.undo());
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.thirdperson.translation).toBeUndefined();
+    // oak_wood : dossier sans entrée dans pack.json -> vue de la pierre, l'export ajoute la clé
+    await page.selectOption('#bcEntry', 'ores/oak_wood');
+    await settled(page);
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.ok).toBe(true);
+    expect(s.display.thirdperson).toEqual(STONE_TP);
+    await page.evaluate(() => ItemModelUI.setComponent('gui', 'fit', 12));
+    expect(JSON.parse(await page.evaluate(() => ItemModelUI.exportPack())).ores.oak_wood).toEqual({ gui: { fit: 12 } });
+    expect(errors).toEqual([]);
+  });
+
+  test('interface : un hôte inconnu dans la section ores refuse aussi les autres entrées (tout le pack)', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    const { files } = await orePack(page, { mithril_ore: { gui: { fit: 12 } } });
+    await page.setInputFiles('#bcFiles', { name: 'pack-src.zip', mimeType: 'application/zip', buffer: makeZip(files) });
+    await settled(page);
+    await expect(page.locator('#bcEntry')).toHaveValue('wings/test_wings');
+    await expect(page.locator('#bcMsg')).toContainText('Refusé par BeltariaContent');
+    await expect(page.locator('#bcMsg')).toContainText('pack.json : ores.mithril_ore : aucun bloc hôte de ce nom');
+    await page.selectOption('#bcEntry', 'ores/mithril_ore');
+    await settled(page);
+    await expect(page.locator('#bcMsg')).toContainText('PackBuild.java:1310-1314');
+    expect(errors).toEqual([]);
+  });
+});

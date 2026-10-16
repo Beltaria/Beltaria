@@ -1977,6 +1977,104 @@ const ItemModel = (() => {
         return { x: (index % perRow) * fw, y: Math.floor(index / perRow) * fh, w: Math.min(fw, w), h: Math.min(fh, h) };
     }
 
+    // ---------- Minerais : section « ores » de pack.json (PackBuild.java:1295, :1307-1320, :972-1031) ----------
+    // La clé est le nom de l'hôte (OreHost.java:65-81), comme le dossier ores/<hôte>/ ; l'item du minerai
+    // est un cube plein de la texture, tenu à la 3e personne comme la pierre vanilla.
+    const ORE_HOSTS = Object.freeze(['smooth_stone', 'smooth_sandstone', 'smooth_quartz', 'smooth_red_sandstone',
+        'oak_wood', 'spruce_wood', 'birch_wood', 'jungle_wood', 'acacia_wood', 'dark_oak_wood']);
+    /** OreHost.byId (OreHost.java:107-109) : sans égard à la casse, espaces retirés ; null si inconnu. */
+    function oreHost(id) {
+        if (id == null) return null;
+        const k = String(id).trim().toLowerCase();
+        return ORE_HOSTS.includes(k) ? k : null;
+    }
+    // PackBuild.ORE_THIRD_PERSON (PackBuild.java:1009-1011), relevé dans models/item/stone.json du client 1.8.9
+    const ORE_THIRD_PERSON = Object.freeze({ rotation: Object.freeze([10, -45, 170]), translation: Object.freeze([0, 1.5, -2.75]), scale: Object.freeze([0.375, 0.375, 0.375]) });
+    /** PackBuild.oreItemModel (PackBuild.java:1020-1031) : cube 0..16, six faces #all, display.thirdperson seul. */
+    function oreItemModel(host) {
+        const faces = {};
+        ['north', 'south', 'east', 'west', 'up', 'down'].forEach(d => { faces[d] = { texture: '#all', uv: [0, 0, 16, 16], rotation: 0 }; });
+        return { textures: { all: './' + host }, elements: [{ from: [0, 0, 0], to: [16, 16, 16], rotation: null, faces }],
+            display: { thirdperson: { rotation: ORE_THIRD_PERSON.rotation.slice(), translation: ORE_THIRD_PERSON.translation.slice(), scale: ORE_THIRD_PERSON.scale.slice() } } };
+    }
+    /** Descriptor.oreFits pour une clé (PackBuild.java:1307-1320) : { fits } ou { error } (BcError). */
+    function readOreFits(id, raw) {
+        const what = `pack.json : ores.${id}`;
+        try {
+            if (!oreHost(id)) fail(`${what} : aucun bloc hôte de ce nom. Hôtes possibles : ${ORE_HOSTS.join(', ')}`, 'PackBuild.java:1310-1314');
+            if (!isObj(raw)) fail(`${what} : objet attendu`, 'PackBuild.java:1315-1317');
+            return { fits: readFits(raw, what) };
+        } catch (e) { if (!(e instanceof BcError)) throw e; return { error: e }; }
+    }
+    const WHOLE_PACK = ' : lu par Descriptor.read avant toute entrée, ce défaut refuse l\'assemblage du pack ENTIER';
+    /**
+     * Défauts de la section ores qui bloquent tout le pack (Descriptor.read) : folders.ores vide,
+     * ores qui n'est pas un objet, hôte inconnu, réglage illisible. `skip` : clé déjà traitée à part.
+     */
+    function orePackProblems(pack, skip) {
+        const out = [];
+        if (!isObj(pack)) return out;
+        if (isObj(pack.folders) && has(pack.folders, 'ores') && (typeof pack.folders.ores !== 'string' || !pack.folders.ores)) {
+            out.push({ text: 'pack.json : folders : « ores » : chaîne non vide attendue' + WHOLE_PACK, ref: 'PackBuild.java:1295 ; :1470-1478' });
+        }
+        if (!has(pack, 'ores')) return out;
+        if (!isObj(pack.ores)) { out.push({ text: 'pack.json : ores doit être un objet hôte -> réglages' + WHOLE_PACK, ref: 'PackBuild.java:1459-1468' }); return out; }
+        Object.keys(pack.ores).forEach(k => {
+            if (k === skip) return;
+            const r = readOreFits(k, pack.ores[k]);
+            if (r.error) out.push({ text: r.error.message + WHOLE_PACK, ref: r.error.ref });
+        });
+        return out;
+    }
+    /**
+     * L'item d'un minerai comme emitOreItems l'écrit (PackBuild.java:972-997) : oreItemModel puis
+     * ModelFit.apply des réglages de pack.json. Même forme de résultat que buildEntry.
+     * @param o { id (clé = hôte), entry (objet pack.json, {} si absent), files (noms du dossier
+     *        ores/<id>/, null si non chargé), folders (folders de pack.json, null sans pack.json) }
+     */
+    function buildOreEntry(o) {
+        const res = { ok: false, flat: false, ore: true, errors: [], warnings: [], notes: [], entry: null, model: null, merged: null, overrides: [], overridden: [], written: [] };
+        const id = o.id;
+        const host = oreHost(id);
+        if (!host && o.declared === false) { // dossier ores/<nom>/ seul : simple note, le pack s'assemble (PackBuild.java:904-908)
+            res.warnings.push({ text: `ores/${id} : aucun bloc hôte de ce nom, BC saute ce dossier (note du pack). Hôtes possibles : ${ORE_HOSTS.join(', ')}`, ref: 'PackBuild.java:904-908' });
+            return res;
+        }
+        const r = readOreFits(id, o.entry || {});
+        if (r.error) { res.errors.push({ text: r.error.message + WHOLE_PACK, ref: r.error.ref }); return res; }
+        let folder = 'beltaria/minerais'; // PackBuild.DEFAULT_ORES_FOLDER (PackBuild.java:208)
+        if (o.folders && has(o.folders, 'ores')) {
+            folder = o.folders.ores;
+            if (typeof folder !== 'string' || !folder) { res.errors.push({ text: 'pack.json : folders : « ores » : chaîne non vide attendue' + WHOLE_PACK, ref: 'PackBuild.java:1295 ; :1470-1478' }); return res; }
+        }
+        try { checkRelative(folder, 'pack.json : folders.ores : dossier CIT'); }
+        catch (e) { if (!(e instanceof BcError)) throw e; res.errors.push({ text: e.message, ref: 'PackBuild.java:984 ; ' + e.ref }); return res; }
+        // descriptor.ores.get(host.id) : une clé écrite avec une autre casse passe la lecture mais n'est jamais retrouvée
+        const applies = host === id;
+        res.entry = { category: 'ores', id, host, material: null, folder, marker: true, fits: r.fits };
+        if (!applies) res.warnings.push({ text: `« ${id} » désigne l'hôte ${host} sans égard à la casse (accepté), mais BC cherche le réglage sous « ${host} » : il n'est jamais appliqué (note du pack : « aucun dossier ores/${id}/ avec sa texture, reglage sans effet »).`, ref: 'PackBuild.java:979, :991-996 ; OreHost.java:107-109' });
+        if (o.files && !o.files.includes('texture.png')) res.warnings.push({ text: `ores/${id}/ sans texture.png : BC saute ce dossier (« ores/${id} : texture.png absente, dossier saute. »), aucun item n'est habillé et ce réglage est sans effet.`, ref: 'PackBuild.java:910-914, :991-996' });
+        const fits = applies ? r.fits : { shift: [0, 0, 0], hasShift: false, slots: {} };
+        res.overrides = overridesOf(fits);
+        res.model = oreItemModel(host);
+        res.merged = mergeEntry(res.model, fits, `ores.${id}`);
+        res.errors.push(...res.merged.problems);
+        res.written = CONTEXTS.filter(c => res.merged.display[c]);
+        res.overridden = res.overrides.map(s => {
+            const [ctx, comp] = s.split('.');
+            const m = res.model.display[ctx];
+            return { ctx, comp, model: m ? m[comp].slice() : null, final: res.merged.display[ctx][comp].slice() };
+        });
+        res.notes.push({ text: `Item du minerai : cube plein aux six faces de ores/${host}/texture.png, règle CIT sur le support marqué (base-item, marqueur = ${host}) ; la vue 3e personne de la pierre vanilla (models/item/stone.json) est recopiée par BC, les autres contextes gardent les défauts du client.`, ref: 'PackBuild.java:972-997, :999-1031' });
+        if (res.overrides.length) res.notes.push({ text: `pack.json remplace, composante par composante, la vue de la pierre : ${res.overrides.map(s => 'display.' + s).join(', ')}`, ref: 'PackBuild.java:979-983' });
+        CONTEXTS.forEach(c => {
+            const s = fits.slots[c];
+            if (s && s.fit > BC.SLOT_SIZE) res.warnings.push({ text: `${c}.fit = ${fr(s.fit)} px : au-delà de 16, l'icône déborde sur les cases voisines (choix d'apparence, accepté par BC)`, ref: 'ModelFit.java:39-46' });
+        });
+        res.ok = !res.errors.length;
+        return res;
+    }
+
     return Object.freeze({
         CONTEXTS, CATEGORIES, COMPONENTS, BC, VANILLA, PLAYER_PARTS, STAND_PARTS, RIDER_OFFSET, BcError,
         readModel, readEntry, readFits, readSlotFit, applySlot, mergeEntry, overridesOf, buildEntry,
@@ -1987,7 +2085,8 @@ const ItemModel = (() => {
         partMatrix, partBoxMatrix, headItemMatrix, headSupport, contextMatrix,
         contextPrefix, sceneMatrix, scenePrefix, gizmoFrame, gizmoInverse, eulerExact, axisAngle3, inv3, lin3,
         BIPED_PARTS, SKIN_PARTS, ARMOR_PIECES, POSES, poseAngles, modelBoxQuads, mannequinBoxes, mannequinBoxMatrix,
-        bakeQuads, bbox, quadPoints, vanillaKind, vanillaDisplay, identityT, entryPath, firstFrame
+        bakeQuads, bbox, quadPoints, vanillaKind, vanillaDisplay, identityT, entryPath, firstFrame,
+        ORE_HOSTS, ORE_THIRD_PERSON, oreHost, oreItemModel, readOreFits, orePackProblems, buildOreEntry
     });
 })();
 if (typeof window !== 'undefined') window.ItemModel = ItemModel;
@@ -2170,6 +2269,14 @@ window.ItemModelUI = (() => {
                 loose.push(p);
             }
         });
+        // Minerais : ores/<hôte>/texture.png[.mcmeta] (PackBuild.discoverOres, PackBuild.java:897-919)
+        paths.forEach(p => {
+            const m = /(?:^|\/)ores\/([^/]+)\/([^/]+)$/.exec(p);
+            if (!m) return;
+            const key = `ores/${m[1]}`;
+            if (!byKey.has(key)) byKey.set(key, { key, category: 'ores', id: m[1], dir: p.slice(0, p.length - m[2].length), names: [], loose: false });
+            byKey.get(key).names.push(m[2]);
+        });
         // Des fichiers isolés n'ont de sens que sans arborescence <catégorie>/<id>/ chargée à côté
         if (byKey.size) loose = [];
         if (st.pack) { // entrées déclarées sans dossier : listées (BC exigerait le dossier)
@@ -2180,8 +2287,13 @@ window.ItemModelUI = (() => {
                     if (!byKey.has(key)) byKey.set(key, { key, category: c, id, dir: null, names: [], loose: false });
                 });
             });
+            const ores = st.pack.ores; // section ores : clés = hôtes
+            if (ores && typeof ores === 'object' && !Array.isArray(ores)) Object.keys(ores).forEach(id => {
+                if (!byKey.has(`ores/${id}`)) byKey.set(`ores/${id}`, { key: `ores/${id}`, category: 'ores', id, dir: null, names: [], loose: false });
+            });
         }
-        st.entries = [...byKey.values()].sort((a, b) => M.CATEGORIES.indexOf(a.category) - M.CATEGORIES.indexOf(b.category) || a.id.localeCompare(b.id));
+        const catOrder = c => (c === 'ores' ? M.CATEGORIES.length : M.CATEGORIES.indexOf(c)); // minerais après les catégories à modèle
+        st.entries = [...byKey.values()].sort((a, b) => catOrder(a.category) - catOrder(b.category) || a.id.localeCompare(b.id));
         if (loose.length) {
             const dirs = [...new Set(loose.map(p => p.slice(0, p.lastIndexOf('/') + 1)))];
             const dir = dirs.sort((a, b) => a.length - b.length)[0];
@@ -2249,7 +2361,7 @@ window.ItemModelUI = (() => {
         const notLoaded = el('optgroup', { label: 'Dans pack.json — fichiers non chargés' });
         st.entries.forEach(e => {
             const missing = !e.loose && e.dir == null;
-            const kind = e.loose ? 'fichiers isolés' : missing ? 'fichiers non chargés' : e.hasModel ? 'modèle' : 'texture plate';
+            const kind = e.loose ? 'fichiers isolés' : missing ? 'fichiers non chargés' : e.category === 'ores' ? 'item de minerai' : e.hasModel ? 'modèle' : 'texture plate';
             const opt = el('option', { value: e.key, text: `${e.loose ? '★ ' : ''}${e.category}/${e.id} (${kind}${e.declared ? '' : ', hors pack.json'})` });
             (missing ? notLoaded : sel).append(opt);
         });
@@ -2307,7 +2419,7 @@ window.ItemModelUI = (() => {
                     try { st.textures[m[1] || ''] = await frameCanvas(dir, name); } catch (err) { st.loadMsgs.push({ type: 'err', text: `${name} : ${err.message}` }); }
                 }
             }
-            if (!cur.modelText) {
+            if (!cur.modelText && e.category !== 'ores') {
                 const flatName = e.names.includes('texture.png') ? 'texture.png' : e.names.find(n => /^bow_.*\.png$/.test(n) && n === 'bow_standby.png') || e.names.find(n => /^bow_.*\.png$/.test(n));
                 if (flatName) { try { st.flatImage = await frameCanvas(dir, flatName); } catch (err) { st.loadMsgs.push({ type: 'err', text: `${flatName} : ${err.message}` }); } }
             }
@@ -2335,13 +2447,19 @@ window.ItemModelUI = (() => {
     function recompute() {
         const c = st.cur;
         if (!c) { st.res = null; return; }
-        st.res = M.buildEntry({
-            category: c.category, id: c.id, entry: c.entry,
-            folders: st.pack ? (st.pack.folders && typeof st.pack.folders === 'object' ? st.pack.folders : {}) : null,
-            modelText: c.modelText, files: c.names
-        });
-        // Fichiers non chargés ici : on ne peut rien conclure (le dossier existe peut-être dans pack-src)
-        st.res.notLoaded = c.dir == null && !c.loose;
+        const folders = st.pack ? (st.pack.folders && typeof st.pack.folders === 'object' ? st.pack.folders : {}) : null;
+        st.res = c.category === 'ores'
+            ? M.buildOreEntry({ id: c.id, entry: c.entry, declared: !!c.declared, folders, files: c.dir == null && !c.loose ? null : c.names })
+            : M.buildEntry({ category: c.category, id: c.id, entry: c.entry, folders, modelText: c.modelText, files: c.names });
+        // Section ores fautive ailleurs dans pack.json : Descriptor.read refuse tout le pack, cette entrée comprise
+        let packLevel = c.category === 'ores' && !M.oreHost(c.id); // hôte inconnu : refus sans même lire les fichiers
+        if (st.pack) {
+            const whole = M.orePackProblems(st.pack, c.category === 'ores' ? c.id : null);
+            if (whole.length) { st.res.errors.unshift(...whole); st.res.ok = false; packLevel = true; }
+        }
+        // Fichiers non chargés ici : on ne peut rien conclure (le dossier existe peut-être dans pack-src),
+        // sauf un refus qui ne dépend que de pack.json
+        st.res.notLoaded = c.dir == null && !c.loose && !packLevel;
         st.guiDirty = true;
         const key = (c.modelText || '') + '|' + JSON.stringify(st.res.merged ? st.res.entry.fits.shift : null) + '|' + Object.keys(st.textures).join(',') + '|' + (st.flatImage ? 'flat' : '');
         if (key !== st.geoKey) { st.geoKey = key; rebuildItem(); }
@@ -2528,7 +2646,7 @@ window.ItemModelUI = (() => {
             fit: hasK('translation') || hasK('scale') ? 'translation / scale données (PackBuild.java:1599)' : ''
         };
         box.append(el('div', { class: 'bc-ctxhead' }, el('code', { text: `"${st.ctx}"` }),
-            el('span', { class: 'ime-badge' + (Object.keys(slot).length ? ' own' : ''), text: Object.keys(slot).length ? 'réglé dans pack.json' : 'non réglé : model.json seul' })));
+            el('span', { class: 'ime-badge' + (Object.keys(slot).length ? ' own' : ''), text: Object.keys(slot).length ? 'réglé dans pack.json' : c.category === 'ores' ? 'non réglé : vue de la pierre (BC)' : 'non réglé : model.json seul' })));
         const row = (comp, controlsFn, wide) => {
             const on = hasK(comp) && !(comp === 'front' && slot.front !== true);
             const why = blocked[comp];
@@ -2654,6 +2772,8 @@ window.ItemModelUI = (() => {
             r.notes.forEach(e => list.push({ type: 'note', text: e.text, ref: e.ref }));
             const cd = currentDisplay();
             if (cd && cd.vanilla) list.push({ type: 'note', text: `Aperçu plat avec les placements de l'${cd.vanilla.label} (matière ${r.entry.material || 'inconnue'}) : approximation, la matière réelle décide.` });
+            const oreTex = st.cur && st.cur.category === 'ores' ? st.textures[''] : null;
+            if (oreTex && oreTex.animated && oreTex.canvas && st.cur.names.includes('texture.png.mcmeta')) list.push({ type: 'warn', text: 'Texture animée : le bloc l\'est (le .mcmeta suit sa texture), mais BC copie texture.png à côté de la règle CIT de l\'item SANS son .mcmeta ; une image plus haute que large y est refusée par le client 1.8.9 (« broken aspect ratio and not an animation ») : item probablement en damier. Aperçu : première image. Déduit du code, non vérifié en jeu.', ref: 'PackBuild.java:984-985, :946-950 ; TextureAtlasSprite.loadSprite' });
             if (st.cur && st.cur.category !== 'items' && st.cur.names.includes('icon.png')) list.push({ type: 'note', text: 'icon.png présent : les menus /wings et /aura montrent cette icône plate, pas le réglage « gui » (PackBuild.java:607-629).' });
         }
         list.forEach(m => box.append(el('div', { class: m.type }, el('span', { text: m.text }), m.ref ? el('span', { class: 'bc-ref', text: ` [${m.ref}]` }) : null)));
@@ -3289,7 +3409,9 @@ window.ItemModelUI = (() => {
         let v = ref;
         for (let i = 0; i < 8 && v && v.charAt(0) === '#'; i++) v = model.textures[v.slice(1)];
         const m = /^\.\/texture(_\d+)?$/.exec(v || '');
-        const t = m ? st.textures[m[1] || ''] : null;
+        let t = m ? st.textures[m[1] || ''] : null;
+        // item de minerai : « ./<hôte> » = ores/<hôte>/texture.png recopiée à côté de la règle (PackBuild.java:984-985)
+        if (!m && st.cur && st.cur.category === 'ores' && st.res && st.res.entry && v === './' + st.res.entry.host) t = st.textures[''] || null;
         return t ? t.canvas : null;
     }
     function disposeGroup(g) {
@@ -3550,6 +3672,7 @@ window.ItemModelUI = (() => {
         const tabs = $('bcTabs');
         M.CONTEXTS.forEach(c => tabs.append(el('button', { type: 'button', role: 'tab', 'data-ctx': c, title: c, text: CTX_INFO[c].tab, onclick: () => setContext(c) })));
         M.CATEGORIES.forEach(c => $('bcCat').append(el('option', { value: c, text: c })));
+        $('bcCat').append(el('option', { value: 'ores', text: 'ores (identifiant = hôte)' }));
         $('bcToggle').addEventListener('change', e => setActive(e.target.checked));
         const onFiles = async (list, rel) => {
             const items = [...list].map(f => ({ path: (rel && f.webkitRelativePath) || f.name, size: f.size, read: async () => new Uint8Array(await f.arrayBuffer()) }));

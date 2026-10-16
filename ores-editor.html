@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minerais (ores.yml)</title>
+<meta name="description" content="Édite et valide ores.yml exactement comme BeltariaContent le charge : les dix hôtes, butin, outil, génération par monde, texture du pack, et modifications ciblées qui gardent les commentaires.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23555'/%3E%3Cpath fill='%23c084fc' d='M2 2h1v1H2zM5 3h1v1H5zM3 5h1v1H3zM5 5h1v1H5z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="studio.css">
+<script src="studio-nav.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha384-+pxiN6T7yvpryuJmE1gM9PX7yQit15auDb+ZwwvJOd/4be2Cie5/IuVXgQb/S9du" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font-size: 14px; line-height: 1.5; min-height: 100vh; }
+  .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .lead { color: var(--st-muted); margin: 0 0 12px; max-width: 100ch; font-size: 13.5px; }
+  .callouts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin: 0 0 14px; }
+  .callout { padding: 12px 14px; border-radius: 12px; background: var(--st-surface); border: 1px solid var(--st-border-strong); font-size: 13px; overflow-wrap: anywhere; }
+  .callout b { color: var(--st-text-strong); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  @media (max-width: 1000px) { .layout, .callouts { grid-template-columns: minmax(0, 1fr); } }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .muted { color: var(--st-muted); font-size: 13px; }
+  .small { font-size: 12px; }
+  .group-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--st-faint); margin: 14px 0 6px; }
+  .group-label:first-child { margin-top: 0; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--st-muted); min-width: 0; }
+  input[type="text"], input[type="number"], select, textarea {
+    background: var(--st-inset); border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm); color: var(--st-text);
+    padding: 6px 10px; font: 400 14px/1.4 var(--st-font); min-height: 36px; min-width: 0; max-width: 100%; width: 100%;
+  }
+  input.mono, textarea.mono { font-family: var(--st-mono); font-size: 13px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--st-accent-hover); }
+  input:focus-visible, select:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+  input.bad, select.bad { border-color: var(--st-error-line); }
+  .file-btn { position: relative; overflow: hidden; }
+  .file-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .file-btn:focus-within { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .fields.two { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .hint { font-size: 11.5px; color: var(--st-faint); font-weight: 400; }
+  .status {
+    min-height: 22px; margin: 0 0 14px; padding: 10px 12px; border-radius: var(--st-radius-sm);
+    background: var(--st-surface-2); border: 1px solid var(--st-border-strong); font-size: 13.5px; overflow-wrap: anywhere;
+  }
+  .status.ok { background: var(--st-ok-soft); border-color: var(--st-ok-line); color: var(--st-ok); }
+  .status.warn { background: var(--st-warn-soft); border-color: var(--st-warn-line); color: var(--st-warn); }
+  .status.error { background: var(--st-error-soft); border-color: var(--st-error-line); color: var(--st-error); }
+  .notes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .notes li { font-size: 13px; padding: 7px 10px; border-radius: var(--st-radius-sm); background: var(--st-inset); border: 1px solid var(--st-border); border-left: 3px solid var(--st-accent-line); overflow-wrap: anywhere; }
+  .notes li.warn { border-left-color: var(--st-warn); }
+  .notes li.error { border-left-color: var(--st-error); }
+  .notes li.ok { border-left-color: var(--st-ok); }
+  .notes li .bc { display: block; font-family: var(--st-mono); font-size: 12px; color: var(--st-text); margin: 2px 0; }
+  .notes li .ref { display: block; font-family: var(--st-mono); font-size: 11.5px; color: var(--st-faint); margin-top: 2px; }
+  .loc { font-family: var(--st-mono); font-size: 12px; color: var(--st-accent-text); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+  code, .mono { font-family: var(--st-mono); font-size: .92em; color: var(--st-accent-text); overflow-wrap: anywhere; }
+  details { margin-top: 10px; font-size: 13px; color: var(--st-muted); }
+  details summary { cursor: pointer; color: var(--st-text); font-weight: 600; padding: 4px 0; }
+  .files-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; color: var(--st-muted); }
+  .files-list li { overflow-wrap: anywhere; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--st-faint); flex: none; }
+  .dot.ok { background: var(--st-ok); } .dot.warn { background: var(--st-warn); } .dot.error { background: var(--st-error); }
+  /* Minerais */
+  .ore-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ore-btn { display: inline-flex; align-items: center; gap: 4px; min-height: 34px; padding: 4px 10px; border-radius: 999px; cursor: pointer; max-width: 100%;
+    background: var(--st-surface-2); border: 1px solid var(--st-border-strong); color: var(--st-text); font: 500 13px/1.2 var(--st-font); overflow-wrap: anywhere; text-align: left; }
+  .ore-btn[aria-pressed="true"] { background: var(--st-accent-soft); border-color: var(--st-accent-hover); color: var(--st-accent-text); }
+  .ore-btn small { color: var(--st-faint); font-family: var(--st-mono); }
+  .sub { border: 1px solid var(--st-border); border-radius: 12px; padding: 10px 12px; background: var(--st-inset); margin-top: 10px; min-width: 0; }
+  .sub > .group-label { margin-top: 0; }
+  .world { border: 1px solid var(--st-border-strong); border-radius: 10px; padding: 8px 10px; margin-top: 8px; background: var(--st-surface); }
+  .world-head { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .world-head label { flex: 1 1 160px; }
+  .name-preview { margin-top: 6px; padding: 6px 10px; border-radius: 4px; background: rgba(16, 0, 16, 0.94); border: 2px solid #2a0a5e; font: 15px/1.3 'Courier New', monospace; text-shadow: 2px 2px 0 rgba(0,0,0,.6); overflow-wrap: anywhere; min-height: 30px; }
+  /* Hôtes */
+  .hosts { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 8px; }
+  .host { border: 1px solid var(--st-border-strong); border-radius: 12px; padding: 8px 10px; background: var(--st-inset); min-width: 0; font-size: 12.5px; }
+  .host.used { border-color: var(--st-accent-line); }
+  .host.cur { box-shadow: 0 0 0 2px var(--st-accent-hover); }
+  .host.clash { border-color: var(--st-error-line); }
+  .host h3 { margin: 0 0 2px; font: 600 13px/1.3 var(--st-mono); color: var(--st-text-strong); overflow-wrap: anywhere; }
+  .host .meta { color: var(--st-muted); font-size: 12px; overflow-wrap: anywhere; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .chip { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; background: var(--st-surface-2); border: 1px solid var(--st-border-strong); color: var(--st-text); overflow-wrap: anywhere; }
+  .chip.ok { background: var(--st-ok-soft); border-color: var(--st-ok-line); color: var(--st-ok); }
+  .chip.warn { background: var(--st-warn-soft); border-color: var(--st-warn-line); color: var(--st-warn); }
+  .chip.error { background: var(--st-error-soft); border-color: var(--st-error-line); color: var(--st-error); }
+  .chip.accent { background: var(--st-accent-soft); border-color: var(--st-accent-line); color: var(--st-accent-text); }
+  .linkish { background: none; border: 0; padding: 0; color: var(--st-accent-text); font: inherit; cursor: pointer; text-decoration: underline; }
+  /* Aperçu */
+  .preview { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+  .preview figure { margin: 0; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .preview figcaption { font-size: 12px; color: var(--st-muted); }
+  canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; display: block; border-radius: 6px; border: 1px solid var(--st-border-strong);
+    background: repeating-conic-gradient(var(--st-surface-3) 0% 25%, var(--st-surface-2) 0% 50%) 0 0 / 16px 16px; }
+  /* Génération */
+  table.gen { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
+  table.gen th, table.gen td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--st-border); vertical-align: top; overflow-wrap: anywhere; }
+  table.gen th { color: var(--st-muted); font-weight: 600; width: 42%; }
+  .ruler { position: relative; height: 18px; border-radius: 4px; background: var(--st-surface-2); border: 1px solid var(--st-border-strong); margin: 4px 0 2px; overflow: hidden; }
+  .ruler span { position: absolute; top: 0; bottom: 0; }
+  .ruler .reach { background: var(--st-accent-soft); border-left: 1px solid var(--st-accent-line); border-right: 1px solid var(--st-accent-line); }
+  .ruler .centre { background: var(--st-accent); opacity: .85; }
+  .ruler-scale { display: flex; justify-content: space-between; font: 10.5px var(--st-mono); color: var(--st-faint); }
+  .world-gen { margin-top: 10px; }
+  .world-gen h3 { margin: 0 0 4px; font: 600 13px var(--st-mono); color: var(--st-text-strong); }
+  /* Sortie */
+  textarea.out { min-height: 260px; font: 12.5px/1.5 var(--st-mono); resize: vertical; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+  textarea.snippet { min-height: 140px; }
+  body.dragging .wrap { outline: 2px dashed var(--st-accent-hover); outline-offset: -8px; border-radius: var(--st-radius); }
+  @media (max-width: 640px) {
+    .title-row .st-badge { display: none; }
+    .fields, .fields.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .hosts { grid-template-columns: minmax(0, 1fr); }
+    .st-btn { min-height: 40px; }
+  }
+  @media (max-width: 380px) { .fields, .fields.two { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<header class="st-header">
+  <div class="st-header-inner">
+    <div class="st-brand">
+      <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+      <div class="st-logo"><span><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 9h1.5v1.5H9zM14 11h1.5v1.5H14zM10.5 14h1.5v1.5h-1.5z"/></svg></span></div>
+      <div>
+        <div class="title-row">
+          <h1 class="st-title">Minerais (ores.yml)</h1>
+          <span class="st-badge st-badge-accent">BeltariaContent</span>
+        </div>
+        <p class="st-subtitle">Édite et valide ores.yml exactement comme BeltariaContent le charge</p>
+      </div>
+    </div>
+    <div class="st-actions"><span class="st-badge">Minecraft 1.8.8</span></div>
+  </div>
+</header>
+
+<main class="st-main wrap">
+  <p class="lead">Chargez <code>ores.yml</code> (et, si vous voulez voir les textures, le dossier du pack : <code>pack-src</code> ou <code>plugins/BeltariaContent/pack</code>). Chaque champ est relu comme BeltariaContent le relit — mêmes valeurs par défaut, mêmes refus, mêmes messages de console — et chaque modification ne touche que ses lignes : commentaires et mise en forme du fichier restent intacts. Tout reste dans le navigateur.</p>
+  <div class="callouts">
+    <div class="callout"><b>Un minerai est un vrai bloc vanilla, son hôte</b> : l'un des dix états que la 1.8 rend inaccessibles (quatre double-dalles lisses à la pioche, six bûches d'écorce à la hache). Le pack recouvre son modèle avec <code>ores/&lt;hôte&gt;/texture.png</code>. Un hôte ne porte qu'un minerai : dix au plus. <span class="muted">OreHost.java:65-81</span></div>
+    <div class="callout"><b>Ce que BC fait d'un fichier fautif</b> : au démarrage le plugin entier est désactivé (« config.yml invalide, plugin desactive : … ») ; au <code>/content reload</code>, rien n'est remplacé. Une erreur de <b>syntaxe</b> YAML, elle, est pire : Bukkit rend un fichier vide et BC démarre sans aucun minerai, sans erreur. <span class="muted">BeltariaContent.java:139-150, :364-370</span></div>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite">Aucun fichier : chargez ores.yml, un dossier ou un .zip — ou commencez un fichier vide.</div>
+
+  <div class="layout">
+    <div class="col">
+      <section class="st-panel" aria-labelledby="h-files">
+        <div class="st-panel-head"><h2 id="h-files" class="st-panel-title"><span class="st-step">1</span> Fichiers</h2></div>
+        <div class="row">
+          <span class="st-btn st-btn-primary file-btn">ores.yml<input id="oresFile" type="file" accept=".yml,.yaml,text/yaml,text/plain" aria-label="Charger ores.yml"></span>
+          <span class="st-btn file-btn">Dossier du pack ou du plugin<input id="packDir" type="file" webkitdirectory multiple aria-label="Charger un dossier : pack-src, plugins/BeltariaContent ou son dossier pack"></span>
+          <span class="st-btn file-btn">Fichiers / .zip<input id="packFiles" type="file" multiple accept=".yml,.yaml,.json,.png,.mcmeta,.zip,application/zip,application/json,image/png" aria-label="Charger des fichiers ou une archive zip"></span>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="newFile" type="button" class="st-btn st-btn-soft">Nouveau fichier vide</button>
+          <button id="exampleFile" type="button" class="st-btn">Exemple</button>
+          <button id="resetFile" type="button" class="st-btn" disabled>Revenir au fichier chargé</button>
+        </div>
+        <ul id="filesInfo" class="files-list"></ul>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-ores">
+        <div class="st-panel-head"><h2 id="h-ores" class="st-panel-title"><span class="st-step">2</span> Minerais</h2><button id="addOre" type="button" class="st-btn st-btn-soft" disabled>+ Nouveau minerai</button></div>
+        <div id="oreList" class="ore-list" role="group" aria-label="Minerais du fichier"></div>
+        <div id="oreForm"><p class="muted">Aucun minerai sélectionné.</p></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="st-panel" aria-labelledby="h-msgs">
+        <div class="st-panel-head"><h2 id="h-msgs" class="st-panel-title"><span class="st-step">3</span> Ce que BeltariaContent en dit</h2></div>
+        <ul id="msgs" class="notes"></ul>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-hosts">
+        <div class="st-panel-head"><h2 id="h-hosts" class="st-panel-title"><span class="st-step">4</span> Les dix hôtes</h2><span id="hostCount" class="st-badge">0 / 10</span></div>
+        <div id="hosts" class="hosts"></div>
+        <p class="muted small" style="margin:8px 0 0">Mécanique documentée par BC : pierre = dureté 2, pioche, résistance aux explosions de 30 (OreHost.java:65-66) ; bois = dureté 2, hache, brûle — le feu est refusé sur un minerai (OreHost.java:73-75). La particule de cassage sort de la texture du pack (<code>block/cube_all</code>, PackBuild.java:1043-1053).</p>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-tex">
+        <div class="st-panel-head"><h2 id="h-tex" class="st-panel-title"><span class="st-step">5</span> Texture du pack</h2></div>
+        <label class="field" style="max-width:320px">Hôte
+          <select id="texHost" aria-label="Hôte dont voir la texture"></select>
+        </label>
+        <div class="preview" style="margin-top:10px">
+          <figure><canvas id="texFlat" class="pixel" width="128" height="128" aria-label="Texture de l'hôte"></canvas><figcaption id="texFlatCap">texture.png</figcaption></figure>
+          <figure><canvas id="texCube" class="pixel" width="144" height="144" aria-label="Le bloc dans le monde"></canvas><figcaption>le bloc (vue isométrique)</figcaption></figure>
+        </div>
+        <ul id="texInfo" class="notes" style="margin-top:10px"></ul>
+      </section>
+
+      <section class="st-panel" aria-labelledby="h-gen">
+        <div class="st-panel-head"><h2 id="h-gen" class="st-panel-title"><span class="st-step">6</span> Génération</h2></div>
+        <div id="gen"><p class="muted">Sélectionnez un minerai accepté.</p></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="st-panel" aria-labelledby="h-out" style="margin-top:16px">
+    <div class="st-panel-head"><h2 id="h-out" class="st-panel-title"><span class="st-step">7</span> ores.yml modifié</h2><span id="diffInfo" class="st-badge">—</span></div>
+    <p class="muted small" style="margin:0 0 8px">Le texte est éditable : les champs ci-dessus le modifient ligne par ligne, et une saisie ici est relue aussitôt.</p>
+    <textarea id="out" class="out" spellcheck="false" aria-label="Contenu de ores.yml"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button id="dlOut" type="button" class="st-btn st-btn-primary" disabled>💾 Télécharger ores.yml</button>
+      <button id="copyOut" type="button" class="st-btn" disabled>📋 Copier le fichier</button>
+    </div>
+    <span class="group-label">Entrée du minerai sélectionné</span>
+    <textarea id="snippet" class="out snippet" readonly spellcheck="false" aria-label="Extrait de l'entrée sélectionnée"></textarea>
+    <div class="row" style="margin-top:8px"><button id="copySnippet" type="button" class="st-btn" disabled>📋 Copier l'entrée</button></div>
+  </section>
+</main>
+
+<script>
+// =====================================================================
+// --- LOGIQUE PURE (window.OresModel) : ores.yml lu comme BeltariaContent ---
+// Aucune dépendance au DOM : testable via page.evaluate(() => OresModel...).
+// Miroir de BeltariaContent (BC) 6.7 : OresConfig.java, OreHost.java, OreDrop.java, OreVeins.java,
+// OreHarvest.java, OreYield.java, ConfigValues.java (src/main/java/fr/beltaria/content/), et du
+// chargement Bukkit 1.8.8 (YamlConfiguration + MemorySection, SnakeYAML 1.33, YAML 1.1).
+// Les messages d'erreur sont ceux que BC écrit, à l'octet (vérifiés contre BC lui-même).
+// =====================================================================
+const OresModel = (() => {
+    'use strict';
+    const Y = (typeof window !== 'undefined' && window.jsyaml) || (typeof jsyaml !== 'undefined' ? jsyaml : null);
+
+    // ---------- Les dix hôtes (OreHost.java:65-81), dans l'ordre de l'énumération ----------
+    // Mécanique documentée par BC : OreHost.java:65-66 (pierre) et :73-75 (bois), README « L'hôte ».
+    const HOSTS = Object.freeze([
+        { id: 'smooth_stone', material: 'DOUBLE_STEP', data: 8, state: '43:8', model: 'double_stone_top', label: 'double-dalle de pierre lisse' },
+        { id: 'smooth_sandstone', material: 'DOUBLE_STEP', data: 9, state: '43:9', model: 'sandstone_all', label: 'double-dalle de grès lisse' },
+        { id: 'smooth_quartz', material: 'DOUBLE_STEP', data: 15, state: '43:15', model: 'quartz_top', label: 'double-dalle de quartz lisse' },
+        { id: 'smooth_red_sandstone', material: 'DOUBLE_STONE_SLAB2', data: 8, state: '181:8', model: 'red_sandstone_all', label: 'double-dalle de grès rouge lisse' },
+        { id: 'oak_wood', material: 'LOG', data: 12, state: '17:12', model: 'oak_bark', label: 'bûche d\'écorce de chêne' },
+        { id: 'spruce_wood', material: 'LOG', data: 13, state: '17:13', model: 'spruce_bark', label: 'bûche d\'écorce de sapin' },
+        { id: 'birch_wood', material: 'LOG', data: 14, state: '17:14', model: 'birch_bark', label: 'bûche d\'écorce de bouleau' },
+        { id: 'jungle_wood', material: 'LOG', data: 15, state: '17:15', model: 'jungle_bark', label: 'bûche d\'écorce d\'acajou' },
+        { id: 'acacia_wood', material: 'LOG_2', data: 12, state: '162:12', model: 'acacia_bark', label: 'bûche d\'écorce d\'acacia' },
+        { id: 'dark_oak_wood', material: 'LOG_2', data: 13, state: '162:13', model: 'dark_oak_bark', label: 'bûche d\'écorce de chêne noir' }
+    ].map(h => Object.freeze(Object.assign(h, { wooden: h.material === 'LOG' || h.material === 'LOG_2' })))); // OreHost.wooden, OreHost.java:169-171
+    const HOST_NAMES = HOSTS.map(h => h.id).join(', '); // OreHost.names(), OreHost.java:122-131
+    /** OreHost.byId (OreHost.java:107-109) : sans égard à la casse, espaces retirés. */
+    function hostById(id) {
+        if (id == null) return null;
+        const k = javaTrim(String(id)).toLowerCase();
+        return HOSTS.find(h => h.id === k) || null;
+    }
+
+    // ---------- Matières Bukkit 1.8.8 (org.bukkit.Material de beltariaspigot-api) : nom, id, isBlock ----------
+    // Relevé par Material.values() sur l'API du serveur ; « b » = bloc (Material.isBlock).
+    const MATERIAL_TABLE = 'AIR:0:b STONE:1:b GRASS:2:b DIRT:3:b COBBLESTONE:4:b WOOD:5:b SAPLING:6:b BEDROCK:7:b WATER:8:b STATIONARY_WATER:9:b LAVA:10:b STATIONARY_LAVA:11:b SAND:12:b GRAVEL:13:b GOLD_ORE:14:b IRON_ORE:15:b COAL_ORE:16:b LOG:17:b LEAVES:18:b SPONGE:19:b GLASS:20:b LAPIS_ORE:21:b LAPIS_BLOCK:22:b DISPENSER:23:b SANDSTONE:24:b NOTE_BLOCK:25:b BED_BLOCK:26:b POWERED_RAIL:27:b DETECTOR_RAIL:28:b PISTON_STICKY_BASE:29:b WEB:30:b LONG_GRASS:31:b DEAD_BUSH:32:b PISTON_BASE:33:b PISTON_EXTENSION:34:b WOOL:35:b PISTON_MOVING_PIECE:36:b YELLOW_FLOWER:37:b RED_ROSE:38:b BROWN_MUSHROOM:39:b RED_MUSHROOM:40:b GOLD_BLOCK:41:b IRON_BLOCK:42:b DOUBLE_STEP:43:b STEP:44:b BRICK:45:b TNT:46:b BOOKSHELF:47:b MOSSY_COBBLESTONE:48:b OBSIDIAN:49:b TORCH:50:b FIRE:51:b MOB_SPAWNER:52:b WOOD_STAIRS:53:b CHEST:54:b REDSTONE_WIRE:55:b DIAMOND_ORE:56:b DIAMOND_BLOCK:57:b WORKBENCH:58:b CROPS:59:b SOIL:60:b FURNACE:61:b BURNING_FURNACE:62:b SIGN_POST:63:b WOODEN_DOOR:64:b LADDER:65:b RAILS:66:b COBBLESTONE_STAIRS:67:b WALL_SIGN:68:b LEVER:69:b STONE_PLATE:70:b IRON_DOOR_BLOCK:71:b WOOD_PLATE:72:b REDSTONE_ORE:73:b GLOWING_REDSTONE_ORE:74:b REDSTONE_TORCH_OFF:75:b REDSTONE_TORCH_ON:76:b STONE_BUTTON:77:b SNOW:78:b ICE:79:b SNOW_BLOCK:80:b CACTUS:81:b CLAY:82:b SUGAR_CANE_BLOCK:83:b JUKEBOX:84:b FENCE:85:b PUMPKIN:86:b NETHERRACK:87:b SOUL_SAND:88:b GLOWSTONE:89:b PORTAL:90:b JACK_O_LANTERN:91:b CAKE_BLOCK:92:b DIODE_BLOCK_OFF:93:b DIODE_BLOCK_ON:94:b STAINED_GLASS:95:b TRAP_DOOR:96:b MONSTER_EGGS:97:b SMOOTH_BRICK:98:b HUGE_MUSHROOM_1:99:b HUGE_MUSHROOM_2:100:b IRON_FENCE:101:b THIN_GLASS:102:b MELON_BLOCK:103:b PUMPKIN_STEM:104:b MELON_STEM:105:b VINE:106:b FENCE_GATE:107:b BRICK_STAIRS:108:b SMOOTH_STAIRS:109:b MYCEL:110:b WATER_LILY:111:b NETHER_BRICK:112:b NETHER_FENCE:113:b NETHER_BRICK_STAIRS:114:b NETHER_WARTS:115:b ENCHANTMENT_TABLE:116:b BREWING_STAND:117:b CAULDRON:118:b ENDER_PORTAL:119:b ENDER_PORTAL_FRAME:120:b ENDER_STONE:121:b DRAGON_EGG:122:b REDSTONE_LAMP_OFF:123:b REDSTONE_LAMP_ON:124:b WOOD_DOUBLE_STEP:125:b WOOD_STEP:126:b COCOA:127:b SANDSTONE_STAIRS:128:b EMERALD_ORE:129:b ENDER_CHEST:130:b TRIPWIRE_HOOK:131:b TRIPWIRE:132:b EMERALD_BLOCK:133:b SPRUCE_WOOD_STAIRS:134:b BIRCH_WOOD_STAIRS:135:b JUNGLE_WOOD_STAIRS:136:b COMMAND:137:b BEACON:138:b COBBLE_WALL:139:b FLOWER_POT:140:b CARROT:141:b POTATO:142:b WOOD_BUTTON:143:b SKULL:144:b ANVIL:145:b TRAPPED_CHEST:146:b GOLD_PLATE:147:b IRON_PLATE:148:b REDSTONE_COMPARATOR_OFF:149:b REDSTONE_COMPARATOR_ON:150:b DAYLIGHT_DETECTOR:151:b REDSTONE_BLOCK:152:b QUARTZ_ORE:153:b HOPPER:154:b QUARTZ_BLOCK:155:b QUARTZ_STAIRS:156:b ACTIVATOR_RAIL:157:b DROPPER:158:b STAINED_CLAY:159:b STAINED_GLASS_PANE:160:b LEAVES_2:161:b LOG_2:162:b ACACIA_STAIRS:163:b DARK_OAK_STAIRS:164:b SLIME_BLOCK:165:b BARRIER:166:b IRON_TRAPDOOR:167:b PRISMARINE:168:b SEA_LANTERN:169:b HAY_BLOCK:170:b CARPET:171:b HARD_CLAY:172:b COAL_BLOCK:173:b PACKED_ICE:174:b DOUBLE_PLANT:175:b STANDING_BANNER:176:b WALL_BANNER:177:b DAYLIGHT_DETECTOR_INVERTED:178:b RED_SANDSTONE:179:b RED_SANDSTONE_STAIRS:180:b DOUBLE_STONE_SLAB2:181:b STONE_SLAB2:182:b SPRUCE_FENCE_GATE:183:b BIRCH_FENCE_GATE:184:b JUNGLE_FENCE_GATE:185:b DARK_OAK_FENCE_GATE:186:b ACACIA_FENCE_GATE:187:b SPRUCE_FENCE:188:b BIRCH_FENCE:189:b JUNGLE_FENCE:190:b DARK_OAK_FENCE:191:b ACACIA_FENCE:192:b SPRUCE_DOOR:193:b BIRCH_DOOR:194:b JUNGLE_DOOR:195:b ACACIA_DOOR:196:b DARK_OAK_DOOR:197:b IRON_SPADE:256:i IRON_PICKAXE:257:i IRON_AXE:258:i FLINT_AND_STEEL:259:i APPLE:260:i BOW:261:i ARROW:262:i COAL:263:i DIAMOND:264:i IRON_INGOT:265:i GOLD_INGOT:266:i IRON_SWORD:267:i WOOD_SWORD:268:i WOOD_SPADE:269:i WOOD_PICKAXE:270:i WOOD_AXE:271:i STONE_SWORD:272:i STONE_SPADE:273:i STONE_PICKAXE:274:i STONE_AXE:275:i DIAMOND_SWORD:276:i DIAMOND_SPADE:277:i DIAMOND_PICKAXE:278:i DIAMOND_AXE:279:i STICK:280:i BOWL:281:i MUSHROOM_SOUP:282:i GOLD_SWORD:283:i GOLD_SPADE:284:i GOLD_PICKAXE:285:i GOLD_AXE:286:i STRING:287:i FEATHER:288:i SULPHUR:289:i WOOD_HOE:290:i STONE_HOE:291:i IRON_HOE:292:i DIAMOND_HOE:293:i GOLD_HOE:294:i SEEDS:295:i WHEAT:296:i BREAD:297:i LEATHER_HELMET:298:i LEATHER_CHESTPLATE:299:i LEATHER_LEGGINGS:300:i LEATHER_BOOTS:301:i CHAINMAIL_HELMET:302:i CHAINMAIL_CHESTPLATE:303:i CHAINMAIL_LEGGINGS:304:i CHAINMAIL_BOOTS:305:i IRON_HELMET:306:i IRON_CHESTPLATE:307:i IRON_LEGGINGS:308:i IRON_BOOTS:309:i DIAMOND_HELMET:310:i DIAMOND_CHESTPLATE:311:i DIAMOND_LEGGINGS:312:i DIAMOND_BOOTS:313:i GOLD_HELMET:314:i GOLD_CHESTPLATE:315:i GOLD_LEGGINGS:316:i GOLD_BOOTS:317:i FLINT:318:i PORK:319:i GRILLED_PORK:320:i PAINTING:321:i GOLDEN_APPLE:322:i SIGN:323:i WOOD_DOOR:324:i BUCKET:325:i WATER_BUCKET:326:i LAVA_BUCKET:327:i MINECART:328:i SADDLE:329:i IRON_DOOR:330:i REDSTONE:331:i SNOW_BALL:332:i BOAT:333:i LEATHER:334:i MILK_BUCKET:335:i CLAY_BRICK:336:i CLAY_BALL:337:i SUGAR_CANE:338:i PAPER:339:i BOOK:340:i SLIME_BALL:341:i STORAGE_MINECART:342:i POWERED_MINECART:343:i EGG:344:i COMPASS:345:i FISHING_ROD:346:i WATCH:347:i GLOWSTONE_DUST:348:i RAW_FISH:349:i COOKED_FISH:350:i INK_SACK:351:i BONE:352:i SUGAR:353:i CAKE:354:i BED:355:i DIODE:356:i COOKIE:357:i MAP:358:i SHEARS:359:i MELON:360:i PUMPKIN_SEEDS:361:i MELON_SEEDS:362:i RAW_BEEF:363:i COOKED_BEEF:364:i RAW_CHICKEN:365:i COOKED_CHICKEN:366:i ROTTEN_FLESH:367:i ENDER_PEARL:368:i BLAZE_ROD:369:i GHAST_TEAR:370:i GOLD_NUGGET:371:i NETHER_STALK:372:i POTION:373:i GLASS_BOTTLE:374:i SPIDER_EYE:375:i FERMENTED_SPIDER_EYE:376:i BLAZE_POWDER:377:i MAGMA_CREAM:378:i BREWING_STAND_ITEM:379:i CAULDRON_ITEM:380:i EYE_OF_ENDER:381:i SPECKLED_MELON:382:i MONSTER_EGG:383:i EXP_BOTTLE:384:i FIREBALL:385:i BOOK_AND_QUILL:386:i WRITTEN_BOOK:387:i EMERALD:388:i ITEM_FRAME:389:i FLOWER_POT_ITEM:390:i CARROT_ITEM:391:i POTATO_ITEM:392:i BAKED_POTATO:393:i POISONOUS_POTATO:394:i EMPTY_MAP:395:i GOLDEN_CARROT:396:i SKULL_ITEM:397:i CARROT_STICK:398:i NETHER_STAR:399:i PUMPKIN_PIE:400:i FIREWORK:401:i FIREWORK_CHARGE:402:i ENCHANTED_BOOK:403:i REDSTONE_COMPARATOR:404:i NETHER_BRICK_ITEM:405:i QUARTZ:406:i EXPLOSIVE_MINECART:407:i HOPPER_MINECART:408:i PRISMARINE_SHARD:409:i PRISMARINE_CRYSTALS:410:i RABBIT:411:i COOKED_RABBIT:412:i RABBIT_STEW:413:i RABBIT_FOOT:414:i RABBIT_HIDE:415:i ARMOR_STAND:416:i IRON_BARDING:417:i GOLD_BARDING:418:i DIAMOND_BARDING:419:i LEASH:420:i NAME_TAG:421:i COMMAND_MINECART:422:i MUTTON:423:i COOKED_MUTTON:424:i BANNER:425:i SPRUCE_DOOR_ITEM:427:i BIRCH_DOOR_ITEM:428:i JUNGLE_DOOR_ITEM:429:i ACACIA_DOOR_ITEM:430:i DARK_OAK_DOOR_ITEM:431:i GOLD_RECORD:2256:i GREEN_RECORD:2257:i RECORD_3:2258:i RECORD_4:2259:i RECORD_5:2260:i RECORD_6:2261:i RECORD_7:2262:i RECORD_8:2263:i RECORD_9:2264:i RECORD_10:2265:i RECORD_11:2266:i RECORD_12:2267:i';
+    const MATERIALS = new Map(), BY_ID = [];
+    MATERIAL_TABLE.split(' ').forEach(t => {
+        const [name, id, block] = t.split(':');
+        const m = Object.freeze({ name, id: Number(id), block: block === 'b', ordinal: MATERIALS.size });
+        MATERIALS.set(name, m);
+        BY_ID[m.id] = m;
+    });
+    /**
+     * Material.matchMaterial (Bukkit 1.8.8) : un nombre entier est d'abord lu comme identifiant
+     * numérique (Integer.parseInt puis getMaterial(int)), sinon le nom passe en majuscules, les
+     * blancs deviennent « _ » et tout ce qui n'est pas [A-Za-z0-9_] est retiré.
+     */
+    function matchMaterial(name) {
+        if (name == null) return null;
+        const s = String(name);
+        if (/^[+-]?\d+$/.test(s)) {
+            const n = Number(s);
+            if (n >= -2147483648 && n <= 2147483647) {
+                const byId = n >= 0 ? BY_ID[n] : null;
+                if (byId) return byId;
+            }
+        }
+        const filtered = s.toUpperCase().replace(/[ \t\n\x0B\f\r]+/g, '_').replace(/[^a-zA-Z_0-9]/g, '');
+        return MATERIALS.get(filtered) || null;
+    }
+    // OreYield.PICKAXES (OreYield.java:33-43) ; EnumMap : ordre de déclaration de Material
+    const PICKAXE_TIERS = Object.freeze({ WOOD_PICKAXE: 0, GOLD_PICKAXE: 0, STONE_PICKAXE: 1, IRON_PICKAXE: 2, DIAMOND_PICKAXE: 3 });
+    const PICKAXES = Object.freeze(Object.keys(PICKAXE_TIERS).sort((a, b) => MATERIALS.get(a).ordinal - MATERIALS.get(b).ordinal));
+    const PICKAXE_NAMES = PICKAXES.join(', '); // OreYield.pickaxeNames, OreYield.java:60-69
+
+    // ---------- Valeurs Java : nombres entiers / décimaux, toString, conversions ----------
+    /** Un décimal YAML (java.lang.Double) : gardé distinct d'un entier pour l'écrire comme Java. */
+    class JDouble {
+        constructor(v) { this.v = v; }
+        valueOf() { return this.v; }
+        toJSON() { return this.v; }
+    }
+    const isNum = v => typeof v === 'number' || v instanceof JDouble;
+    const numOf = v => (v instanceof JDouble ? v.v : v);
+    function javaTrim(s) { return s.replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, ''); }
+    /** Double.toString : « 65.0 », « 0.25 », « 1.0E10 », « NaN », « Infinity ». */
+    function javaDouble(d) {
+        if (Number.isNaN(d)) return 'NaN';
+        if (d === Infinity) return 'Infinity';
+        if (d === -Infinity) return '-Infinity';
+        if (d === 0) return Object.is(d, -0) ? '-0.0' : '0.0';
+        const a = Math.abs(d);
+        if (a >= 1e-3 && a < 1e7) { const s = String(d); return s.includes('.') ? s : s + '.0'; }
+        const [m, e] = d.toExponential().split('e');
+        return (m.includes('.') ? m : m + '.0') + 'E' + Number(e);
+    }
+    /** Number.intValue : Integer / Long (réduction à 32 bits) ; Double : conversion saturée de Java. */
+    function intValue(v) {
+        if (v instanceof JDouble) {
+            const d = v.v;
+            if (Number.isNaN(d)) return 0;
+            if (d >= 2147483647) return 2147483647;
+            if (d <= -2147483648) return -2147483648;
+            return Math.trunc(d);
+        }
+        return Number.isSafeInteger(v) ? v | 0 : (Number.isFinite(v) ? Number(BigInt.asIntN(32, BigInt(Math.trunc(v)))) : 0);
+    }
+    const doubleValue = v => numOf(v);
+
+    // ---------- Sections Bukkit (MemorySection) ----------
+    class Section {
+        constructor(path) { this.path = path; this.map = new Map(); }
+        toString() { return `MemorySection[path='${this.path}', root='YamlConfiguration']`; }
+    }
+    const isMap = v => v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof JDouble) && !(v instanceof Date) && !(v instanceof Section);
+    /** String.valueOf / toString de Java : List [a, b], Map {a=b}, Double 2.0, Integer 2. */
+    function jstr(v) {
+        if (v === null || v === undefined) return 'null';
+        if (v instanceof Section) return v.toString();
+        if (v instanceof JDouble) return javaDouble(v.v);
+        if (typeof v === 'number') return String(v);
+        if (typeof v === 'boolean') return v ? 'true' : 'false';
+        if (Array.isArray(v)) return '[' + v.map(jstr).join(', ') + ']';
+        if (v instanceof Date) return javaDate(v);
+        if (isMap(v)) return '{' + Object.keys(v).map(k => k + '=' + jstr(v[k])).join(', ') + '}';
+        return String(v);
+    }
+    /** Date.toString de Java (« Tue Jan 02 01:00:00 CET 2024 ») ; le fuseau est celui du navigateur, BC prend celui du serveur. */
+    function javaDate(d) {
+        const p2 = n => String(n).padStart(2, '0');
+        let zone = '';
+        try { zone = (new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(d).find(x => x.type === 'timeZoneName') || {}).value || ''; } catch (e) { zone = ''; }
+        if (!/^[A-Z]{2,5}$/.test(zone)) { const o = -d.getTimezoneOffset(); zone = 'GMT' + (o >= 0 ? '+' : '-') + p2(Math.floor(Math.abs(o) / 60)) + ':' + p2(Math.abs(o) % 60); }
+        return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]
+            + ' ' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()) + ' ' + zone + ' ' + d.getFullYear();
+    }
+    const childPath = (sec, key) => (sec.path ? sec.path + '.' + key : key);
+    // MemorySection.set / createSection : un chemin à points crée les sections intermédiaires,
+    // une valeur nulle retire la clé (c'est ce qui efface « world: » sans valeur).
+    function walk(sec, parts) {
+        let s = sec;
+        for (let i = 0; i < parts.length - 1; i++) {
+            let c = s.map.get(parts[i]);
+            if (!(c instanceof Section)) { c = new Section(childPath(s, parts[i])); s.map.set(parts[i], c); }
+            s = c;
+        }
+        return s;
+    }
+    function bukkitSet(sec, path, value) {
+        const parts = path.split('.');
+        const s = walk(sec, parts);
+        const last = parts[parts.length - 1];
+        if (value === null || value === undefined) s.map.delete(last); else s.map.set(last, value);
+    }
+    function createSection(sec, path) {
+        const parts = path.split('.');
+        const s = walk(sec, parts);
+        const last = parts[parts.length - 1];
+        const n = new Section(childPath(s, last));
+        s.map.set(last, n);
+        return n;
+    }
+    // YamlConfiguration.convertMapsToSections
+    function convertMaps(input, sec) {
+        Object.keys(input).forEach(k => {
+            const v = input[k];
+            if (isMap(v)) convertMaps(v, createSection(sec, String(k)));
+            else bukkitSet(sec, String(k), v);
+        });
+    }
+    function sget(sec, key) { // MemorySection.get (chemin à points)
+        const parts = String(key).split('.');
+        let s = sec;
+        for (let i = 0; i < parts.length - 1; i++) { s = s.map.get(parts[i]); if (!(s instanceof Section)) return null; }
+        const v = s.map.get(parts[parts.length - 1]);
+        return v === undefined ? null : v;
+    }
+    const contains = (sec, key) => sget(sec, key) != null;
+    const getString = (sec, key, def) => { const v = sget(sec, key); return v != null ? jstr(v) : def; };
+    const getInt = (sec, key, def) => { const v = sget(sec, key); return isNum(v) ? intValue(v) : def; };
+    const getDouble = (sec, key, def) => { const v = sget(sec, key); return isNum(v) ? doubleValue(v) : def; };
+    const getBoolean = (sec, key, def) => { const v = sget(sec, key); return typeof v === 'boolean' ? v : def; };
+    function getStringList(sec, key) { // MemorySection.getStringList : chaînes et types primitifs seulement
+        const v = sget(sec, key);
+        if (!Array.isArray(v)) return [];
+        return v.filter(x => typeof x === 'string' || typeof x === 'boolean' || isNum(x)).map(jstr);
+    }
+
+    // ---------- YAML 1.1 (SnakeYAML 1.33, Resolver + SafeConstructor) pour js-yaml 4 ----------
+    let SCHEMA = null;
+    function schema() {
+        if (SCHEMA) return SCHEMA;
+        if (!Y) throw new Error('js-yaml absent : impossible de lire ores.yml');
+        const BOOL = /^(?:yes|Yes|YES|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF)$/;
+        const INT = /^(?:[-+]?0b_*[0-1]+[0-1_]*|[-+]?0_*[0-7]+[0-7_]*|[-+]?(?:0|[1-9][0-9_]*)|[-+]?0x_*[0-9a-fA-F]+[0-9a-fA-F_]*|[-+]?[1-9][0-9_]*(?::[0-5]?[0-9])+)$/;
+        const FLOAT = /^(?:(?:[-+]?(?:[0-9][0-9_]*)\.[0-9_]*(?:[eE][-+]?[0-9]+)?)|(?:[-+]?(?:[0-9][0-9_]*)(?:[eE][-+]?[0-9]+))|(?:[-+]?\.[0-9_]+(?:[eE][-+]?[0-9]+)?)|(?:[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*)|(?:[-+]?\.(?:inf|Inf|INF))|(?:\.(?:nan|NaN|NAN)))$/;
+        const sexa = (s) => s.split(':').reduce((acc, d) => acc * 60 + Number(d), 0);
+        const bool = new Y.Type('tag:yaml.org,2002:bool', {
+            kind: 'scalar', resolve: d => d !== null && BOOL.test(d), construct: d => /^(?:yes|Yes|YES|true|True|TRUE|on|On|ON)$/.test(d),
+            predicate: o => typeof o === 'boolean', represent: o => (o ? 'true' : 'false')
+        });
+        const int = new Y.Type('tag:yaml.org,2002:int', { // ConstructYamlInt
+            kind: 'scalar', resolve: d => d !== null && INT.test(d),
+            construct: d => {
+                let v = d.replace(/_/g, ''), sign = 1;
+                if (v[0] === '-') { sign = -1; v = v.slice(1); } else if (v[0] === '+') v = v.slice(1);
+                let n;
+                if (v === '0') n = 0;
+                else if (v.startsWith('0b')) n = parseInt(v.slice(2), 2);
+                else if (v.startsWith('0x')) n = parseInt(v.slice(2), 16);
+                else if (v.startsWith('0')) n = parseInt(v.slice(1), 8);
+                else if (v.includes(':')) n = sexa(v);
+                else n = Number(v);
+                return sign * n;
+            },
+            predicate: o => typeof o === 'number' && Number.isInteger(o), represent: o => String(o)
+        });
+        const float = new Y.Type('tag:yaml.org,2002:float', { // ConstructYamlFloat
+            kind: 'scalar', resolve: d => d !== null && FLOAT.test(d),
+            construct: d => {
+                let v = d.replace(/_/g, ''), sign = 1;
+                if (v[0] === '-') { sign = -1; v = v.slice(1); } else if (v[0] === '+') v = v.slice(1);
+                const low = v.toLowerCase();
+                if (low === '.inf') return new JDouble(sign * Infinity);
+                if (low === '.nan') return new JDouble(NaN);
+                if (v.includes(':')) { const parts = v.split(':'); const last = Number(parts.pop()); return new JDouble(sign * (parts.reduce((a, x) => a * 60 + Number(x), 0) * 60 + last)); }
+                return new JDouble(sign * Number(v));
+            },
+            instanceOf: JDouble, represent: o => javaDouble(o.v)
+        });
+        SCHEMA = Y.DEFAULT_SCHEMA.extend({ implicit: [bool, int, float] });
+        return SCHEMA;
+    }
+    /**
+     * Charge le texte comme YamlConfiguration.loadFromString. Une erreur de syntaxe, ou une racine
+     * qui n'est pas un bloc, fait rendre à loadConfiguration une configuration VIDE (le serveur
+     * journalise « Cannot load ») : BC part alors sans aucun minerai (BeltariaContent.java:364-370).
+     */
+    function load(text) {
+        let data;
+        try {
+            data = Y.load(String(text == null ? '' : text), { schema: schema(), json: true }); // json : clés en double -> la dernière gagne, comme SnakeYAML
+        } catch (e) {
+            const line = e && e.mark && typeof e.mark.line === 'number' ? e.mark.line + 1 : null;
+            return { kind: 'empty', message: (e && e.reason) || String(e && e.message || e), line };
+        }
+        if (data === null || data === undefined) data = {};
+        if (!isMap(data)) return { kind: 'empty', message: 'Top level is not a Map.', line: 1 };
+        const root = new Section('');
+        convertMaps(data, root);
+        return { kind: 'ok', root, data };
+    }
+
+    // ---------- OresConfig.from et ce qu'il appelle ----------
+    class ConfigError extends Error {
+        constructor(path, problem, ref) { super(path + ' : ' + problem); this.name = 'ConfigError'; this.path = path; this.problem = problem; this.ref = ref || ''; }
+    }
+    const CE = (path, problem, ref) => new ConfigError(path, problem, ref);
+    const P = (parent, key) => (parent === '' ? key : parent + '.' + key); // ConfigValues.path
+    const REF = Object.freeze({
+        id: 'OresConfig.java:100-105', dupHost: 'OresConfig.java:107-112', block: 'ConfigValues.java:130-147',
+        hostMissing: 'OresConfig.java:124-130', hostUnknown: 'OresConfig.java:131-135',
+        toolList: 'OresConfig.java:224-233', toolEmpty: 'OresConfig.java:234-238 ; OreHarvest.java:71-75',
+        toolTier: 'OresConfig.java:245-250 ; OreHarvest.java:54-58', material: 'ConfigValues.java:149-158',
+        dropItem: 'OreDrop.java:67-74', dropData: 'OreDrop.java:75-79', amount: 'OreDrop.java:81-85', experience: 'OreDrop.java:86-90', range: 'OreDrop.java:104-130',
+        veins: 'OreVeins.java:77-83', size: 'OreVeins.java:84-88', minY: 'OreVeins.java:89-94', maxY: 'OreVeins.java:95-98', order: 'OreVeins.java:99-102',
+        replaceEmpty: 'OreVeins.java:105-112', replaceBlock: 'OreVeins.java:113-121',
+        worldsList: 'OresConfig.java:188-196', worldsMap: 'OresConfig.java:197-203', worldsEmpty: 'OresConfig.java:205-210'
+    });
+    function block(parent, key, path) { // ConfigValues.block
+        const raw = sget(parent, key);
+        if (raw == null) return new Section(childPath(parent, key));
+        if (raw instanceof Section) return raw;
+        throw CE(path, 'bloc attendu (cle: valeur), recu : ' + jstr(raw), REF.block);
+    }
+    function material(raw, path) { // ConfigValues.material
+        if (raw == null) throw CE(path, 'matiere absente', REF.material);
+        const m = matchMaterial(raw);
+        if (!m) throw CE(path, 'matiere inconnue : ' + raw, REF.material);
+        return m;
+    }
+    const DEFAULTS = Object.freeze({ veinsPerChunk: 8, veinSize: 8, minY: 5, maxY: 40, replace: Object.freeze(['STONE']) }); // OreVeins.java:42-47
+    const MAX_VEINS = 64, MAX_SIZE = 64, MAX_HEIGHT = 255; // OreVeins.java:38-40, OreVein.java:29
+    function veinsFrom(section, path, inh) { // OreVeins.from (OreVeins.java:69-125)
+        const veins = getDouble(section, 'veins-per-chunk', inh.veinsPerChunk);
+        if (!(veins >= 0 && veins <= MAX_VEINS)) throw CE(P(path, 'veins-per-chunk'), 'nombre de veines entre 0 et ' + MAX_VEINS + ' attendu, recu ' + javaDouble(veins), REF.veins);
+        const size = getInt(section, 'vein-size', inh.veinSize);
+        if (size < 1 || size > MAX_SIZE) throw CE(P(path, 'vein-size'), 'taille de veine entre 1 et ' + MAX_SIZE + ' attendue, recu ' + size, REF.size);
+        const minY = getInt(section, 'min-y', inh.minY);
+        const maxY = getInt(section, 'max-y', inh.maxY);
+        if (minY < 0 || minY > MAX_HEIGHT) throw CE(P(path, 'min-y'), 'altitude entre 0 et ' + MAX_HEIGHT + ' attendue, recu ' + minY, REF.minY);
+        if (maxY < 0 || maxY > MAX_HEIGHT) throw CE(P(path, 'max-y'), 'altitude entre 0 et ' + MAX_HEIGHT + ' attendue, recu ' + maxY, REF.maxY);
+        if (maxY < minY) throw CE(P(path, 'max-y'), 'altitude maximale sous la minimale : ' + maxY + ' < ' + minY, REF.order);
+        let replace = inh.replace;
+        if (contains(section, 'replace')) {
+            const rp = P(path, 'replace');
+            const named = getStringList(section, 'replace');
+            if (!named.length) throw CE(rp, 'liste vide : un minerai qui ne remplace rien ne se genere jamais', REF.replaceEmpty);
+            const set = new Map();
+            named.forEach(n => {
+                const m = material(n, rp);
+                if (!m.block) throw CE(rp, m.name + ' n\'est pas un bloc, donc rien a remplacer', REF.replaceBlock);
+                set.set(m.name, m);
+            });
+            replace = Object.freeze([...set.values()].sort((a, b) => a.ordinal - b.ordinal).map(m => m.name)); // EnumSet : ordre de l'énumération
+        }
+        return Object.freeze({ veinsPerChunk: veins, veinSize: size, minY, maxY, replace });
+    }
+    function range(section, key, path, fmin, fmax) { // OreDrop.range (OreDrop.java:104-130)
+        const where = P(path, key);
+        const raw = sget(section, key);
+        if (raw == null) return [fmin, fmax];
+        if (isNum(raw)) { const v = intValue(raw); return [v, v]; }
+        if (Array.isArray(raw)) {
+            if (raw.length !== 2 || !isNum(raw[0]) || !isNum(raw[1])) throw CE(where, 'fourchette [min, max] de deux nombres attendue, recu : ' + jstr(raw), REF.range);
+            const min = intValue(raw[0]), max = intValue(raw[1]);
+            if (max < min) throw CE(where, 'maximum sous le minimum : ' + max + ' < ' + min, REF.range);
+            return [min, max];
+        }
+        throw CE(where, 'nombre ou fourchette [min, max] attendu, recu : ' + jstr(raw), REF.range);
+    }
+    const SELF = Object.freeze({ item: null, data: 0, amount: [1, 1], fortune: false, silkTouch: true, experience: [0, 0] }); // OreDrop.java:39
+    function dropFrom(section, path) { // OreDrop.from (OreDrop.java:66-95)
+        let item = getString(section, 'item', null);
+        if (item != null) {
+            item = javaTrim(item);
+            if (!item) throw CE(P(path, 'item'), 'identifiant vide : retirer la cle rend le minerai lui-meme', REF.dropItem);
+        }
+        const data = getInt(section, 'data', 0);
+        if (data < 0 || data > 32767) throw CE(P(path, 'data'), 'variante entre 0 et 32767 attendue, recu ' + data, REF.dropData);
+        const amount = range(section, 'amount', path, 1, 1);
+        if (amount[0] < 0) throw CE(P(path, 'amount'), 'quantite negative : ' + amount[0], REF.amount);
+        const experience = range(section, 'experience', path, 0, 0);
+        if (experience[0] < 0) throw CE(P(path, 'experience'), 'experience negative : ' + experience[0], REF.experience);
+        return Object.freeze({ item, data, amount, fortune: getBoolean(section, 'fortune', false), silkTouch: getBoolean(section, 'silk-touch', true), experience });
+    }
+    function harvest(entry, toolPath) { // OresConfig.harvest (OresConfig.java:222-251)
+        const raw = sget(entry, 'tool');
+        if (Array.isArray(raw)) {
+            const items = [];
+            raw.forEach(named => {
+                const item = named == null ? '' : javaTrim(jstr(named));
+                if (!item) throw CE(toolPath, 'nom d\'item vide dans la liste : ' + jstr(raw), REF.toolList);
+                items.push(material(item, toolPath).name);
+            });
+            if (!items.length) throw CE(toolPath, 'liste d\'outils vide : aucun item ne recolterait ce bloc. Pour n\'exiger aucun outil, ecrire NONE', REF.toolEmpty);
+            return Object.freeze({ kind: 'list', tier: null, items: Object.freeze([...new Set(items)]) });
+        }
+        const toolName = getString(entry, 'tool', null);
+        if (toolName == null || !javaTrim(toolName) || javaTrim(toolName).toUpperCase() === 'NONE') return Object.freeze({ kind: 'any', tier: null, items: [] });
+        // ConfigException étend IllegalArgumentException : une matière inconnue est rattrapée par le
+        // même catch et reçoit le chemin une seconde fois (OresConfig.java:245-250).
+        let m;
+        try { m = material(toolName, toolPath); } catch (e) { throw CE(toolPath, e.message + ', ou NONE, ou une liste d\'items', REF.toolTier + ' ; ' + REF.material); }
+        if (!(m.name in PICKAXE_TIERS)) throw CE(toolPath, m.name + ' n\'est pas une pioche. Paliers possibles : ' + PICKAXE_NAMES + ', ou NONE, ou une liste d\'items', REF.toolTier);
+        return Object.freeze({ kind: 'tier', tier: m.name, items: [] });
+    }
+    /** ChatColor.translateAlternateColorCodes('&', …) */
+    function translateColors(s) {
+        const chars = s.split('');
+        for (let i = 0; i < chars.length - 1; i++) {
+            if (chars[i] === '&' && '0123456789AaBbCcDdEeFfKkLlMmNnOoRr'.includes(chars[i + 1])) { chars[i] = '§'; chars[i + 1] = chars[i + 1].toLowerCase(); }
+        }
+        return chars.join('');
+    }
+    function worldsOf(entry, path, common) { // OresConfig.worlds (OresConfig.java:183-212)
+        const wp = P(path, 'worlds');
+        const worlds = new Map();
+        const raw = sget(entry, 'worlds');
+        if (Array.isArray(raw)) {
+            raw.forEach(named => {
+                const w = named == null ? '' : javaTrim(jstr(named));
+                if (!w) throw CE(wp, 'nom de monde vide dans la liste : ' + jstr(raw), REF.worldsList);
+                worlds.set(w, common);
+            });
+        } else {
+            const declared = block(entry, 'worlds', wp);
+            for (const w of declared.map.keys()) {
+                const p = P(wp, w);
+                worlds.set(w, veinsFrom(block(declared, w, p), p, common));
+            }
+        }
+        if (!worlds.size && contains(entry, 'worlds')) {
+            throw CE(wp, 'aucun monde lu. Un monde sans reglage propre s\'ecrit "world: {}" ou dans une liste "worlds: [world]" : une cle YAML sans valeur est effacee avant d\'arriver ici, et le minerai ne se generait alors nulle part.', REF.worldsEmpty);
+        }
+        return worlds;
+    }
+    function parseOre(id, entry, path) { // OresConfig.parse (OresConfig.java:123-160)
+        const hostPath = P(path, 'host');
+        const hostId = getString(entry, 'host', null);
+        if (hostId == null) throw CE(hostPath, 'hote absent : un minerai occupe un bloc vanilla, que le pack rhabille. Hotes possibles : ' + HOST_NAMES, REF.hostMissing);
+        const host = hostById(hostId);
+        if (!host) throw CE(hostPath, 'hote inconnu : ' + hostId + '. Hotes possibles : ' + HOST_NAMES, REF.hostUnknown);
+        const rawName = getString(entry, 'name', null);
+        const name = rawName == null ? null : translateColors(rawName);
+        const tool = harvest(entry, P(path, 'tool'));
+        const drop = contains(entry, 'drop') ? dropFrom(block(entry, 'drop', P(path, 'drop')), P(path, 'drop')) : SELF;
+        const common = veinsFrom(entry, path, DEFAULTS);
+        const worlds = worldsOf(entry, path, common);
+        return Object.freeze({
+            id, host, name, rawName, tool, drop, common, worlds,
+            standIn: host.wooden && tool.kind === 'tier', // Ore.digStandIn (Ore.java:119-121)
+            markerValue: host.id                           // Ore.markerValue (Ore.java:137-139)
+        });
+    }
+    /**
+     * OresConfig.from (OresConfig.java:94-116) : s'arrête au premier défaut, comme BC.
+     * @return Map id -> minerai ; lève une ConfigError sinon.
+     */
+    function fromRoot(root) {
+        const parsed = new Map(), claimed = new Map();
+        for (const id of root.map.keys()) {
+            const entryPath = P('', id);
+            if (!/^[a-z0-9_-]+$/.test(id)) throw CE(entryPath, 'identifiant attendu en minuscules, chiffres, _ ou -', REF.id);
+            const ore = parseOre(id, block(root, id, entryPath), entryPath);
+            if (claimed.has(ore.host.id)) throw CE(P(entryPath, 'host'), 'l\'hote ' + ore.host.id + ' est deja pris par ' + claimed.get(ore.host.id) + ' : deux minerais sur le meme bloc seraient le meme bloc', REF.dupHost);
+            claimed.set(ore.host.id, id);
+            parsed.set(id, ore);
+        }
+        return parsed;
+    }
+
+    // ---------- Lignes du fichier : chemin YAML -> ligne (pour « ores.yml:12 » et les éditions) ----------
+    function unquote(k) {
+        if (k[0] === '"') { try { return JSON.parse(k); } catch (e) { return k.slice(1, -1); } }
+        if (k[0] === '\'') return k.slice(1, -1).replace(/''/g, '\'');
+        return k.trim();
+    }
+    /** Début et fin de la valeur après « clé: » : jusqu'au commentaire (« # » précédé d'un blanc), hors guillemets. */
+    function valueSpan(raw, from) {
+        let i = from;
+        while (i < raw.length && (raw[i] === ' ' || raw[i] === '\t')) i++;
+        const vs = i;
+        let q = null, end = raw.length;
+        for (; i < raw.length; i++) {
+            const c = raw[i];
+            if (q === '"') { if (c === '\\') i++; else if (c === '"') q = null; continue; }
+            if (q === '\'') { if (c === '\'') q = null; continue; }
+            if ((c === '"' || c === '\'') && (i === vs || /[\s[{,:]/.test(raw[i - 1]))) { q = c; continue; }
+            if (c === '#' && (i === vs || /\s/.test(raw[i - 1]))) { end = i; break; }
+        }
+        let ve = end;
+        while (ve > vs && /\s/.test(raw[ve - 1])) ve--;
+        return { vs, ve };
+    }
+    /**
+     * Index des lignes : un nœud par clé de bloc (et par élément « - » de liste en bloc).
+     * { path: [clés], line (0-based), indent, colon (fin de « clé: »), vs/ve (valeur sur la ligne),
+     *   end (dernière ligne de son bloc) }. Les clés en double gardent leur dernier nœud (comme SnakeYAML).
+     */
+    function indexLines(text) {
+        const nl = /\r\n/.test(text) ? '\r\n' : '\n';
+        const lines = String(text).split(/\r?\n/);
+        const nodes = [], stack = [];
+        for (let i = 0; i < lines.length; i++) {
+            const raw = lines[i];
+            if (/^\s*(#.*)?$/.test(raw) || /^(---|\.\.\.)\s*$/.test(raw)) continue;
+            const indent = /^ */.exec(raw)[0].length;
+            while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
+            stack.forEach(s => { s.end = i; });
+            const parent = stack[stack.length - 1] || null;
+            const rest = raw.slice(indent);
+            if (/^-(\s|$)/.test(rest)) {
+                if (parent) parent.seq = (parent.seq || 0) + 1;
+                const n = { path: (parent ? parent.path : []).concat([parent ? parent.seq - 1 : 0]), line: i, indent, seqItem: true, end: i, vs: indent + 1, ve: raw.length };
+                nodes.push(n); stack.push(n);
+                continue;
+            }
+            const km = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^\s#'"\-[{][^#]*?|-[^\s#][^#]*?)\s*:(?=\s|$)/.exec(rest);
+            if (!km) continue;
+            const colon = indent + km[0].length;
+            const { vs, ve } = valueSpan(raw, colon);
+            const n = { path: (parent ? parent.path : []).concat([unquote(km[1])]), line: i, indent, colon, vs, ve, inline: ve > vs, end: i };
+            nodes.push(n); stack.push(n);
+        }
+        return { lines, nodes, nl };
+    }
+    const samePath = (a, b) => a.length === b.length && a.every((x, i) => String(x) === String(b[i]));
+    function findNode(idx, path) {
+        for (let i = idx.nodes.length - 1; i >= 0; i--) if (samePath(idx.nodes[i].path, path)) return idx.nodes[i];
+        return null;
+    }
+    /** Ligne (1-based) d'un chemin BC « a.b.c » : la clé la plus précise présente dans le fichier. */
+    function lineOf(text, bcPath, idx) {
+        const ix = idx || indexLines(text);
+        const parts = String(bcPath || '').split('.');
+        for (let n = parts.length; n > 0; n--) {
+            const want = parts.slice(0, n).join('.');
+            for (let i = ix.nodes.length - 1; i >= 0; i--) {
+                const nd = ix.nodes[i];
+                if (!nd.seqItem && nd.path.join('.') === want) return nd.line + 1;
+            }
+        }
+        return null;
+    }
+    /** Clés présentes deux fois au même endroit : SnakeYAML garde la dernière, sans rien dire. */
+    function duplicateKeys(idx) {
+        const seen = new Map(), out = [];
+        idx.nodes.forEach(n => {
+            if (n.seqItem) return;
+            const k = JSON.stringify(n.path);
+            if (seen.has(k)) out.push({ path: n.path.join('.'), line: n.line + 1, first: seen.get(k) + 1 });
+            seen.set(k, n.line);
+        });
+        return out;
+    }
+
+    // ---------- Validation complète : verdict de BC + conseils non bloquants ----------
+    const ORE_KEYS = Object.freeze(['host', 'name', 'tool', 'drop', 'veins-per-chunk', 'vein-size', 'min-y', 'max-y', 'replace', 'worlds']);
+    const DROP_KEYS = Object.freeze(['item', 'data', 'amount', 'fortune', 'silk-touch', 'experience']);
+    const VEIN_KEYS = Object.freeze(['veins-per-chunk', 'vein-size', 'min-y', 'max-y', 'replace']);
+    const NUMERIC = { 'veins-per-chunk': 'getDouble', 'vein-size': 'getInt', 'min-y': 'getInt', 'max-y': 'getInt' };
+    /**
+     * @return { status: 'ok' | 'error' | 'empty', error: { message, path, line, ref } | null,
+     *           syntax, ores: [minerais lus], perOre: { id: erreur }, warnings: [{ text, line, ref, id }] }
+     * status 'error' : BC refuse le fichier (premier défaut, le seul qu'il affiche) ; perOre donne en
+     * plus le premier défaut de chaque entrée prise seule, pour corriger tout d'un coup.
+     */
+    function validate(text) {
+        const idx = indexLines(String(text || ''));
+        const out = { status: 'ok', error: null, syntax: null, ores: [], perOre: {}, warnings: [], hostsUsed: {} };
+        const loaded = load(text);
+        if (loaded.kind === 'empty') {
+            out.status = 'empty';
+            out.syntax = { message: loaded.message, line: loaded.line };
+            return out;
+        }
+        const root = loaded.root;
+        try {
+            fromRoot(root);
+        } catch (e) {
+            if (!(e instanceof ConfigError)) throw e;
+            out.status = 'error';
+            out.error = { message: e.message, path: e.path, line: lineOf(text, e.path, idx), ref: e.ref };
+        }
+        // Chaque entrée seule (comme si elle était la première), et les hôtes pris dans l'ordre du fichier
+        const claimed = {};
+        for (const id of root.map.keys()) {
+            const one = new Section('');
+            one.map.set(id, root.map.get(id));
+            try {
+                const ore = fromRoot(one).get(id);
+                if (claimed[ore.host.id]) {
+                    const p = P(id, 'host');
+                    out.perOre[id] = { message: p + ' : l\'hote ' + ore.host.id + ' est deja pris par ' + claimed[ore.host.id] + ' : deux minerais sur le meme bloc seraient le meme bloc', path: p, line: lineOf(text, p, idx), ref: REF.dupHost };
+                } else claimed[ore.host.id] = id;
+                out.ores.push(ore);
+            } catch (e) {
+                if (!(e instanceof ConfigError)) throw e;
+                out.perOre[id] = { message: e.message, path: e.path, line: lineOf(text, e.path, idx), ref: e.ref };
+            }
+        }
+        out.hostsUsed = claimed;
+        out.warnings = advice(root, out, text, idx);
+        return out;
+    }
+    /** Ce que BC accepte sans rien dire mais qui ne fait probablement pas ce qu'on croit. */
+    function advice(root, res, text, idx) {
+        const w = [];
+        const add = (id, path, msg, ref, kind) => w.push({ id, path, line: path ? lineOf(text, path, idx) : null, text: msg, ref: ref || '', kind: kind || 'warn' });
+        duplicateKeys(idx).forEach(d => add(null, d.path, `clé « ${d.path} » écrite deux fois (lignes ${d.first} et ${d.line}) : SnakeYAML garde la dernière sans prévenir.`, 'SnakeYAML 1.33, LoaderOptions.allowDuplicateKeys', 'warn'));
+        const unknownKeys = (sec, allowed, path, id, where, ref) => {
+            if (!(sec instanceof Section)) return;
+            for (const k of sec.map.keys()) if (!allowed.includes(k)) add(id, P(path, k), `« ${k} » n'est pas une clé lue par BC ${where} : ignorée sans message (faute de frappe ?). Clés lues : ${allowed.join(', ')}.`, ref, 'warn');
+        };
+        const typed = (sec, path, id, inh) => { // getInt / getDouble : une valeur du mauvais type est remplacée en silence
+            if (!(sec instanceof Section)) return;
+            Object.keys(NUMERIC).forEach(k => {
+                const v = sget(sec, k);
+                if (v != null && !isNum(v)) add(id, P(path, k), `${k}: ${jstr(v)} n'est pas un nombre : MemorySection.${NUMERIC[k]} le remplace en silence par ${inh}.`, 'OreVeins.java:77-90', 'warn');
+            });
+        };
+        const byId = new Map(res.ores.map(o => [o.id, o]));
+        for (const id of root.map.keys()) {
+            const sec = root.map.get(id);
+            if (!(sec instanceof Section)) continue;
+            unknownKeys(sec, ORE_KEYS, id, id, 'pour un minerai', 'OresConfig.java:123-160');
+            typed(sec, id, id, 'la valeur par défaut');
+            const ore = byId.get(id);
+            const drop = sget(sec, 'drop');
+            if (drop instanceof Section) {
+                unknownKeys(drop, DROP_KEYS, P(id, 'drop'), id, 'dans drop', 'OreDrop.java:66-95');
+                const d = sget(drop, 'data');
+                if (d != null && !isNum(d)) add(id, P(id, 'drop.data'), `drop.data: ${jstr(d)} n'est pas un nombre : remplacé en silence par 0.`, 'OreDrop.java:75', 'warn');
+                ['fortune', 'silk-touch'].forEach(k => {
+                    const b = sget(drop, k);
+                    if (b != null && typeof b !== 'boolean') add(id, P(id, 'drop.' + k), `drop.${k}: ${jstr(b)} n'est pas true / false : remplacé en silence par ${k === 'fortune' ? 'false' : 'true'}.`, 'OreDrop.java:93', 'warn');
+                });
+            }
+            const worlds = sget(sec, 'worlds');
+            if (worlds instanceof Section) {
+                for (const wn of worlds.map.keys()) {
+                    const ws = worlds.map.get(wn);
+                    unknownKeys(ws, VEIN_KEYS, P(id, 'worlds.' + wn), id, 'dans un monde', 'OreVeins.java:69-125');
+                    typed(ws, P(id, 'worlds.' + wn), id, 'la valeur du minerai');
+                }
+            }
+            if (!ore) continue;
+            const host = ore.host;
+            if (ore.drop.item) {
+                const m = matchMaterial(ore.drop.item);
+                if (!m) add(id, P(id, 'drop.item'), `drop.item « ${ore.drop.item} » n'est pas une matière Bukkit : ce doit être un identifiant d'items.yml, sinon BC journalise au démarrage « Butin introuvable, ce minerai ne rendra rien : ${id} -> ${ore.drop.item} - ni entree d'items.yml, ni matiere Bukkit. » (vérifié au chargement du serveur ; items.yml n'est pas lu ici).`, 'OresConfig.java:330-338 ; BeltariaContent.java:546-549', 'note');
+                else add(id, P(id, 'drop.item'), `drop.item « ${ore.drop.item} » : matière Bukkit ${m.name}, sauf si items.yml déclare un item de ce nom (essayé en premier).`, 'OreDrop.java:31-34 ; :178-192', 'note');
+            } else if (ore.drop.fortune) {
+                add(id, P(id, 'drop.fortune'), 'drop.fortune sans drop.item : sans effet, un minerai qui se rend lui-même ne profite pas de la Fortune (comme le minerai de fer vanilla).', 'OresListener.java:215-223', 'warn');
+            }
+            if (host.wooden) {
+                if (ore.standIn) add(id, P(id, 'tool'), 'hôte en bûche + palier de pioche : BC fait creuser cet état comme de la pierre (Bukkit#getBlockDigRules), la pioche y met le temps de la hache ; la craquelure du client ne se remplit pas jusqu\'au bout.', 'Ore.java:104-121', 'note');
+                else add(id, P(id, 'host'), `hôte en bûche : se casse vite à la hache (outil du bloc, côté client) ; ${ore.tool.kind === 'list' ? 'une liste d\'outils ne déclenche pas l\'emprunt des règles de la pierre' : 'sans palier de pioche, aucun emprunt des règles de la pierre'}. Le feu est refusé par BC.`, 'OreHost.java:73-75 ; Ore.java:115-121', 'note');
+            }
+            if (!ore.worlds.size) add(id, P(id, 'worlds'), 'aucun monde : ne se génère nulle part (se pose à la main, /content ores give).', 'Ore.java:24-26', 'note');
+            ore.worlds.forEach((v, wn) => {
+                if (!(v.veinsPerChunk > 0)) add(id, P(id, 'worlds.' + wn), `monde ${wn} : veins-per-chunk 0, aucune veine (pas de populateur pour ce minerai).`, 'OreVeins.java:173-175 ; Ore.java:195-198', 'note');
+            });
+            const vpcs = [ore.common, ...ore.worlds.values()].map(v => v.veinsPerChunk);
+            if (vpcs.some(v => v !== Math.floor(v))) add(id, P(id, 'veins-per-chunk'), 'veins-per-chunk décimal : un tirage de plus par tronçon, qui décale le hasard des minerais déclarés APRÈS celui-ci dans ores.yml (jamais ceux d\'avant). Les tronçons déjà générés ne changent pas.', 'OrePopulator.java:113-136', 'note');
+        }
+        return w;
+    }
+
+    // ---------- Génération : ce qui se déduit EXACTEMENT de l'algorithme de BC ----------
+    /**
+     * OrePopulator.place / veinCount (OrePopulator.java:97-136), OreYield.between (OreYield.java:112-120),
+     * OreVein.shape (OreVein.java:53-110), OrePopulator.Cell.fill (OrePopulator.java:158-160).
+     * Le nombre de blocs posés, lui, dépend de la roche rencontrée et de la découpe au bord du
+     * tronçon : il n'est PAS calculé.
+     */
+    function generationStats(v) {
+        const vpc = v.veinsPerChunk;
+        const whole = Math.floor(vpc), frac = vpc - whole;
+        const layers = v.maxY - v.minY + 1;
+        const wMax = v.veinSize / 8 + 1; // largeur < (sin + 1) × taille/16 + 1 <= taille/8 + 1 (OreVein.java:79-80)
+        // y d'un pas dans [centre - 2 ; centre] (OreVein.java:68-69) ; case prise si |y_case + 0,5 - y| < largeur/2 (:94-96)
+        const lo = Math.max(0, Math.floor(v.minY - 2 - 0.5 - wMax / 2) + 1);
+        const hi = Math.min(255, Math.ceil(v.maxY - 0.5 + wMax / 2) - 1);
+        return {
+            expected: vpc,                        // E[veines] = partie entière + P(nextDouble < partie décimale)
+            whole, frac,
+            chunksWithVein: vpc >= 1 ? 1 : vpc,   // part des tronçons qui reçoivent au moins une veine
+            oneIn: vpc > 0 && vpc < 1 ? 1 / vpc : null,
+            centre: [v.minY, v.maxY], layers,
+            perLayer: layers > 0 ? vpc / layers : 0, // centres de veine par couche et par tronçon (tirage uniforme)
+            blocksY: [lo, hi]                     // bornes (pire cas) des cases qu'une veine peut toucher
+        };
+    }
+
+    // ---------- Éditions ciblées qui préservent le texte (commentaires, ordre, style) ----------
+    const RESERVED = /^(?:yes|no|true|false|on|off|null|~|y|n)$/i;
+    function scalarText(v) {
+        if (v instanceof JDouble) return javaDouble(v.v);
+        if (typeof v === 'number') return String(v);
+        if (typeof v === 'boolean') return v ? 'true' : 'false';
+        if (v === null || v === undefined) return '~';
+        const s = String(v);
+        if (/^[A-Za-z_][A-Za-z0-9_-]*$/.test(s) && !RESERVED.test(s)) return s;
+        return JSON.stringify(s);
+    }
+    function flowText(v) {
+        if (Array.isArray(v)) return '[' + v.map(flowText).join(', ') + ']';
+        if (isMap(v)) { const k = Object.keys(v); return k.length ? '{ ' + k.map(x => scalarText(x) + ': ' + flowText(v[x])).join(', ') + ' }' : '{}'; }
+        return scalarText(v);
+    }
+    /** Bloc YAML (une clé par ligne) ; listes et objets vides en ligne. */
+    function blockLines(obj, indent) {
+        const pad = ' '.repeat(indent);
+        const out = [];
+        Object.keys(obj).forEach(k => {
+            const v = obj[k];
+            if (isMap(v) && Object.keys(v).length) { out.push(pad + scalarText(k) + ':'); out.push(...blockLines(v, indent + 2)); }
+            else out.push(pad + scalarText(k) + ': ' + flowText(v));
+        });
+        return out;
+    }
+    function deepEq(a, b) {
+        if (isNum(a) && isNum(b)) return Object.is(numOf(a), numOf(b)) || numOf(a) === numOf(b);
+        if (Array.isArray(a) || Array.isArray(b)) return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEq(x, b[i]));
+        if (isMap(a) || isMap(b)) {
+            if (!isMap(a) || !isMap(b)) return false;
+            const ka = Object.keys(a), kb = Object.keys(b);
+            return ka.length === kb.length && ka.every(k => Object.prototype.hasOwnProperty.call(b, k) && deepEq(a[k], b[k]));
+        }
+        return a === b;
+    }
+    function joinLines(idx) { return idx.lines.join(idx.nl); }
+    function childIndent(idx, node) {
+        const kid = idx.nodes.find(n => n.line > node.line && n.line <= node.end && n.indent > node.indent);
+        return kid ? kid.indent : node.indent + 2;
+    }
+    function replaceValue(text, path, valueText) {
+        const idx = indexLines(text);
+        const n = findNode(idx, path);
+        if (!n) throw new Error('clé introuvable : ' + path.join('.'));
+        const raw = idx.lines[n.line];
+        const comment = n.inline ? raw.slice(n.ve) : raw.slice(n.colon); // espaces et commentaire d'origine
+        idx.lines[n.line] = raw.slice(0, n.colon) + ' ' + valueText + (comment.trim() ? comment : '');
+        if (n.end > n.line) idx.lines.splice(n.line + 1, n.end - n.line);
+        return joinLines(idx);
+    }
+    function replaceWithBlock(text, path, obj) {
+        const idx = indexLines(text);
+        const n = findNode(idx, path);
+        const raw = idx.lines[n.line];
+        const comment = n.inline ? raw.slice(n.ve) : raw.slice(n.colon);
+        const ind = n.end > n.line && !n.inline ? childIndent(idx, n) : n.indent + 2;
+        idx.lines.splice(n.line, n.end - n.line + 1, raw.slice(0, n.colon) + (comment.trim() ? comment : ''), ...blockLines(obj, ind));
+        return joinLines(idx);
+    }
+    function removeKey(text, path) {
+        const idx = indexLines(text);
+        const n = findNode(idx, path);
+        if (!n) return text;
+        idx.lines.splice(n.line, n.end - n.line + 1);
+        return joinLines(idx);
+    }
+    /** Ajoute `key` dans le bloc `parentPath`, juste après la clé `afterKey` si elle y figure, sinon en fin de bloc. */
+    function insertKey(text, parentPath, key, value, afterKey) {
+        const idx = indexLines(text);
+        const parent = findNode(idx, parentPath);
+        if (!parent) throw new Error('bloc introuvable : ' + parentPath.join('.'));
+        const ind = childIndent(idx, parent);
+        const pad = ' '.repeat(ind);
+        const lines = isMap(value) && Object.keys(value).length ? [pad + scalarText(key) + ':', ...blockLines(value, ind + 2)] : [pad + scalarText(key) + ': ' + flowText(value)];
+        const after = afterKey != null ? findNode(idx, parentPath.concat([afterKey])) : null;
+        idx.lines.splice((after ? after.end : parent.end) + 1, 0, ...lines);
+        return joinLines(idx);
+    }
+    /**
+     * Applique newV au chemin `path` en ne touchant que les lignes qui changent : une valeur
+     * inchangée garde son texte, ses commentaires et son style (liste en ligne ou en bloc).
+     */
+    function applyValue(text, path, oldV, newV) {
+        if (deepEq(oldV, newV)) return text;
+        const idx = indexLines(text);
+        const n = findNode(idx, path);
+        if (!n) throw new Error('clé introuvable dans le texte : ' + path.join('.') + ' (ancre ou alias YAML ?)');
+        const blockNode = !n.inline && n.end > n.line;
+        if (isMap(oldV) && isMap(newV) && blockNode && Object.keys(newV).length) {
+            let t = text;
+            Object.keys(oldV).filter(k => !Object.prototype.hasOwnProperty.call(newV, k)).forEach(k => { t = removeKey(t, path.concat([k])); });
+            let prev = null; // une clé ajoutée se place après celle qui la précède dans newV
+            Object.keys(newV).forEach(k => {
+                if (Object.prototype.hasOwnProperty.call(oldV, k)) t = applyValue(t, path.concat([k]), oldV[k], newV[k]);
+                else t = insertKey(t, path, k, newV[k], prev);
+                prev = k;
+            });
+            return t;
+        }
+        if (isMap(newV) && Object.keys(newV).length) return replaceWithBlock(text, path, newV);
+        return replaceValue(text, path, flowText(newV));
+    }
+    /** Remplace (ou ajoute en fin de fichier) l'entrée `id` par `raw` ; le reste du fichier est conservé. */
+    function setOre(text, id, raw) {
+        const loaded = load(text);
+        const data = loaded.kind === 'ok' ? loaded.data : {};
+        const idx = indexLines(text);
+        if (Object.prototype.hasOwnProperty.call(data, id) && findNode(idx, [id])) return applyValue(text, [id], data[id], raw);
+        return appendOre(text, id, raw);
+    }
+    function appendOre(text, id, raw) {
+        const nl = /\r\n/.test(text) ? '\r\n' : '\n';
+        let t = String(text || '');
+        const body = isMap(raw) && Object.keys(raw).length ? [scalarText(id) + ':', ...blockLines(raw, 2)] : [scalarText(id) + ': {}'];
+        if (t && !/\r?\n$/.test(t)) t += nl;
+        if (t.trim()) t += nl;
+        return t + body.join(nl) + nl;
+    }
+    function removeOre(text, id) { return removeKey(text, [id]); }
+    function renameOre(text, id, newId) {
+        const idx = indexLines(text);
+        const n = findNode(idx, [id]);
+        if (!n) throw new Error('minerai introuvable : ' + id);
+        const raw = idx.lines[n.line];
+        idx.lines[n.line] = raw.slice(0, n.indent) + scalarText(newId) + raw.slice(n.colon - 1);
+        return joinLines(idx);
+    }
+    /** Extrait d'une entrée tel qu'il figure dans le texte (commentaires internes compris). */
+    function entryText(text, id) {
+        const idx = indexLines(text);
+        const n = findNode(idx, [id]);
+        if (!n) return '';
+        return idx.lines.slice(n.line, n.end + 1).join(idx.nl);
+    }
+    /** Données brutes (comme YAML les donne) d'une entrée, pour l'éditeur ; null si absente. */
+    function rawOre(text, id) {
+        const l = load(text);
+        if (l.kind !== 'ok' || !Object.prototype.hasOwnProperty.call(l.data, id)) return null;
+        return l.data[id];
+    }
+    function rawIds(text) {
+        const l = load(text);
+        return l.kind === 'ok' ? Object.keys(l.data) : [];
+    }
+    /** Lignes retirées / ajoutées entre deux textes (plus longue sous-suite commune). */
+    function changedLines(a, b) {
+        const x = String(a).split(/\r?\n/), y = String(b).split(/\r?\n/);
+        const n = x.length, m = y.length;
+        if (n * m > 4e6) return { removed: n, added: m };
+        const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+        for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = x[i] === y[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        const common = dp[0][0];
+        return { removed: n - common, added: m - common };
+    }
+
+    // ---------- pack.json : section ores (PackBuild.java:1295, :1307-1320) ----------
+    /** Défauts que tout le pack partage : un hôte inconnu ou une valeur qui n'est pas un objet refuse l'assemblage entier. */
+    function packOresProblems(pack) {
+        const out = [];
+        if (!isMap(pack)) return out;
+        if (isMap(pack.folders) && Object.prototype.hasOwnProperty.call(pack.folders, 'ores') && (typeof pack.folders.ores !== 'string' || pack.folders.ores === '')) {
+            out.push({ text: 'pack.json : ores : chaine non vide attendue', ref: 'PackBuild.java:1295 ; :1470-1478' });
+        }
+        if (Object.prototype.hasOwnProperty.call(pack, 'ores')) {
+            if (!isMap(pack.ores)) out.push({ text: 'pack.json : ores doit etre un objet identifiant -> reglages', ref: 'PackBuild.java:1459-1468' });
+            else Object.keys(pack.ores).forEach(k => {
+                const what = 'pack.json : ores.' + k;
+                if (!hostById(k)) out.push({ text: what + ' : aucun bloc hote de ce nom. Hotes possibles : ' + HOST_NAMES, ref: 'PackBuild.java:1310-1314' });
+                else if (!isMap(pack.ores[k])) out.push({ text: what + ' : objet attendu', ref: 'PackBuild.java:1315-1317' });
+            });
+        }
+        return out;
+    }
+
+    // ---------- Texture animée : .mcmeta du client 1.8.9 (AnimationMetadataSection) ----------
+    /** Images d'une texture : { frameW, frameH, frames: [{ index, time }] } ; time en ticks (défaut frametime, 1). */
+    function animation(w, h, mcmeta) {
+        const anim = mcmeta && isMap(mcmeta.animation) ? mcmeta.animation : null;
+        if (!anim) return { animated: false, frameW: w, frameH: h, frames: [{ index: 0, time: 1 }], count: 1, perRow: 1 };
+        const fw = typeof anim.width === 'number' ? anim.width : Math.min(w, h);
+        const fh = typeof anim.height === 'number' ? anim.height : fw;
+        const perRow = Math.max(1, Math.floor(w / fw)), total = perRow * Math.max(1, Math.floor(h / fh));
+        const ft = typeof anim.frametime === 'number' && anim.frametime > 0 ? anim.frametime : 1;
+        let frames;
+        if (Array.isArray(anim.frames) && anim.frames.length) frames = anim.frames.map(f => (typeof f === 'number' ? { index: f, time: ft } : { index: isMap(f) && typeof f.index === 'number' ? f.index : 0, time: isMap(f) && typeof f.time === 'number' ? f.time : ft }));
+        else frames = Array.from({ length: total }, (_, i) => ({ index: i, time: ft }));
+        return { animated: true, frameW: fw, frameH: fh, perRow, frames, count: total };
+    }
+
+    // ---------- Codes couleur Minecraft (§) -> segments pour l'aperçu du nom ----------
+    const COLORS = { 0: '#000000', 1: '#0000AA', 2: '#00AA00', 3: '#00AAAA', 4: '#AA0000', 5: '#AA00AA', 6: '#FFAA00', 7: '#AAAAAA', 8: '#555555', 9: '#5555FF', a: '#55FF55', b: '#55FFFF', c: '#FF5555', d: '#FF55FF', e: '#FFFF55', f: '#FFFFFF' };
+    function colorSegments(s, base) {
+        const out = [];
+        const reset = () => ({ color: base || '#FFFFFF', bold: false, italic: false, underline: false, strike: false, obf: false });
+        let st = reset(), buf = '';
+        const flush = () => { if (buf) out.push(Object.assign({ text: buf }, st)); buf = ''; };
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === '§' && i + 1 < s.length) {
+                const c = s[i + 1].toLowerCase();
+                flush();
+                if (COLORS[c]) st = Object.assign(reset(), { color: COLORS[c] });
+                else if (c === 'l') st = Object.assign({}, st, { bold: true });
+                else if (c === 'o') st = Object.assign({}, st, { italic: true });
+                else if (c === 'n') st = Object.assign({}, st, { underline: true });
+                else if (c === 'm') st = Object.assign({}, st, { strike: true });
+                else if (c === 'k') st = Object.assign({}, st, { obf: true });
+                else if (c === 'r') st = reset();
+                i++;
+                continue;
+            }
+            buf += s[i];
+        }
+        flush();
+        return out;
+    }
+
+    return Object.freeze({
+        HOSTS, HOST_NAMES, hostById, MATERIALS, matchMaterial, PICKAXES, PICKAXE_TIERS, PICKAXE_NAMES, DEFAULTS, SELF, REF,
+        ORE_KEYS, DROP_KEYS, VEIN_KEYS,
+        JDouble, javaDouble, jstr, intValue, load, validate, fromRoot, translateColors,
+        indexLines, lineOf, duplicateKeys, generationStats,
+        scalarText, flowText, blockLines, deepEq, applyValue, setOre, appendOre, removeOre, renameOre, entryText, rawOre, rawIds, changedLines,
+        packOresProblems, animation, colorSegments
+    });
+})();
+if (typeof window !== 'undefined') window.OresModel = OresModel;
+if (typeof module !== 'undefined') module.exports = OresModel;
+</script>
+
+<script>
+// =====================================================================
+// --- INTERFACE (window.OresEditor) ---
+// État modifiable unique (objet `st`) ; tout se passe sur le thread principal (lectures de
+// fichiers asynchrones, mais chaque suite s'exécute seule) : aucune synchronisation à porter.
+// Le texte de ores.yml est la seule source de vérité : chaque champ le modifie par une édition
+// ciblée (OresModel.setOre), puis tout est relu et redessiné (rendu différé, focus conservé).
+// =====================================================================
+window.OresEditor = (() => {
+    'use strict';
+    const M = window.OresModel;
+    const $ = id => document.getElementById(id);
+    const el = (tag, props, ...kids) => {
+        const e = document.createElement(tag);
+        if (props) Object.keys(props).forEach(k => {
+            if (k === 'class') e.className = props[k];
+            else if (k === 'text') e.textContent = props[k];
+            else if (k.startsWith('on')) e.addEventListener(k.slice(2), props[k]);
+            else if (props[k] !== undefined && props[k] !== null && props[k] !== false) e.setAttribute(k, props[k] === true ? '' : props[k]);
+        });
+        kids.forEach(k => { if (k != null) e.append(k); });
+        return e;
+    };
+    const has = (o, k) => o != null && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);
+    const isMap = v => v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof M.JDouble) && !(v instanceof Date);
+
+    const st = {
+        text: null, original: null, fileName: 'ores.yml',
+        files: new Map(),       // chemin -> { path, read }
+        pack: null, packPath: null, packError: null,
+        oreDirs: new Map(),     // dossier ores/<nom> -> { names: Set, base }
+        tex: new Map(),         // hôte -> { canvas, w, h, anim, meta, metaError, path }
+        notes: [],              // messages de chargement
+        sel: null, texHost: null, res: null,
+        actionMsg: null, tick: 0, animTimer: 0, renderQueued: false
+    };
+
+    // ---------- Fichiers : dossier, fichiers isolés, .zip (lecture paresseuse) ----------
+    async function inflateRaw(data) {
+        if (typeof DecompressionStream === 'undefined') throw new Error('ce navigateur ne sait pas décompresser les .zip (DecompressionStream absent)');
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    function readZip(buf, zipName) {
+        const u8 = new Uint8Array(buf), dv = new DataView(buf);
+        let eocd = -1;
+        for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+        if (eocd < 0) throw new Error(`${zipName} : archive .zip illisible (répertoire central introuvable)`);
+        const count = dv.getUint16(eocd + 10, true);
+        let p = dv.getUint32(eocd + 16, true);
+        const out = [], dec = new TextDecoder();
+        for (let n = 0; n < count; n++) {
+            if (dv.getUint32(p, true) !== 0x02014b50) throw new Error(`${zipName} : répertoire central corrompu`);
+            const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+            const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), lho = dv.getUint32(p + 42, true);
+            const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+            p += 46 + nlen + xlen + clen;
+            if (name.endsWith('/') || name.startsWith('__MACOSX/')) continue;
+            out.push({ path: name, read: async () => {
+                if (flags & 1) throw new Error(`${name} : fichier chiffré dans l'archive`);
+                const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+                const data = u8.subarray(start, start + csize);
+                if (method === 0) return data.slice();
+                if (method === 8) return inflateRaw(data);
+                throw new Error(`${name} : compression ${method} non prise en charge`);
+            } });
+        }
+        return out;
+    }
+    const norm = p => String(p).replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+    const textOf = async rec => new TextDecoder().decode(await rec.read());
+    async function decodeImage(bytes) {
+        const blob = new Blob([bytes], { type: 'image/png' });
+        if (typeof createImageBitmap === 'function') return createImageBitmap(blob);
+        const url = URL.createObjectURL(blob);
+        try { return await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('image illisible')); i.src = url; }); }
+        finally { URL.revokeObjectURL(url); }
+    }
+
+    /** Charge des fichiers : [{ path, data (Uint8Array | chaîne) } | { path, read }]. Un .zip est déplié. */
+    async function loadFiles(list) {
+        st.files = new Map();
+        st.notes = [];
+        for (const it of list) {
+            const path = norm(it.path);
+            const rec = it.read ? { path, read: it.read } : { path, read: async () => (typeof it.data === 'string' ? new TextEncoder().encode(it.data) : new Uint8Array(it.data)) };
+            if (/\.zip$/i.test(path)) {
+                const bytes = await rec.read();
+                readZip(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), path).forEach(z => st.files.set(norm(z.path), Object.assign(z, { path: norm(z.path) })));
+            } else st.files.set(path, rec);
+        }
+        const paths = [...st.files.keys()];
+        const depth = p => p.split('/').length;
+        const yml = paths.filter(p => /(^|\/)ores\.ya?ml$/.test(p)).sort((a, b) => depth(a) - depth(b))[0];
+        // pack.json : celui du pack, pas un fichier d'entrée (le moins profond hors des dossiers de catégories)
+        const packJson = paths.filter(p => /(^|\/)pack\.json$/.test(p) && !/(^|\/)(wings|auras|motes|blocks|items|armor|entities|ores|glyphs|assets)\//.test(p)).sort((a, b) => depth(a) - depth(b))[0];
+        st.pack = null; st.packPath = packJson || null; st.packError = null;
+        if (packJson) {
+            try { st.pack = JSON.parse(await textOf(st.files.get(packJson))); }
+            catch (e) { st.packError = `${packJson} : JSON invalide (${e.message}) ; BC refuserait tout le pack (PackBuild.java:1262-1271).`; }
+        }
+        // ores/<dossier>/texture.png (+ .mcmeta) : PackBuild.discoverOres (PackBuild.java:897-919)
+        st.oreDirs = new Map();
+        paths.forEach(p => {
+            const m = /(?:^|\/)ores\/([^/]+)\/([^/]+)$/.exec(p);
+            if (!m) return;
+            const base = p.slice(0, p.length - m[2].length);
+            if (!st.oreDirs.has(m[1])) st.oreDirs.set(m[1], { names: new Set(), base });
+            st.oreDirs.get(m[1]).names.add(m[2]);
+        });
+        st.tex = new Map();
+        for (const [folder, d] of st.oreDirs) {
+            const host = M.hostById(folder);
+            if (!host || !d.names.has('texture.png')) continue;
+            try {
+                const img = await decodeImage(await st.files.get(d.base + 'texture.png').read());
+                const c = document.createElement('canvas');
+                c.width = img.width; c.height = img.height;
+                c.getContext('2d').drawImage(img, 0, 0);
+                let meta = null, metaError = null;
+                if (d.names.has('texture.png.mcmeta')) {
+                    try { meta = JSON.parse(await textOf(st.files.get(d.base + 'texture.png.mcmeta'))); } catch (e) { metaError = e.message; }
+                }
+                st.tex.set(host.id, { canvas: c, w: img.width, h: img.height, meta, metaError, anim: M.animation(img.width, img.height, meta), folder, path: d.base + 'texture.png' });
+            } catch (e) { st.notes.push({ kind: 'error', text: `${d.base}texture.png : ${e.message}` }); }
+        }
+        if (yml) {
+            st.fileName = yml.split('/').pop();
+            loadText(await textOf(st.files.get(yml)), yml);
+        } else render();
+        st.notes.unshift({ kind: 'ok', text: `${st.files.size} fichier(s) lus${yml ? ', ores.yml : ' + yml : ', sans ores.yml'}${packJson ? ', pack.json : ' + packJson : ''} ; ${st.tex.size} texture(s) de minerai.` });
+        render();
+        return getState();
+    }
+    function loadText(text, name) {
+        st.text = String(text == null ? '' : text);
+        st.original = st.text;
+        if (name) st.fileName = String(name).split('/').pop();
+        st.actionMsg = null;
+        const ids = M.rawIds(st.text);
+        st.sel = ids.includes(st.sel) ? st.sel : (ids[0] || null);
+        render();
+        return getState();
+    }
+
+    // ---------- Éditions ----------
+    function cloneRaw(v) {
+        if (Array.isArray(v)) return v.map(cloneRaw);
+        if (v instanceof M.JDouble) return new M.JDouble(v.v);
+        if (isMap(v)) { const o = {}; Object.keys(v).forEach(k => { o[k] = cloneRaw(v[k]); }); return o; }
+        return v;
+    }
+    /** Pose (ou retire, value undefined) une clé ; une clé nouvelle prend sa place dans l'ordre de la doc de BC. */
+    function setKey(obj, key, value, order) {
+        if (value === undefined) { delete obj[key]; return obj; }
+        if (has(obj, key)) { obj[key] = value; return obj; }
+        const pos = order ? order.indexOf(key) : -1;
+        const keys = Object.keys(obj);
+        let at = keys.length;
+        if (pos >= 0) { at = 0; keys.forEach((k, i) => { const p = order.indexOf(k); if (p >= 0 && p < pos) at = i + 1; else if (p < 0 && at === i) at = i + 1; }); }
+        const copy = {};
+        keys.slice(0, at).forEach(k => { copy[k] = obj[k]; });
+        copy[key] = value;
+        keys.slice(at).forEach(k => { copy[k] = obj[k]; });
+        Object.keys(obj).forEach(k => delete obj[k]);
+        Object.assign(obj, copy);
+        return obj;
+    }
+    /** Modifie l'entrée sélectionnée : fn reçoit une copie de ses données brutes et la change. */
+    function mutate(fn) {
+        if (st.text == null || !st.sel) return { ok: false, error: 'aucun minerai sélectionné' };
+        const raw = M.rawOre(st.text, st.sel);
+        const next = isMap(raw) ? cloneRaw(raw) : {};
+        fn(next);
+        try {
+            st.text = M.setOre(st.text, st.sel, next);
+            st.actionMsg = null;
+        } catch (e) {
+            st.actionMsg = { kind: 'error', text: `Modification impossible par les champs : ${e.message}. Corrigez le texte de ores.yml directement (section 7).` };
+        }
+        render();
+        return { ok: !st.actionMsg };
+    }
+    function numberOrText(s) {
+        const t = String(s == null ? '' : s).trim();
+        if (!t) return undefined;
+        const n = Number(t.replace(',', '.'));
+        if (Number.isFinite(n) && /^[-+]?(\d+([.,]\d*)?|[.,]\d+)([eE][-+]?\d+)?$/.test(t)) return n;
+        return t;
+    }
+    function listOf(s) {
+        const t = String(s == null ? '' : s).trim();
+        if (!t) return undefined;
+        return t.split(/[,;\s]+/).filter(Boolean).map(x => (/^\d+$/.test(x) ? Number(x) : x));
+    }
+    function rangeOf(s) {
+        const t = String(s == null ? '' : s).trim();
+        if (!t) return undefined;
+        const parts = t.replace(/^\[|\]$/g, '').split(/[,;]|\s+-\s+|\s+/).map(x => x.trim()).filter(Boolean);
+        const nums = parts.map(x => Number(x.replace(',', '.')));
+        if (parts.length === 1 && Number.isFinite(nums[0])) return nums[0];
+        if (parts.length === 2 && nums.every(Number.isFinite)) return nums;
+        return t; // laissé tel quel : BC dira pourquoi il le refuse
+    }
+    const showVal = v => (v === undefined || v === null ? '' : Array.isArray(v) ? v.map(x => M.jstr(x)).join(', ') : M.jstr(v));
+    const rangeText = v => (v === undefined || v === null ? '' : Array.isArray(v) ? v.map(x => M.jstr(x)).join(', ') : M.jstr(v));
+    function uniqueId(base) {
+        const ids = new Set(M.rawIds(st.text || ''));
+        if (!ids.has(base)) return base;
+        for (let i = 2; ; i++) if (!ids.has(`${base}_${i}`)) return `${base}_${i}`;
+    }
+    function addOre() {
+        if (st.text == null) st.text = st.original = '';
+        const res = M.validate(st.text);
+        const used = new Set(Object.keys(res.hostsUsed || {}));
+        const free = M.HOSTS.find(h => !used.has(h.id));
+        const id = uniqueId('nouveau_minerai');
+        st.text = M.appendOre(st.text, id, { host: free ? free.id : 'smooth_stone', name: '&fNouveau minerai', tool: 'IRON_PICKAXE', 'veins-per-chunk': 1, 'vein-size': 4, 'min-y': 0, 'max-y': 16, worlds: ['world'] });
+        st.sel = id;
+        st.actionMsg = { kind: 'ok', text: `Minerai ${id} ajouté en fin de fichier${free ? ` sur l'hôte libre ${free.id}` : ' : plus aucun hôte libre, BC refusera le doublon'}.` };
+        render();
+        return getState();
+    }
+    function removeSelected() {
+        if (!st.sel) return;
+        const id = st.sel;
+        st.text = M.removeOre(st.text, id);
+        const ids = M.rawIds(st.text);
+        st.sel = ids[0] || null;
+        st.actionMsg = { kind: 'ok', text: `Minerai ${id} retiré (ses lignes seulement).` };
+        render();
+    }
+    function renameSelected(newId) {
+        const id = String(newId || '').trim();
+        if (!st.sel || !id || id === st.sel) return;
+        if (M.rawIds(st.text).includes(id)) { st.actionMsg = { kind: 'error', text: `« ${id} » existe déjà dans ores.yml.` }; render(); return; }
+        st.text = M.renameOre(st.text, st.sel, id);
+        st.sel = id;
+        render();
+    }
+
+    // ---------- Rendu (différé : le champ suivant garde le focus) ----------
+    function render() {
+        if (st.renderQueued) return;
+        st.renderQueued = true;
+        setTimeout(() => { st.renderQueued = false; renderNow(); }, 0);
+    }
+    function renderNow() {
+        const focusId = document.activeElement && document.activeElement.id;
+        st.res = st.text == null ? null : M.validate(st.text);
+        const ids = st.text == null ? [] : M.rawIds(st.text);
+        if (st.sel && !ids.includes(st.sel)) st.sel = ids[0] || null;
+        renderStatus();
+        renderFiles();
+        renderOreList(ids);
+        renderForm();
+        renderMessages();
+        renderHosts();
+        renderTexture();
+        renderGeneration();
+        renderOutput();
+        if (focusId) { const f = $(focusId); if (f && document.activeElement !== f) f.focus({ preventScroll: true }); }
+    }
+    function renderStatus() {
+        const s = $('status');
+        const r = st.res;
+        if (!r) { s.className = 'status'; s.textContent = 'Aucun fichier : chargez ores.yml, un dossier ou un .zip — ou commencez un fichier vide.'; return; }
+        if (r.status === 'empty') {
+            s.className = 'status error';
+            s.textContent = `Illisible pour Bukkit (ligne ${r.syntax.line || '?'}) : YamlConfiguration rend un fichier vide, BC démarre sans AUCUN minerai et sans erreur de BC.`;
+        } else if (r.status === 'error') {
+            s.className = 'status error';
+            s.textContent = `Refusé par BeltariaContent : ${r.error.message}`;
+        } else {
+            const n = r.ores.length;
+            s.className = 'status ok';
+            s.textContent = n ? `Accepté par BeltariaContent : ${n} minerai(s), ${n} hôte(s) sur 10.` : 'Accepté par BeltariaContent : aucun minerai déclaré (catalogue vide).';
+        }
+    }
+    function renderFiles() {
+        const ul = $('filesInfo');
+        ul.textContent = '';
+        st.notes.forEach(n => ul.append(el('li', null, el('span', { class: 'dot ' + (n.kind === 'error' ? 'error' : n.kind === 'warn' ? 'warn' : 'ok') }), n.text)));
+        if (st.text != null) ul.append(el('li', null, el('span', { class: 'dot ok' }), `${st.fileName} : ${st.text.split(/\r?\n/).length} ligne(s)${/\r\n/.test(st.text) ? ', fins de ligne CRLF conservées' : ''}.`));
+        $('resetFile').disabled = st.text == null || st.text === st.original;
+        $('addOre').disabled = false;
+    }
+    function oreState(id) {
+        const r = st.res;
+        if (!r || r.status === 'empty') return 'error';
+        return r.perOre[id] ? 'error' : 'ok';
+    }
+    function renderOreList(ids) {
+        const box = $('oreList');
+        box.textContent = '';
+        if (st.text == null) { box.append(el('p', { class: 'muted', text: 'Chargez un fichier ou commencez-en un.' })); return; }
+        if (!ids.length) { box.append(el('p', { class: 'muted', text: st.res && st.res.status === 'empty' ? 'Fichier illisible : corrigez la syntaxe dans le texte (section 7).' : 'Aucun minerai : « + Nouveau minerai ».' })); return; }
+        ids.forEach(id => {
+            const raw = M.rawOre(st.text, id);
+            const host = isMap(raw) && raw.host != null ? M.jstr(raw.host) : '?';
+            box.append(el('button', { type: 'button', class: 'ore-btn', 'aria-pressed': String(id === st.sel), 'data-id': id, onclick: () => select(id) },
+                el('span', { class: 'dot ' + oreState(id) }), id, el('small', { text: ' ' + host })));
+        });
+    }
+
+    // ---------- Formulaire de l'entrée sélectionnée ----------
+    function field(label, input, hint) {
+        return el('label', { class: 'field' }, el('span', { text: label }), input, hint ? el('span', { class: 'hint', text: hint }) : null);
+    }
+    function textInput(id, value, onchange, extra) {
+        const i = el('input', Object.assign({ type: 'text', id, value: value == null ? '' : String(value), autocomplete: 'off', spellcheck: 'false', onchange: e => onchange(e.target.value) }, extra || {}));
+        return i;
+    }
+    function selectInput(id, options, value, onchange) {
+        const s = el('select', { id, onchange: e => onchange(e.target.value) });
+        options.forEach(o => { const opt = el('option', { value: o.value, text: o.label }); if (o.disabled) opt.disabled = true; s.append(opt); });
+        s.value = value;
+        return s;
+    }
+    function toolMode(v) {
+        if (v === undefined || v === null) return 'absent';
+        if (Array.isArray(v)) return 'list';
+        const s = String(M.jstr(v)).trim();
+        if (!s || s.toUpperCase() === 'NONE') return 'none';
+        const m = M.matchMaterial(s);
+        return m && m.name in M.PICKAXE_TIERS && typeof v === 'string' ? 'tier' : 'raw';
+    }
+    function worldsMode(v) {
+        if (v === undefined || v === null) return 'none';
+        if (Array.isArray(v)) return 'list';
+        if (isMap(v)) return 'map';
+        return 'raw';
+    }
+    function renderForm() {
+        const box = $('oreForm');
+        box.textContent = '';
+        if (!st.sel) { box.append(el('p', { class: 'muted', text: st.text == null ? 'Aucun fichier.' : 'Aucun minerai sélectionné.' })); return; }
+        const raw = M.rawOre(st.text, st.sel);
+        const id = st.sel;
+        const ore = st.res ? st.res.ores.find(o => o.id === id) : null;
+        const err = st.res ? st.res.perOre[id] : null;
+        box.append(el('div', { class: 'fields two' },
+            field('Identifiant (clé de ores.yml)', textInput('f-id', id, renameSelected, { class: 'mono', 'aria-label': 'Identifiant du minerai' }), 'minuscules, chiffres, _ ou - ; se tape dans /content ores give'),
+            field('Hôte', selectInput('f-host', hostOptions(raw), isMap(raw) && raw.host != null ? (M.hostById(raw.host) && typeof raw.host === 'string' && raw.host === M.hostById(raw.host).id ? raw.host : '*raw') : '', v => mutate(o => { if (v !== '*raw') setKey(o, 'host', v || undefined, M.ORE_KEYS); })), 'le bloc vanilla occupé ; un seul minerai par hôte')));
+        if (!isMap(raw)) {
+            box.append(el('div', { class: 'st-note st-note-error', style: 'margin-top:10px', text: `L'entrée ${id} n'est pas un bloc « clé: valeur » : BC la refuse. Corrigez-la dans le texte, ou remplacez-la par un bloc minimal.` }),
+                el('div', { class: 'row', style: 'margin-top:8px' }, el('button', { type: 'button', class: 'st-btn', onclick: () => { st.text = M.removeOre(st.text, id); st.text = M.appendOre(st.text, id, { host: 'smooth_stone' }); render(); }, text: 'Remplacer par un bloc minimal' })));
+            return;
+        }
+        // Nom
+        const name = el('div', { class: 'name-preview', id: 'namePreview', 'aria-label': 'Aperçu du nom en jeu' });
+        const rawName = raw.name != null ? M.jstr(raw.name) : '';
+        paintName(name, raw.name != null ? M.translateColors(rawName) : id, raw.name == null);
+        box.append(el('span', { class: 'group-label', text: 'Nom de l\'item' }),
+            field('name (codes couleur avec &)', textInput('f-name', rawName, v => mutate(o => setKey(o, 'name', v === '' ? undefined : v, M.ORE_KEYS)), { 'aria-label': 'Nom du minerai' }), 'défaut : l\'identifiant (Ore.java:155-167)'), name);
+        // Outil
+        const tm = toolMode(raw.tool);
+        const tools = el('div', { class: 'fields two' },
+            field('tool : ce qu\'il faut tenir pour récolter', selectInput('f-tool-mode', [
+                { value: 'absent', label: '(absent) aucun outil exigé' }, { value: 'none', label: 'NONE : aucun outil exigé' },
+                { value: 'tier', label: 'un palier de pioche (échelle vanilla)' }, { value: 'list', label: 'une liste exacte d\'items' },
+                { value: 'raw', label: '(autre valeur, telle quelle)', disabled: tm !== 'raw' }], tm, v => mutate(o => {
+                    const cur = o.tool;
+                    const val = { absent: undefined, none: 'NONE', tier: 'IRON_PICKAXE', list: ['DIAMOND_PICKAXE'], raw: cur }[v];
+                    setKey(o, 'tool', val, M.ORE_KEYS);
+                })), 'sans l\'outil voulu, le bloc casse et ne rend rien'));
+        if (tm === 'tier') {
+            const order = M.PICKAXES.slice().sort((a, b) => M.PICKAXE_TIERS[a] - M.PICKAXE_TIERS[b]);
+            tools.append(field('Pioche minimale', selectInput('f-tool-tier', order.map(p => ({ value: p, label: `${p} (palier ${M.PICKAXE_TIERS[p]})` })), M.matchMaterial(String(raw.tool)).name, v => mutate(o => setKey(o, 'tool', v, M.ORE_KEYS))), 'GOLD_PICKAXE = palier du bois, comme en vanilla (OreYield.java:30-41)'));
+        } else if (tm === 'list' || tm === 'raw') {
+            tools.append(field(tm === 'list' ? 'Items acceptés (séparés par des virgules)' : 'Valeur', textInput('f-tool-list', showVal(raw.tool), v => mutate(o => setKey(o, 'tool', tm === 'list' ? (listOf(v) || []) : (v === '' ? undefined : v), M.ORE_KEYS)), { class: 'mono' }), tm === 'list' ? 'exactement ces items, sans échelle : la seule forme qui sache dire « la hache aussi »' : ''));
+        }
+        box.append(el('span', { class: 'group-label', text: 'Récolte' }), tools);
+        // Butin
+        const drop = raw.drop;
+        const dropOn = drop !== undefined && drop !== null;
+        const dsub = el('div', { class: 'sub' });
+        const dcb = el('input', { type: 'checkbox', id: 'f-drop-on', onchange: e => mutate(o => setKey(o, 'drop', e.target.checked ? {} : undefined, M.ORE_KEYS)) });
+        dcb.checked = dropOn;
+        dsub.append(el('label', { class: 'row', style: 'gap:6px;font-size:13px;cursor:pointer' }, dcb, el('span', { text: 'Section drop (sinon le minerai se rend lui-même, OreDrop.SELF)' })));
+        if (dropOn && isMap(drop)) {
+            const dset = (k, v) => mutate(o => { const d = isMap(o.drop) ? o.drop : {}; setKey(d, k, v, M.DROP_KEYS); setKey(o, 'drop', d, M.ORE_KEYS); });
+            const boolSel = (idf, k, def) => selectInput(idf, [{ value: '', label: `(défaut : ${def ? 'oui' : 'non'})` }, { value: 'true', label: 'true' }, { value: 'false', label: 'false' }, { value: '*raw', label: '(autre valeur)', disabled: true }],
+                drop[k] === undefined ? '' : drop[k] === true ? 'true' : drop[k] === false ? 'false' : '*raw', v => dset(k, v === '' ? undefined : v === 'true'));
+            dsub.append(el('div', { class: 'fields', style: 'margin-top:8px' },
+                field('item', textInput('f-drop-item', showVal(drop.item), v => dset('item', v === '' ? undefined : v), { class: 'mono' }), 'id d\'items.yml ou matière Bukkit'),
+                field('data', textInput('f-drop-data', showVal(drop.data), v => dset('data', numberOrText(v)), { inputmode: 'numeric' }), '0 à 32767, défaut 0'),
+                field('amount', textInput('f-drop-amount', rangeText(drop.amount), v => dset('amount', rangeOf(v)), { class: 'mono' }), 'n ou min, max ; défaut 1'),
+                field('experience', textInput('f-drop-exp', rangeText(drop.experience), v => dset('experience', rangeOf(v)), { class: 'mono' }), 'n ou min, max ; défaut 0'),
+                field('fortune', boolSel('f-drop-fortune', 'fortune', false), 'multiplie la quantité'),
+                field('silk-touch', boolSel('f-drop-silk', 'silk-touch', true), 'la Soie rend le bloc')));
+        } else if (dropOn) {
+            dsub.append(el('p', { class: 'muted small', text: `drop vaut « ${M.jstr(drop)} » : ce n'est pas un bloc, BC le refuse. Décochez pour le retirer.` }));
+        }
+        box.append(el('span', { class: 'group-label', text: 'Butin' }), dsub);
+        // Génération commune
+        const gen = (idf, k, hint, def) => field(k, textInput(idf, showVal(raw[k]), v => mutate(o => setKey(o, k, numberOrText(v), M.ORE_KEYS)), { inputmode: 'decimal', placeholder: String(def) }), hint);
+        box.append(el('span', { class: 'group-label', text: 'Génération (tous les mondes)' }),
+            el('div', { class: 'fields' },
+                gen('f-vpc', 'veins-per-chunk', '0 à 64 ; décimal = une chance (défaut 8)', M.DEFAULTS.veinsPerChunk),
+                gen('f-size', 'vein-size', '1 à 64 cases (défaut 8)', M.DEFAULTS.veinSize),
+                gen('f-miny', 'min-y', '0 à 255 (défaut 5)', M.DEFAULTS.minY),
+                gen('f-maxy', 'max-y', '0 à 255 (défaut 40)', M.DEFAULTS.maxY),
+                field('replace', textInput('f-replace', showVal(raw.replace), v => mutate(o => setKey(o, 'replace', listOf(v), M.ORE_KEYS)), { class: 'mono', placeholder: 'STONE' }), 'blocs remplacés (défaut STONE)')));
+        // Mondes
+        const wm = worldsMode(raw.worlds);
+        const wsub = el('div', { class: 'sub' });
+        wsub.append(field('worlds : où il se génère', selectInput('f-worlds-mode', [
+            { value: 'none', label: '(absent) nulle part' }, { value: 'list', label: 'une liste : mêmes réglages partout' },
+            { value: 'map', label: 'un bloc par monde : réglages repris' }, { value: 'raw', label: '(autre valeur)', disabled: wm !== 'raw' }], wm, v => mutate(o => {
+                const cur = o.worlds;
+                let val;
+                if (v === 'none') val = undefined;
+                else if (v === 'list') val = isMap(cur) ? Object.keys(cur) : Array.isArray(cur) ? cur : ['world'];
+                else if (v === 'map') { val = {}; (Array.isArray(cur) ? cur : ['world']).forEach(w => { val[M.jstr(w)] = {}; }); }
+                else val = cur;
+                setKey(o, 'worlds', val, M.ORE_KEYS);
+            })), 'un monde absent n\'en reçoit aucun'));
+        if (wm === 'list') {
+            wsub.append(field('Mondes (séparés par des virgules)', textInput('f-worlds-list', showVal(raw.worlds), v => mutate(o => setKey(o, 'worlds', listOf(v) || [], M.ORE_KEYS)), { class: 'mono' })));
+        } else if (wm === 'map') {
+            const names = Object.keys(raw.worlds);
+            names.forEach((wn, i) => {
+                const wv = raw.worlds[wn];
+                const inh = ore ? ore.common : M.DEFAULTS;
+                const wset = (k, v) => mutate(o => { const ws = o.worlds; const cur = isMap(ws[wn]) ? ws[wn] : {}; setKey(cur, k, v, M.VEIN_KEYS); ws[wn] = cur; });
+                const wf = (k, label, def) => field(label, textInput(`f-w${i}-${k}`, isMap(wv) ? showVal(wv[k]) : '', v => wset(k, k === 'replace' ? listOf(v) : numberOrText(v)), { inputmode: k === 'replace' ? 'text' : 'decimal', class: k === 'replace' ? 'mono' : '', placeholder: String(def) }));
+                const box2 = el('div', { class: 'world' },
+                    el('div', { class: 'world-head' },
+                        field('Monde', textInput(`f-w${i}-name`, wn, v => mutate(o => {
+                            const nv = String(v).trim();
+                            if (!nv || nv === wn || has(o.worlds, nv)) return;
+                            const copy = {};
+                            Object.keys(o.worlds).forEach(k => { copy[k === wn ? nv : k] = o.worlds[k]; });
+                            o.worlds = copy;
+                        }), { class: 'mono' })),
+                        el('button', { type: 'button', class: 'st-btn', 'aria-label': `Retirer le monde ${wn}`, onclick: () => mutate(o => { delete o.worlds[wn]; }), text: 'Retirer' })),
+                    isMap(wv) || wv === null || wv === undefined ? el('div', { class: 'fields', style: 'margin-top:6px' },
+                        wf('veins-per-chunk', 'veins-per-chunk', inh.veinsPerChunk), wf('vein-size', 'vein-size', inh.veinSize),
+                        wf('min-y', 'min-y', inh.minY), wf('max-y', 'max-y', inh.maxY), wf('replace', 'replace', inh.replace.join(', ')))
+                        : el('p', { class: 'muted small', text: `vaut « ${M.jstr(wv)} » : pas un bloc, BC le refuse.` }));
+                wsub.append(box2);
+            });
+            wsub.append(el('div', { class: 'row', style: 'margin-top:8px' }, el('button', { type: 'button', class: 'st-btn st-btn-soft', id: 'f-add-world', text: '+ Monde', onclick: () => mutate(o => {
+                const ws = isMap(o.worlds) ? o.worlds : {};
+                let n = 'world';
+                for (let k = 2; has(ws, n); k++) n = `world_${k}`;
+                ws[n] = {};
+                o.worlds = ws;
+            }) })), el('p', { class: 'hint', style: 'margin:6px 0 0', text: 'Champ vide = repris du minerai ; un monde sans réglage s\'écrit « monde: {} » (les accolades ne sont pas décoratives, OresConfig.java:162-182).' }));
+        } else if (wm === 'raw') {
+            wsub.append(el('p', { class: 'muted small', text: `worlds vaut « ${M.jstr(raw.worlds)} » : ni liste ni bloc, BC le refuse.` }));
+        }
+        box.append(el('span', { class: 'group-label', text: 'Mondes' }), wsub);
+        // Entrée : refus, suppression
+        if (err) box.append(el('div', { class: 'st-note st-note-error', style: 'margin-top:12px' }, el('b', { text: 'BC refuse cette entrée : ' }), err.message));
+        else if (ore) box.append(el('div', { class: 'st-note st-note-ok', style: 'margin-top:12px', text: `Entrée acceptée : ${ore.host.id}, ${ore.tool.kind === 'tier' ? ore.tool.tier + ' minimum' : ore.tool.kind === 'list' ? ore.tool.items.join(', ') : 'sans palier d\'outil'}, ${ore.worlds.size} monde(s). Item marqué ${ore.markerValue} (Ore.java:137-139).` }));
+        box.append(el('div', { class: 'row', style: 'margin-top:12px' }, el('button', { type: 'button', class: 'st-btn st-btn-danger', id: 'f-remove', text: 'Retirer ce minerai', onclick: removeSelected })));
+    }
+    function hostOptions(raw) {
+        const used = st.res ? st.res.hostsUsed : {};
+        const opts = [{ value: '', label: '(absent)' }];
+        M.HOSTS.forEach(h => {
+            const by = used[h.id];
+            opts.push({ value: h.id, label: `${h.id} — ${h.wooden ? 'bois, hache' : 'pierre, pioche'}${by && by !== st.sel ? ' (pris par ' + by + ')' : ''}` });
+        });
+        if (isMap(raw) && raw.host != null && !(typeof raw.host === 'string' && M.hostById(raw.host) && M.hostById(raw.host).id === raw.host)) opts.push({ value: '*raw', label: `valeur actuelle : ${M.jstr(raw.host)}` });
+        return opts;
+    }
+    function paintName(box, text, isDefault) {
+        box.textContent = '';
+        M.colorSegments(text, isDefault ? '#FFFFFF' : '#FFFFFF').forEach(s => {
+            const sp = el('span', { text: s.text });
+            sp.style.color = s.color;
+            if (s.bold) sp.style.fontWeight = '700';
+            if (s.italic) sp.style.fontStyle = 'italic';
+            const deco = [s.underline ? 'underline' : '', s.strike ? 'line-through' : ''].filter(Boolean).join(' ');
+            if (deco) sp.style.textDecoration = deco;
+            box.append(sp);
+        });
+        if (isDefault) box.append(el('span', { class: 'hint', text: '  (identifiant, faute de name)' }));
+    }
+
+    // ---------- Messages ----------
+    function goToLine(line) {
+        const ta = $('out');
+        if (!line || !ta) return;
+        const lines = ta.value.split('\n');
+        let start = 0;
+        for (let i = 0; i < line - 1 && i < lines.length; i++) start += lines[i].length + 1;
+        ta.focus();
+        ta.setSelectionRange(start, start + (lines[line - 1] || '').length);
+        const lh = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+        ta.scrollTop = Math.max(0, (line - 3) * lh);
+    }
+    function locButton(line) {
+        if (!line) return null;
+        return el('button', { type: 'button', class: 'loc', onclick: () => goToLine(line), text: `${st.fileName}:${line}` });
+    }
+    function item(kind, title, bcText, line, ref) {
+        return el('li', { class: kind }, title ? el('span', { text: title }) : null, bcText ? el('span', { class: 'bc', text: bcText }) : null,
+            line || ref ? el('span', { class: 'ref' }, locButton(line), line && ref ? ' · ' : null, ref ? `[${ref}]` : null) : null);
+    }
+    function renderMessages() {
+        const ul = $('msgs');
+        ul.textContent = '';
+        const r = st.res;
+        if (st.actionMsg) ul.append(item(st.actionMsg.kind, st.actionMsg.text));
+        if (!r) { ul.append(item('', 'Chargez ores.yml pour voir le verdict de BC.')); return; }
+        if (r.status === 'empty') {
+            ul.append(item('error', 'Erreur de syntaxe YAML : YamlConfiguration.loadConfiguration journalise « Cannot load … » et rend une configuration vide. BC démarre alors avec ZÉRO minerai, sans aucune erreur de son côté.', r.syntax.message, r.syntax.line, 'BeltariaContent.java:364-370 ; YamlConfiguration.loadConfiguration'));
+        } else if (r.status === 'error') {
+            ul.append(item('error', 'Refusé : BC s\'arrête au premier défaut et affiche ce message (au démarrage, précédé de « config.yml invalide, plugin desactive : », et le plugin entier est désactivé ; au /content reload, rien n\'est remplacé) :', r.error.message, r.error.line, r.error.ref + ' ; BeltariaContent.java:139-150, :266-271'));
+            Object.keys(r.perOre).forEach(id => {
+                const e = r.perOre[id];
+                if (e.message !== r.error.message) ul.append(item('error', `Ensuite, entrée ${id} :`, e.message, e.line, e.ref));
+            });
+        } else {
+            ul.append(item('ok', `Accepté : ${r.ores.length} minerai(s) — ${r.ores.map(o => `${o.id} (${o.host.id})`).join(', ') || 'aucun'}.`));
+        }
+        (r.warnings || []).forEach(w => ul.append(item(w.kind === 'note' ? '' : 'warn', (w.id ? w.id + ' : ' : '') + w.text, null, w.line, w.ref)));
+        // Pack
+        if (st.packError) ul.append(item('error', st.packError));
+        if (st.pack) M.packOresProblems(st.pack).forEach(p => ul.append(item('error', 'pack.json : bloque l\'assemblage du pack ENTIER (Descriptor.read échoue avant toute entrée).', p.text, null, p.ref)));
+        if (st.oreDirs.size) {
+            for (const [folder, d] of st.oreDirs) {
+                const host = M.hostById(folder);
+                if (!host) ul.append(item('warn', 'Note du pack (PackBuild.discoverOres) :', `ores/${folder} : aucun bloc hote de ce nom, dossier saute. Hotes possibles : ${M.HOST_NAMES}`, null, 'PackBuild.java:904-908'));
+                else if (!d.names.has('texture.png')) ul.append(item('warn', 'Note du pack (PackBuild.discoverOres) :', `ores/${folder} : texture.png absente, dossier saute.`, null, 'PackBuild.java:910-914'));
+                else if (folder !== host.id) ul.append(item('warn', `ores/${folder} : nom accepté sans égard à la casse, mais la texture est lue à ores/${host.id}/texture.png : trouvée sous Windows, absente sous Linux.`, null, null, 'PackBuild.java:904, :921-923'));
+            }
+            if (r.status !== 'empty') r.ores.forEach(o => { if (!st.tex.has(o.host.id)) ul.append(item('warn', `${o.id} : aucun ores/${o.host.id}/texture.png dans le pack chargé : le bloc garderait l'apparence vanilla de ${o.host.label} et l'item resterait le support nu.`, null, null, 'PackBuild.java:897-919')); });
+            st.tex.forEach((t, hid) => { if (r.status !== 'empty' && !r.ores.some(o => o.host.id === hid)) ul.append(item('', `ores/${hid}/ habille un bloc que plus rien ne pose : aucun minerai de ores.yml sur cet hôte.`, null, null, 'ores.yml (en-tête) : « En retirer une entree d\'ici rend son hote »')); });
+        }
+    }
+
+    // ---------- Hôtes ----------
+    function renderHosts() {
+        const box = $('hosts');
+        box.textContent = '';
+        const r = st.res;
+        const used = r && r.status !== 'empty' ? r.hostsUsed : {};
+        const clashes = new Set();
+        if (r && r.status !== 'empty') Object.keys(r.perOre).forEach(id => { if (/deja pris par/.test(r.perOre[id].message)) { const raw = M.rawOre(st.text, id); const h = isMap(raw) ? M.hostById(raw.host) : null; if (h) clashes.add(h.id); } });
+        const selRaw = st.sel && st.text != null ? M.rawOre(st.text, st.sel) : null;
+        const selHost = isMap(selRaw) ? M.hostById(selRaw.host) : null;
+        let n = 0;
+        M.HOSTS.forEach(h => {
+            const by = used[h.id];
+            if (by) n++;
+            const chips = el('div', { class: 'chips' },
+                el('span', { class: 'chip', text: h.wooden ? 'bois · hache' : 'pierre · pioche' }),
+                el('span', { class: 'chip', text: 'dureté 2' }),
+                el('span', { class: 'chip', text: h.wooden ? 'brûle (feu refusé)' : 'explosions 30' }));
+            const t = st.tex.get(h.id);
+            if (st.files.size) chips.append(el('span', { class: 'chip ' + (t ? 'ok' : by ? 'warn' : ''), text: t ? (t.anim.animated ? `texture animée ${t.anim.frames.length} img.` : `texture ${t.w}×${t.h}`) : 'pas de texture' }));
+            if (st.pack && isMap(st.pack.ores) && has(st.pack.ores, h.id)) chips.append(el('span', { class: 'chip accent', text: 'vue d\'item réglée (pack.json)' }));
+            const usedBy = by ? el('div', { class: 'meta' }, 'pris par ', el('button', { type: 'button', class: 'linkish', onclick: () => select(by), text: by })) : el('div', { class: 'meta', text: 'libre' });
+            box.append(el('div', { class: 'host' + (by ? ' used' : '') + (selHost && selHost.id === h.id ? ' cur' : '') + (clashes.has(h.id) ? ' clash' : ''), 'data-host': h.id },
+                el('h3', { text: h.id }), el('div', { class: 'meta', text: `${h.state} ${h.label} · modèle ${h.model}` }), usedBy, chips));
+        });
+        $('hostCount').textContent = `${n} / 10 pris`;
+    }
+
+    // ---------- Texture : première image + animation (.mcmeta), et le bloc en vue isométrique ----------
+    function frameRect(t, frameIdx) {
+        const a = t.anim;
+        const f = a.frames[frameIdx % a.frames.length];
+        const idx = Math.max(0, f.index);
+        return { x: (idx % a.perRow) * a.frameW, y: Math.floor(idx / a.perRow) * a.frameH, w: a.frameW, h: a.frameH };
+    }
+    function currentFrame(t) {
+        const a = t.anim;
+        if (!a.animated) return 0;
+        const total = a.frames.reduce((s, f) => s + Math.max(1, f.time), 0);
+        let k = st.tick % total;
+        for (let i = 0; i < a.frames.length; i++) { k -= Math.max(1, a.frames[i].time); if (k < 0) return i; }
+        return 0;
+    }
+    function drawTexture() {
+        const host = st.texHost;
+        const t = host ? st.tex.get(host) : null;
+        const flat = $('texFlat'), cube = $('texCube');
+        const g = flat.getContext('2d'), c = cube.getContext('2d');
+        g.clearRect(0, 0, flat.width, flat.height);
+        c.clearRect(0, 0, cube.width, cube.height);
+        if (!t) return;
+        const fi = currentFrame(t);
+        const r = frameRect(t, fi);
+        g.imageSmoothingEnabled = false;
+        g.drawImage(t.canvas, r.x, r.y, r.w, r.h, 0, 0, flat.width, flat.height);
+        $('texFlatCap').textContent = t.anim.animated ? `image ${fi + 1} / ${t.anim.frames.length} (index ${t.anim.frames[fi].index})` : `texture.png ${t.w}×${t.h}`;
+        // Cube : trois faces (dessus, gauche, droite), ombrées comme un bloc d'inventaire
+        const s = 44, cx = cube.width / 2, top = 14;
+        c.imageSmoothingEnabled = false;
+        const face = (m, shade) => {
+            c.save();
+            c.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+            c.drawImage(t.canvas, r.x, r.y, r.w, r.h, 0, 0, 1, 1);
+            if (shade) { c.fillStyle = `rgba(0,0,0,${shade})`; c.fillRect(0, 0, 1, 1); }
+            c.restore();
+        };
+        const k = s * 1.15;
+        face([k, k / 2, -k, k / 2, cx, top], 0);                    // dessus
+        face([k, k / 2, 0, k, cx - k, top + k / 2], 0.2);           // face gauche
+        face([k, -k / 2, 0, k, cx, top + k], 0.4);                  // face droite
+    }
+    function renderTexture() {
+        const sel = $('texHost');
+        const selRaw = st.sel && st.text != null ? M.rawOre(st.text, st.sel) : null;
+        const selHost = isMap(selRaw) ? M.hostById(selRaw.host) : null;
+        if (!st.texHost || !st.tex.has(st.texHost)) st.texHost = selHost && st.tex.has(selHost.id) ? selHost.id : (st.tex.keys().next().value || null);
+        if (selHost && st.tex.has(selHost.id) && st.lastSelHost !== selHost.id) st.texHost = selHost.id;
+        st.lastSelHost = selHost ? selHost.id : null;
+        sel.textContent = '';
+        if (!st.tex.size) sel.append(el('option', { value: '', text: st.files.size ? 'aucune texture ores/<hôte>/texture.png' : 'chargez le dossier du pack' }));
+        st.tex.forEach((t, hid) => sel.append(el('option', { value: hid, text: hid + (st.res && st.res.hostsUsed && st.res.hostsUsed[hid] ? ' — ' + st.res.hostsUsed[hid] : '') })));
+        sel.value = st.texHost || '';
+        const info = $('texInfo');
+        info.textContent = '';
+        const t = st.texHost ? st.tex.get(st.texHost) : null;
+        if (!t) {
+            info.append(item('', 'Chargez le dossier pack-src (ou plugins/BeltariaContent/pack) : chaque ores/<hôte>/texture.png recouvre le modèle de son état hôte (PackBuild.emitOreBlocks), et sert de cube à l\'item du minerai.', null, null, 'PackBuild.java:938-951, :972-997'));
+        } else {
+            info.append(item('', `Bloc dans le monde : ${t.path} recouvre models/block/${M.hostById(st.texHost).model}.json (block/cube_all : six faces et particule de cassage).${t.anim.animated ? ' Le .mcmeta est copié à côté : le bloc est animé.' : ''}`, null, null, 'PackBuild.java:938-951'));
+            if (t.metaError) info.append(item('warn', `texture.png.mcmeta illisible (${t.metaError}) : le client l'ignorerait.`));
+            if (!t.anim.animated && t.w !== t.h) info.append(item('error', `texture ${t.w}×${t.h} sans .mcmeta : le client 1.8.9 refuse une texture non carrée qui n'est pas une animation (« broken aspect ratio and not an animation ») et affiche le damier.`, null, null, 'TextureAtlasSprite.loadSprite (client 1.8.9)'));
+            if (t.anim.animated && t.h !== t.w) info.append(item('warn', 'Item du minerai : BC copie texture.png à côté de sa règle CIT, mais pas son .mcmeta. Une texture animée (plus haute que large) y arrive donc sans animation, ce que le client 1.8.9 refuse (« broken aspect ratio ») : item probablement en damier en main et en inventaire. Déduit du code, non vérifié en jeu.', null, null, 'PackBuild.java:984-985 ; :946-950 (bloc) ; TextureAtlasSprite.loadSprite'));
+        }
+        clearInterval(st.animTimer);
+        st.animTimer = 0;
+        if (t && t.anim.animated) st.animTimer = setInterval(() => { st.tick++; drawTexture(); }, 50); // 20 ticks par seconde
+        drawTexture();
+    }
+
+    // ---------- Génération ----------
+    const fmt = (v, d) => String(Math.round(v * Math.pow(10, d == null ? 3 : d)) / Math.pow(10, d == null ? 3 : d)).replace('.', ',');
+    function renderGeneration() {
+        const box = $('gen');
+        box.textContent = '';
+        const ore = st.res && st.sel ? st.res.ores.find(o => o.id === st.sel) : null;
+        if (!ore) { box.append(el('p', { class: 'muted', text: st.sel ? 'Entrée refusée par BC : rien à générer.' : 'Sélectionnez un minerai accepté.' })); return; }
+        if (!ore.worlds.size) { box.append(el('p', { class: 'muted', text: `${ore.id} n'a aucun monde : il ne pousse nulle part (Ore.java:24-26).` })); return; }
+        box.append(el('p', { class: 'muted small', style: 'margin:0', text: 'Ce qui se déduit exactement du code de BC, monde par monde. Le nombre de blocs posés ne l\'est pas : il dépend de la roche rencontrée (replace) et de la découpe au bord du tronçon (OrePopulator.java:158-160).' }));
+        ore.worlds.forEach((v, wn) => {
+            const g = M.generationStats(v);
+            const tbl = el('table', { class: 'gen' });
+            const row = (k, val, ref) => tbl.append(el('tr', null, el('th', { text: k }), el('td', null, val, ref ? el('span', { class: 'hint', text: ` [${ref}]` }) : null)));
+            row('Veines tentées par tronçon', v.veinsPerChunk > 0 ? `${fmt(g.expected)} en moyenne${g.frac > 0 ? ` (${g.whole} d'office + 1 avec une chance de ${fmt(g.frac * 100, 1)} %)` : ' (exactement, aucun tirage)'}` : 'aucune (0) : pas de populateur', 'OrePopulator.java:129-136');
+            if (v.veinsPerChunk > 0) row('Tronçons avec au moins une veine', g.chunksWithVein >= 1 ? 'tous' : `${fmt(g.chunksWithVein * 100, 2)} % (1 sur ${fmt(g.oneIn, 2)})`, 'OrePopulator.java:100');
+            row('Centre de veine', `y ${v.minY} à ${v.maxY}, uniforme : ${g.layers} couche(s), ${fmt(g.perLayer, 4)} centre(s) par couche et par tronçon`, 'OreYield.java:112-120 ; OrePopulator.java:106');
+            row('Cases qu\'une veine peut toucher', `y ${g.blocksY[0]} à ${g.blocksY[1]} (bornes, pire cas)`, 'OreVein.java:68-69, :79-80, :94-96 ; OrePopulator.java:159');
+            row('Taille', `${v.veinSize} pas de boule (numberOfBlocks vanilla) ; veine taillée au bord du tronçon`, 'OreVein.java:53-110');
+            row('Remplace', v.replace.join(', '), 'OreVeins.java:104-123');
+            const ruler = el('div', { class: 'ruler', role: 'img', 'aria-label': `Hauteurs : cases possibles y ${g.blocksY[0]} à ${g.blocksY[1]}, centres y ${v.minY} à ${v.maxY}` });
+            const pct = y => (y / 256 * 100) + '%';
+            const reach = el('span', { class: 'reach' }); reach.style.left = pct(g.blocksY[0]); reach.style.width = `calc(${pct(g.blocksY[1] + 1 - g.blocksY[0])})`;
+            const centre = el('span', { class: 'centre' }); centre.style.left = pct(v.minY); centre.style.width = `calc(${pct(v.maxY + 1 - v.minY)})`;
+            ruler.append(reach, centre);
+            box.append(el('div', { class: 'world-gen' }, el('h3', { text: `monde ${wn}` }), ruler,
+                el('div', { class: 'ruler-scale' }, el('span', { text: 'y 0' }), el('span', { text: '64' }), el('span', { text: '128' }), el('span', { text: '192' }), el('span', { text: '255' })),
+                el('div', { class: 'hint', text: 'foncé : centres tirés ; clair : cases qu\'une veine peut atteindre' }), tbl));
+        });
+    }
+
+    // ---------- Sortie ----------
+    function renderOutput() {
+        const out = $('out');
+        if (document.activeElement !== out) out.value = st.text == null ? '' : st.text.replace(/\r\n/g, '\n');
+        const on = st.text != null;
+        $('dlOut').disabled = !on; $('copyOut').disabled = !on;
+        const snip = on && st.sel ? M.entryText(st.text, st.sel) : '';
+        $('snippet').value = snip.replace(/\r\n/g, '\n');
+        $('copySnippet').disabled = !snip;
+        if (on && st.original != null) {
+            const d = M.changedLines(st.original, st.text);
+            $('diffInfo').textContent = st.text === st.original ? 'inchangé' : `−${d.removed} / +${d.added} ligne(s)`;
+        } else $('diffInfo').textContent = '—';
+    }
+    function exportText() { return st.text; }
+    function download() {
+        if (st.text == null) return;
+        const a = el('a', { href: URL.createObjectURL(new Blob([st.text], { type: 'text/yaml' })), download: st.fileName || 'ores.yml' });
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    function copy(text, ok) {
+        const done = () => { st.actionMsg = { kind: 'ok', text: ok }; render(); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => done());
+        else done();
+    }
+
+    // ---------- API ----------
+    function select(id) { st.sel = id; render(); }
+    function setText(text) { st.text = String(text); render(); }
+    function getState() {
+        const r = st.res || (st.text == null ? null : M.validate(st.text));
+        return {
+            loaded: st.text != null, fileName: st.fileName, selected: st.sel,
+            status: r ? r.status : null, error: r && r.error ? r.error : null, syntax: r ? r.syntax : null,
+            ores: r ? r.ores.map(o => ({ id: o.id, host: o.host.id, tool: o.tool, worlds: [...o.worlds.keys()] })) : [],
+            perOre: r ? r.perOre : {}, warnings: r ? r.warnings : [],
+            hostsUsed: r ? r.hostsUsed : {}, textures: [...st.tex.keys()], texHost: st.texHost,
+            packPath: st.packPath, changed: st.text != null && st.text !== st.original
+        };
+    }
+
+    // ---------- Construction ----------
+    function init() {
+        const onFiles = (list, rel) => loadFiles([...list].map(f => ({ path: (rel && f.webkitRelativePath) || f.name, read: async () => new Uint8Array(await f.arrayBuffer()) }))).catch(report);
+        $('oresFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) f.text().then(t => { st.notes = [{ kind: 'ok', text: `${f.name} chargé.` }]; loadText(t, f.name); }).catch(report).finally(() => { e.target.value = ''; }); });
+        $('packDir').addEventListener('change', e => { onFiles(e.target.files, true); setTimeout(() => { e.target.value = ''; }, 0); });
+        $('packFiles').addEventListener('change', e => { onFiles(e.target.files, false); setTimeout(() => { e.target.value = ''; }, 0); });
+        $('newFile').addEventListener('click', () => { st.notes = [{ kind: 'ok', text: 'Nouveau fichier vide.' }]; st.fileName = 'ores.yml'; loadText('# BeltariaContent : minerais personnalises.\n', 'ores.yml'); });
+        $('exampleFile').addEventListener('click', () => { st.notes = [{ kind: 'ok', text: 'Exemple chargé (fichier fictif).' }]; loadText(EXAMPLE, 'ores.yml'); });
+        $('resetFile').addEventListener('click', () => { if (st.original != null) { st.text = st.original; st.actionMsg = { kind: 'ok', text: 'Fichier remis comme chargé.' }; render(); } });
+        $('addOre').addEventListener('click', addOre);
+        $('texHost').addEventListener('change', e => { st.texHost = e.target.value || null; st.lastSelHost = st.texHost; render(); });
+        let typing = 0;
+        $('out').addEventListener('input', e => { clearTimeout(typing); const v = e.target.value; typing = setTimeout(() => { if (st.text == null) st.original = ''; const crlf = st.text && /\r\n/.test(st.text); st.text = crlf ? v.replace(/\r?\n/g, '\r\n') : v; render(); }, 250); });
+        $('dlOut').addEventListener('click', download);
+        $('copyOut').addEventListener('click', () => copy(st.text || '', 'ores.yml copié.'));
+        $('copySnippet').addEventListener('click', () => copy($('snippet').value, 'Entrée copiée.'));
+        // Glisser-déposer : fichiers, dossiers et zips n'importe où
+        const entries = async (dt) => {
+            const out = [];
+            const walk = (entry, prefix) => new Promise(res => {
+                if (entry.isFile) entry.file(f => { out.push({ path: prefix + f.name, read: async () => new Uint8Array(await f.arrayBuffer()) }); res(); }, () => res());
+                else if (entry.isDirectory) { const r = entry.createReader(); const all = []; const next = () => r.readEntries(b => { if (!b.length) Promise.all(all.map(x => walk(x, prefix + entry.name + '/'))).then(res); else { all.push(...b); next(); } }, () => res()); next(); }
+                else res();
+            });
+            const items = [...(dt.items || [])].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+            if (items.length) await Promise.all(items.map(e => walk(e, '')));
+            else [...dt.files].forEach(f => out.push({ path: f.name, read: async () => new Uint8Array(await f.arrayBuffer()) }));
+            return out;
+        };
+        document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('dragging'); });
+        document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('dragging'); });
+        document.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('dragging'); entries(e.dataTransfer).then(list => (list.length === 1 && /\.ya?ml$/i.test(list[0].path) ? list[0].read().then(b => loadText(new TextDecoder().decode(b), list[0].path)) : loadFiles(list))).catch(report); });
+        render();
+    }
+    function report(err) { st.actionMsg = { kind: 'error', text: err && err.message ? err.message : String(err) }; render(); }
+    // Exemple fictif (aucun contenu de BeltariaContent) : un minerai de pierre, un bloc sur bûche
+    const EXAMPLE = [
+        '# Exemple fictif pour essayer l\'outil.',
+        '',
+        'exemple_ore:',
+        '  host: smooth_stone',
+        '  name: "&aMinerai d\'exemple"',
+        '  tool: IRON_PICKAXE',
+        '  drop:',
+        '    item: EMERALD',
+        '    amount: [1, 2]',
+        '    fortune: true',
+        '    experience: [2, 5]',
+        '  veins-per-chunk: 0.5     # un tronçon sur deux',
+        '  vein-size: 5',
+        '  min-y: 4',
+        '  max-y: 20',
+        '  worlds:',
+        '    world: {}',
+        '    world_nether:',
+        '      replace: [NETHERRACK]',
+        '      max-y: 100',
+        '',
+        'exemple_bloc:',
+        '  host: acacia_wood',
+        '  name: "&2Bloc d\'exemple"',
+        '  tool: IRON_PICKAXE',
+        ''
+    ].join('\n');
+
+    init();
+    return { loadText, loadFiles, select, setText, exportText, getState, addOre, removeSelected, renameSelected, mutate, renderNow, get state() { return st; } };
+})();
+</script>
+</body>
+</html>
