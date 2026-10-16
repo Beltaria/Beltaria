@@ -487,7 +487,7 @@ test.describe('interface du réglage d\'entrée', () => {
   test('page intacte : visualiseur d\'origine, lien Beltaria Studio, aucun message d\'erreur', async ({ page }) => {
     const errors = collectErrors(page);
     await page.goto(PAGE, { waitUntil: 'load' });
-    await expect(page.locator('a[href="index.html"]')).toHaveText('← Beltaria Studio');
+    await expect(page.locator('a.st-back[href="index.html"]')).toHaveText('← Beltaria Studio');
     await page.setInputFiles('#itemUpload', { name: 'epee.png', mimeType: 'image/png', buffer: await pngBuffer(page, 16, 16, 1) });
     await expect(page.locator('#statusText')).toHaveText('Item simple : 16x16');
     await expect(page.locator('#bcPanel')).toBeHidden();
