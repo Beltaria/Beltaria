@@ -135,11 +135,30 @@
         ctx.fillStyle = "#2b2b8c"; ctx.fillRect(0, 16, 16, 16); ctx.fillRect(16, 48, 16, 16); 
     }
 
+    // Couches HD (128x64, 512x256...) : les coordonnées restent celles du format 64x32,
+    // multipliées par l'échelle propre de chaque image ; la toile suit la plus grande échelle.
+    const layerScale = img => img.width / 64;
+    let skinScale = 1;
+
+    function resizeCanvases() {
+        skinScale = Math.max(1, ...[imgLayer1, imgLayer2].filter(Boolean).map(layerScale));
+        for (const [canvas, c] of [[mainCanvas, ctx], [armorCanvas, actx]]) {
+            canvas.width = canvas.height = 64 * skinScale;
+            c.setTransform(skinScale, 0, 0, skinScale, 0, 0);
+            c.imageSmoothingEnabled = false;
+        }
+    }
+
+    function drawLayer(targetCtx, img, sx, sy, sw, sh, dx, dy, dw, dh) {
+        const s = layerScale(img);
+        targetCtx.drawImage(img, sx * s, sy * s, sw * s, sh * s, dx, dy, dw, dh);
+    }
+
     function drawFlipped(targetCtx, img, sx, sy, sw, sh, dx, dy, dw, dh) {
         targetCtx.save();
         targetCtx.translate(dx + dw, dy);
         targetCtx.scale(-1, 1);
-        targetCtx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+        drawLayer(targetCtx, img, sx, sy, sw, sh, 0, 0, dw, dh);
         targetCtx.restore();
     }
 
@@ -159,16 +178,16 @@
 
         // Dessin des armures
         if (imgLayer2) {
-            actx.drawImage(imgLayer2, 16, 16, 24, 16, 16, 32, 24, 16); 
-            actx.drawImage(imgLayer2, 0, 16, 16, 16, 0, 32, 16, 16); 
-            mirrorLimb(actx, imgLayer2, 0, 0, 48); 
+            drawLayer(actx, imgLayer2, 16, 16, 24, 16, 16, 32, 24, 16);
+            drawLayer(actx, imgLayer2, 0, 16, 16, 16, 0, 32, 16, 16);
+            mirrorLimb(actx, imgLayer2, 0, 0, 48);
         }
         if (imgLayer1) {
-            actx.drawImage(imgLayer1, 0, 0, 32, 16, 32, 0, 32, 16); 
-            actx.drawImage(imgLayer1, 16, 16, 24, 16, 16, 32, 24, 16); 
-            actx.drawImage(imgLayer1, 40, 16, 16, 16, 40, 32, 16, 16); 
-            mirrorLimb(actx, imgLayer1, 40, 48, 48); 
-            actx.drawImage(imgLayer1, 0, 16, 16, 16, 0, 32, 16, 16); 
+            drawLayer(actx, imgLayer1, 0, 0, 32, 16, 32, 0, 32, 16);
+            drawLayer(actx, imgLayer1, 16, 16, 24, 16, 16, 32, 24, 16);
+            drawLayer(actx, imgLayer1, 40, 16, 16, 16, 40, 32, 16, 16);
+            mirrorLimb(actx, imgLayer1, 40, 48, 48);
+            drawLayer(actx, imgLayer1, 0, 16, 16, 16, 0, 32, 16, 16);
             mirrorLimb(actx, imgLayer1, 0, 0, 48); 
         }
 
@@ -196,7 +215,7 @@
             actx.restore();
         }
 
-        ctx.drawImage(armorCanvas, 0, 0);
+        ctx.drawImage(armorCanvas, 0, 0, 64, 64);
 
         // Rendu dans la 3D : un canvas est chargé de façon synchrone (pas de toDataURL ni d'images qui arrivent dans le désordre)
         viewer.loadSkin(mainCanvas, { model: "default" });
@@ -247,13 +266,14 @@
                     statusText.style.color = "#e74c3c";
                 };
                 img.onload = function() {
-                    // Les coordonnées de updateTexture supposent le format 1.8 (64x32)
-                    if (img.width !== 64 || img.height !== 32) {
-                        statusText.textContent = "❌ " + file.name + " : " + img.width + "x" + img.height + " (attendu 64x32)";
+                    // Format 1.8 : 64x32, ou un multiple HD (128x64, 512x256...) comme dans BeltariaContent
+                    if (img.width % 64 !== 0 || img.width !== img.height * 2) {
+                        statusText.textContent = "❌ " + file.name + " : " + img.width + "x" + img.height + " (attendu 64x32 ou un multiple : 128x64, 256x128...)";
                         statusText.style.color = "#e74c3c";
                         return;
                     }
                     if (isLayer1) imgLayer1 = img; else imgLayer2 = img;
+                    resizeCanvases();
                     statusText.textContent = "✅ " + file.name;
                     statusText.style.color = "#2ecc71";
                     updateTexture(false); // Faux car ce n'est pas l'animation, c'est un nouveau fichier
