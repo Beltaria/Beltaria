@@ -25,8 +25,9 @@ BeltariaContent. Les outils qui produisent ou vérifient ce contenu suivent ses 
 - **Icônes du texte :** déposer `glyphs/<id>/texture.png` ; BeltariaContent attribue les caractères
   (`U+F900`–`U+FDFF`, retenus dans `chars.json`) et construit la police. Le vérificateur d'icônes
   prédit ce résultat ; aucun outil ne produit `glyph_sizes.bin` ni de page `unicode_page_*.png`.
-- **Réglage d'entrée :** Item 3D applique `shift`, `turn`, `front` et `fit` comme l'assemblage, refuse
-  ce qu'il refuserait et exporte l'entrée `pack.json`.
+- **Réglage d'entrée :** Item 3D applique `shift`, `turn`, `front` et `fit` comme l'assemblage, se règle aux
+  curseurs ou à la poignée 3D sur un joueur portant une armure du pack, refuse ce qu'il refuserait
+  et exporte l'entrée `pack.json`.
 - **Armures :** couches `layer_1.png` / `layer_2.png` en 64x32 ou en multiple HD (128x64, 512x256…).
 - `rank-generator.html` est une copie de `tools/rank-generator.html` de BeltariaContent ; une
   correction de fond se fait dans les deux.

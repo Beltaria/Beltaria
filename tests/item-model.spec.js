@@ -703,3 +703,460 @@ test.describe('interface du réglage d\'entrée', () => {
     expect(errors).toEqual([]);
   });
 });
+
+// --- Manipulation directe : inverse exacte de la chaîne de rendu (logique pure) ------------------------
+test.describe('poignée 3D : inverse exacte de la chaîne de rendu (MCP 1.8.9)', () => {
+  test.beforeEach(async ({ page }) => { await page.goto(PAGE, { waitUntil: 'load' }); });
+
+  test('INVERSE EXACTE : translation, rotation, échelle et shift dans tous les contextes (écart ≤ 1e-6)', async ({ page }) => {
+    const r = await evalM(page, () => {
+      const M = ItemModel;
+      const sub = (a, b) => a.map((v, i) => v - b[i]);
+      const add = (a, b) => a.map((v, i) => v + b[i]);
+      const err = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+      const mul = (m, v) => [0, 1, 2].map(i => m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2]);
+      const cases = [['thirdperson', {}], ['head', { support: 'rider' }], ['head', { support: 'player' }], ['head', { support: 'block' }],
+        ['head', { support: 'stand' }], ['gui', {}], ['ground', {}], ['fixed', {}], ['firstperson', {}]];
+      const t0 = { rotation: [12.5, -33, 71], translation: [1.5, -6.25, 3], scale: [0.8, 1.3, 0.6] };
+      const pts = [[0, 0, 0], [1, 1, 1], [0.2, 0.9, 0.4], [-0.5, 1.5, 0.3]];
+      const worst = { translate: 0, rotate: 0, scale: 0, shift: 0, rotateMoved: 0 };
+      for (const [ctx, opts] of cases) {
+        const W = t => M.sceneMatrix(ctx, t, opts);
+        const unit = ctx === 'gui' ? 1 : 1 / 16; // le repère GUI est en pixels
+        const dw = [0.137, -0.071, 0.052].map(v => v * (ctx === 'gui' ? 16 : 1));
+        // translation : chaque point du modèle bouge exactement de dw
+        const t1 = M.gizmoInverse(ctx, t0, opts, { mode: 'translate', world: dw });
+        pts.forEach(p => { worst.translate = Math.max(worst.translate, err(sub(M.apply(W(t1), p), M.apply(W(t0), p)), dw)); });
+        // rotation autour de l'ancre : W'(p) = A + Q (W(p) - A)
+        const axis = [0.3, -0.8, 0.5], ang = 37;
+        const t2 = M.gizmoInverse(ctx, t0, opts, { mode: 'rotate', axis, angle: ang });
+        const A = M.gizmoFrame(ctx, t0, opts).anchor, Q = M.axisAngle3(axis, ang);
+        pts.forEach(p => {
+          const want = add(A, mul(Q, sub(M.apply(W(t0), p), A)));
+          worst.rotate = Math.max(worst.rotate, err(M.apply(W(t2), p), want));
+          worst.rotateMoved = Math.max(worst.rotateMoved, err(M.apply(W(t2), p), M.apply(W(t0), p)) / unit);
+        });
+        // échelle dans les axes du modèle : chaque arête du modèle est multipliée par son facteur
+        const f = [1.5, 0.75, 2];
+        const t3 = M.gizmoInverse(ctx, t0, opts, { mode: 'scale', factor: f });
+        [0, 1, 2].forEach(k => {
+          const e = [0, 0, 0]; e[k] = 1;
+          const before = sub(M.apply(W(t0), e), M.apply(W(t0), [0, 0, 0])), after = sub(M.apply(W(t3), e), M.apply(W(t3), [0, 0, 0]));
+          worst.scale = Math.max(worst.scale, err(after, before.map(v => v * f[k])));
+        });
+        // shift : la géométrie décalée de Δs px se dessine exactement dw plus loin
+        const ds = M.gizmoInverse(ctx, t0, opts, { mode: 'shift', world: dw }).shift;
+        pts.forEach(p => { worst.shift = Math.max(worst.shift, err(sub(M.apply(W(t0), add(p, ds.map(v => v / 16))), M.apply(W(t0), p)), dw)); });
+      }
+      // casque porté par le porte-armure : 1 unité JSON = 1,25/16 bloc, X et Z inversés (le porte-armure regarde le joueur de dos)
+      const rider = { support: 'rider' };
+      const up = M.gizmoInverse('head', t0, rider, { mode: 'translate', world: [1.25 / 16, 1.25 / 16, 1.25 / 16] }).translation;
+      const unitHead = M.gizmoFrame('head', t0, rider).unit;
+      // avec des pivots (turn) : la « rotation » rendue est celle du contexte, composée par BC avec les pivots
+      const turns = [[0, 0, -45]];
+      const base = M.applySlot({ rotation: [0, 90, -35], translation: [0, 1.25, -3.5], scale: [0.85, 0.85, 0.85], fit: 0, front: false, turns }, null, null);
+      const tt = { rotation: base.rotation, translation: base.translation, scale: base.scale };
+      const rt = M.gizmoInverse('thirdperson', tt, {}, { mode: 'rotate', axis: [0, 1, 0], angle: 30 }, turns);
+      const rebuilt = M.applySlot({ rotation: rt.contextRotation, translation: tt.translation, scale: tt.scale, fit: 0, front: false, turns }, null, null);
+      const A = M.gizmoFrame('thirdperson', tt, {}).anchor, Q = M.axisAngle3([0, 1, 0], 30);
+      const turnErr = Math.max(...[[0, 0, 0], [1, 1, 1], [1, 0, 0.5]].map(p => err(M.apply(M.sceneMatrix('thirdperson', rebuilt, {}), p),
+        add(A, mul(Q, sub(M.apply(M.sceneMatrix('thirdperson', tt, {}), p), A))))));
+      return { worst, up, unitHead, turnErr, rebuiltRot: rebuilt.rotation, rtRot: rt.rotation };
+    });
+    expect(r.worst.translate).toBeLessThanOrEqual(1e-6);
+    expect(r.worst.rotate).toBeLessThanOrEqual(1e-6);
+    expect(r.worst.rotateMoved).toBeGreaterThan(0.1); // la rotation déplace vraiment les points
+    expect(r.worst.scale).toBeLessThanOrEqual(1e-6);
+    expect(r.worst.shift).toBeLessThanOrEqual(1e-6);
+    expect(r.unitHead).toBeCloseTo(1.25 / 16, 12);
+    expect(r.up.map(v => Math.round(v * 1e9) / 1e9)).toEqual([0.5, -5.25, 2]); // [1,5 - 1 ; -6,25 + 1 ; 3 - 1]
+    expect(r.turnErr).toBeLessThanOrEqual(1e-4); // BC arrondit la rotation composée au millième de degré
+  });
+
+  test('mannequin 1.8 : ModelBox (UV, gonflement, miroir) et pièces de LayerBipedArmor', async ({ page }) => {
+    const r = await evalM(page, () => {
+      const M = ItemModel;
+      const front = M.modelBoxQuads([-4, 0, -2, 8, 12, 4], 1, false, [16, 16, 64, 32]).find(q => q.face === 'front');
+      const mirrored = M.modelBoxQuads([-1, -2, -2, 4, 12, 4], 1, true, [40, 16, 64, 32]).find(q => q.face === 'front');
+      const boxes = M.mannequinBoxes('debout', false, true);
+      const armor = boxes.filter(b => b.layer !== 'skin').map(b => `${b.piece}:${b.part}:${b.layer}:${b.inflate}:${b.mirror ? 'm' : ''}`);
+      const skin = boxes.filter(b => b.layer === 'skin').map(b => `${b.part}:${b.tex.join(',')}:${b.inflate}`);
+      const xs = q => q.pos.map(p => p[0]);
+      return { frontPos: front.pos, frontUv: front.uv, mirroredUv: mirrored.uv, mirroredX: xs(mirrored), armor, skin,
+        holding: M.poseAngles('debout', true).rightArm, rest: M.poseAngles('debout', false).rightArm };
+    });
+    // plastron : torse 8 × 12 × 4 gonflé de 1 px de chaque côté (ModelBox.java:52-57) ; face avant en z = -3
+    expect(r.frontPos).toEqual([[5, -1, -3], [-5, -1, -3], [-5, 13, -3], [5, 13, -3]]);
+    // UV de la face avant : (u + d, v + d) -> (u + d + w, v + d + h) sur 64 × 32 (ModelBox.java:86), sommets de TexturedQuad
+    expect(r.frontUv).toEqual([[28 / 64, 20 / 32], [20 / 64, 20 / 32], [20 / 64, 32 / 32], [28 / 64, 32 / 32]]);
+    // bras gauche en miroir : x1/x2 échangés puis flipFace (UV inversées dans l'ordre des sommets)
+    expect(r.mirroredUv).toEqual([[48 / 64, 32 / 32], [44 / 64, 32 / 32], [44 / 64, 20 / 32], [48 / 64, 20 / 32]]);
+    expect(r.mirroredX).toEqual([-2, 4, 4, -2]);
+    expect(r.armor).toEqual([
+      'helmet:head:armor1:1:', 'helmet:headwear:armor1:1.5:', // casque : tête + couche de chapeau (+0,5)
+      'chestplate:body:armor1:1:', 'chestplate:rightArm:armor1:1:', 'chestplate:leftArm:armor1:1:m',
+      'leggings:body:armor2:0.5:', 'leggings:rightLeg:armor2:0.5:', 'leggings:leftLeg:armor2:0.5:m',
+      'boots:rightLeg:armor1:1:', 'boots:leftLeg:armor1:1:m']);
+    expect(r.skin).toEqual(['head:0,0,64,64:0', 'headwear:32,0,64,64:0.5', 'body:16,16,64,64:0', 'body:16,32,64,64:0.25', 'rightArm:40,16,64,64:0', 'rightArm:40,32,64,64:0.25',
+      'leftArm:32,48,64,64:0', 'leftArm:48,48,64,64:0.25', 'rightLeg:0,16,64,64:0', 'rightLeg:0,32,64,64:0.25', 'leftLeg:16,48,64,64:0', 'leftLeg:0,48,64,64:0.25']); // ModelPlayer : 2e couche +0,25, chapeau +0,5
+    expect(r.holding[0]).toBeCloseTo(-Math.PI / 10, 12);
+    expect(r.holding[2]).toBeCloseTo(0.1, 12);
+    expect(r.rest[0]).toBe(0);
+  });
+});
+
+// --- Curseurs, poignée, historique, mannequin (interface) -----------------------------------------
+// Couches d'armure synthétiques : rectangles [x, y, w, h, couleur] en unités 64 × 32, à l'échelle de la texture
+async function rectPng(page, w, h, rects, unitW) {
+  const b64 = await page.evaluate(([w, h, rects, unitW]) => {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const s = w / unitW;
+    rects.forEach(([x, y, rw, rh, col]) => { g.fillStyle = col; g.fillRect(x * s, y * s, rw * s, rh * s); });
+    return c.toDataURL('image/png').split(',')[1];
+  }, [w, h, rects, unitW || 64]);
+  return Buffer.from(b64, 'base64');
+}
+// couche 1 : casque, plastron et bras de la couleur donnée, jambes transparentes ; couche 2 : jambières
+const layer1 = col => [[0, 0, 32, 16, col], [16, 16, 24, 16, col], [40, 16, 16, 16, col]];
+const layer2 = col => [[0, 16, 16, 16, col], [16, 16, 24, 16, col]];
+
+async function armorPackFiles(page) {
+  return [...await packSrcFiles(page),
+    { name: 'pack-src/armor/fer_test/layer_1.png', data: await rectPng(page, 64, 32, layer1('#ff00ff')) },
+    { name: 'pack-src/armor/fer_test/layer_2.png', data: await rectPng(page, 64, 32, layer2('#00ffff')) },
+    { name: 'pack-src/armor/hd_test/layer_1.png', data: await rectPng(page, 128, 64, layer1('#ffff00')) },
+    { name: 'pack-src/armor/hd_test/layer_2.png', data: await rectPng(page, 128, 64, layer2('#0000ff')) },
+    { name: 'pack-src/armor/seule/layer.png', data: await rectPng(page, 64, 32, layer1('#ff8000')) },
+    { name: 'pack-src/armor/incomplete/layer_1.png', data: await rectPng(page, 64, 32, layer1('#ffffff')) }];
+}
+async function loadZip(page, files) {
+  await page.setInputFiles('#bcFiles', { name: 'pack-src.zip', mimeType: 'application/zip', buffer: makeZip(files) });
+  await settled(page);
+  await expect(page.locator('#bcEntry')).toHaveValue('wings/test_wings');
+}
+// Couleur rendue au point du mannequin (pièce, px), une fois que le rendu satisfait `ok`
+async function playerColor(page, part, p, ok) {
+  const handle = await page.waitForFunction(([part, p, ok]) => {
+    const c = ItemModelUI.samplePixel(ItemModelUI.playerPoint(part, p));
+    if (!c) return false;
+    const [r, g, b] = c;
+    return new Function('r', 'g', 'b', `return ${ok};`)(r, g, b) ? c : false;
+  }, [part, p, ok], { timeout: 5000 });
+  return handle.jsonValue();
+}
+
+test.describe('curseurs, poignée 3D, annuler / rétablir', () => {
+  test('curseur : display fusionné et pack.json exporté changent de la valeur glissée, échelle uniforme, aperçu direct', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await packSrcFiles(page));
+    await page.click('#bcTabs button[data-ctx="head"]');
+    // les curseurs vont exactement des bornes de BC
+    await expect(page.locator('#bc-translation-1-r')).toHaveAttribute('min', '-24');
+    await expect(page.locator('#bc-translation-1-r')).toHaveAttribute('max', '24');
+    await expect(page.locator('#bc-scale-0-r')).toHaveAttribute('max', '4');
+    await expect(page.locator('#bc-rotation-2-r')).toHaveAttribute('step', '0.5');
+    const r = await page.evaluate(() => ItemModelUI.setSlider('head', 'translation', 1, -20.5));
+    expect(r.ok).toBe(true);
+    let s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.display.head.translation).toEqual([0, -20.5, 0]);
+    await expect(page.locator('#bc-translation-1')).toHaveValue('-20.5');
+    const pack = await page.evaluate(() => ItemModelUI.exportPack());
+    expect(pack).toBe(PACK.replace('"head": { "translation": [0, -23, 0] }', '"head": { "translation": [0, -20.5, 0] }'));
+    // échelle : la composante est cochée par le curseur (valeurs de model.json), verrou uniforme
+    await page.evaluate(() => ItemModelUI.setSlider('head', 'scale', 0, 1.25));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.scale).toEqual([1.25, 1.25, 1.25]);
+    expect(s.display.head.scale).toEqual([1.25, 1.25, 1.25]);
+    await page.uncheck('#bcUniform');
+    await page.evaluate(() => ItemModelUI.setSlider('head', 'scale', 2, 0.5));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.scale).toEqual([1.25, 1.25, 0.5]);
+    // shift : bornes du curseur = éléments dans [-16 ; 32] (WING_MODEL : x de -8 à 24, y de 0 à 16, z à 8)
+    await page.check('#bc-on-shift');
+    await expect(page.locator('#bc-shift-0-r')).toHaveAttribute('min', '-8');
+    await expect(page.locator('#bc-shift-0-r')).toHaveAttribute('max', '8');
+    await expect(page.locator('#bc-shift-1-r')).toHaveAttribute('min', '-16');
+    await page.evaluate(() => ItemModelUI.setSlider('head', 'shift', 1, -6.5));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.shift).toEqual([0, -6.5, 0]);
+    expect(s.elements[1].from).toEqual([8, -6.5, 8]);
+    // aperçu direct : pendant le glissé (input seul) l'entrée suit, image par image, sans attendre le relâchement
+    const live = await page.evaluate(async () => {
+      const sl = document.getElementById('bc-translation-1-r');
+      sl.value = '-10'; sl.dispatchEvent(new Event('input'));
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const during = ItemModelUI.getState();
+      sl.dispatchEvent(new Event('change'));
+      return { y: during.display.head.translation[1], undoDuring: during.history.undo, undoAfter: ItemModelUI.getState().history.undo };
+    });
+    expect(live.y).toBe(-10);
+    expect(live.undoAfter).toBe(live.undoDuring + 1); // le geste n'entre dans l'historique qu'au relâchement
+    expect(errors).toEqual([]);
+  });
+
+  test('curseurs : exclusions de BC (front / fit) et valeur saisie hors bornes montrée refusée, jamais bornée', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await packSrcFiles(page));
+    await page.click('#bcTabs button[data-ctx="gui"]');
+    // fit coché : curseurs de translation et d'échelle désactivés, avec la raison ; front : rotation désactivée
+    await expect(page.locator('#bc-translation-0-r')).toBeDisabled();
+    await expect(page.locator('#bc-scale-0-r')).toBeDisabled();
+    await expect(page.locator('#bc-rotation-0-r')).toBeDisabled();
+    await expect(page.locator('#bcCtxEditor')).toContainText('Exclu : « fit » la calcule (PackBuild.java:1599)');
+    const refused = await page.evaluate(() => ItemModelUI.setSlider('gui', 'translation', 0, 2));
+    expect(refused.ok).toBe(false);
+    expect(refused.error).toContain('fit');
+    const rot = await page.evaluate(() => ItemModelUI.setSlider('gui', 'rotation', 0, 10));
+    expect(rot.ok).toBe(false);
+    // le curseur de fit va de ]0 ; 32] et fonctionne
+    await expect(page.locator('#bc-fit-r')).toHaveAttribute('max', '32');
+    expect(Number(await page.locator('#bc-fit-r').getAttribute('min'))).toBeGreaterThan(0);
+    await page.evaluate(() => ItemModelUI.setSlider('gui', 'fit', 0, 12));
+    let s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.gui).toEqual({ front: true, fit: 12 });
+    // tête : 30 saisi au clavier, refusé par BC et non borné ; le champ est marqué, le curseur reste aux bornes
+    await page.click('#bcTabs button[data-ctx="head"]');
+    await page.fill('#bc-translation-1', '30');
+    await page.locator('#bc-translation-1').dispatchEvent('change');
+    await expect(page.locator('#bcMsg')).toContainText('display.head.translation[1] = 30 hors de [-24 ; 24]');
+    await expect(page.locator('#bc-translation-1')).toHaveClass(/bad/);
+    expect(await page.locator('#bc-translation-1-r').inputValue()).toBe('24');
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.translation).toEqual([0, 30, 0]);
+    expect(s.display.head.translation).toEqual([0, 30, 0]);
+    expect(errors).toEqual([]);
+  });
+
+  test('poignée (geste simulé) : translation exacte en unités de casque, aimant, rotation, exclusions, annuler / rétablir', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await packSrcFiles(page));
+    await page.click('#bcTabs button[data-ctx="head"]');
+    let s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.gizmo.attached).toBe(true);
+    expect(s.gizmo.mode).toBe('translate');
+    // porte-armure : 1 unité = 1,25/16 bloc ; monter de 2 unités = 0,15625 bloc
+    let r = await page.evaluate(() => ItemModelUI.gizmoDrag('translate', [0, 0.15625, 0], { snap: false }));
+    expect(r.ok).toBe(true);
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.translation).toEqual([0, -21, 0]);
+    expect(s.history.undo).toBe(1);
+    expect(await page.evaluate(() => ItemModelUI.exportPack())).toContain('"head": { "translation": [0, -21, 0] }');
+    // la poignée suit le modèle
+    const anchor = s.gizmo.anchor;
+    // aimant : 0,03 bloc = 0,384 unité -> arrondi au multiple de 0,25
+    await page.evaluate(() => ItemModelUI.gizmoDrag('translate', [0, 0.03, 0], { snap: true }));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.translation).toEqual([0, -20.5, 0]);
+    expect(s.gizmo.anchor[1] - anchor[1]).toBeCloseTo(0.5 * 1.25 / 16, 9);
+    // sans aimant : arrondi à 4 décimales au plus
+    await page.evaluate(() => ItemModelUI.gizmoDrag('translate', [0.01, 0, 0], { snap: false }));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.translation).toEqual([-0.128, -20.5, 0]);
+    // rotation : 20° aimantés à 15° autour de l'axe X de la poignée (= X du modèle tourné)
+    await page.evaluate(() => ItemModelUI.gizmoDrag('rotate', { axis: 'X', angle: 20 }, { snap: true }));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.rotation).toEqual([8, 0, 0]); // model.json : -7 ; +15
+    // échelle : facteur 1,5 depuis model.json (2), verrou uniforme
+    await page.evaluate(() => ItemModelUI.gizmoDrag('scale', [1.5, 1, 1], { snap: false }));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.scale).toEqual([3, 3, 3]);
+    // curseurs synchronisés avec la poignée
+    await expect(page.locator('#bc-scale-1')).toHaveValue('3');
+    await expect(page.locator('#bc-rotation-0')).toHaveValue('8');
+    // shift : la géométrie bouge, l'entrée l'écrit
+    await page.evaluate(() => ItemModelUI.gizmoDrag('shift', [0, -0.15625, 0], { snap: false }));
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.shift[1]).toBeCloseTo(-4 - (16 * 0.15625 / 1.25 / 1.5) * Math.cos(8 * Math.PI / 180), 3); // modèle tourné de 8° en X, échelle 3, ×0,5 de renderItem
+    expect(s.history.undo).toBe(6);
+    // annuler / rétablir (Ctrl+Z / Ctrl+Y et boutons)
+    await page.locator('#bcView canvas').first().click({ position: { x: 5, y: 300 } });
+    await page.keyboard.press('Control+z');
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.shift).toEqual([0, -4, 0]);
+    await page.click('#bcUndo');
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.scale).toBeUndefined();
+    await page.keyboard.press('Control+y');
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.head.scale).toEqual([3, 3, 3]);
+    expect(s.history).toEqual({ undo: 5, redo: 1 });
+    await expect(page.locator('#bc-scale-0')).toHaveValue('3');
+    for (let i = 0; i < 5; i++) await page.evaluate(() => ItemModelUI.undo());
+    expect(await page.evaluate(() => ItemModelUI.exportPack())).toBe(PACK); // retour à l'octet près
+    // touches G / R / S
+    await page.keyboard.press('r');
+    expect((await page.evaluate(() => ItemModelUI.getState())).gizmo.mode).toBe('rotate');
+    await page.keyboard.press('s');
+    expect((await page.evaluate(() => ItemModelUI.getState())).gizmo.mode).toBe('scale');
+    await page.keyboard.press('g');
+    expect((await page.evaluate(() => ItemModelUI.getState())).gizmo.mode).toBe('translate');
+    // exclusions : inventaire (front + fit) -> déplacer, tourner, échelle et shift refusés avec la raison
+    await page.click('#bcTabs button[data-ctx="gui"]');
+    for (const mode of ['translate', 'rotate', 'scale', 'shift']) {
+      const x = await page.evaluate(m => ItemModelUI.gizmoDrag(m, m === 'rotate' ? { axis: 'Y', angle: 10 } : m === 'scale' ? [2, 2, 2] : [1, 0, 0]), mode);
+      expect(x.ok, mode).toBe(false);
+    }
+    await expect(page.locator('#bcGizmoWhy')).toContainText('« fit » recentre le modèle');
+    await expect(page.locator('#bcTools button[data-mode="rotate"]')).toBeDisabled();
+    s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.current.entry.gui).toEqual({ front: true, fit: 20 });
+    expect(errors).toEqual([]);
+  });
+
+  test('poignée à la souris : glisser la flèche X déplace translation X seule, orbite figée pendant le geste', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await packSrcFiles(page));
+    await page.click('#bcTabs button[data-ctx="head"]');
+    await page.waitForFunction(() => ItemModelUI.getState().gizmo.attached && ItemModelUI.gizmoHandlePoint('X'));
+    const start = await page.evaluate(() => ItemModelUI.gizmoHandlePoint('X'));
+    const cam0 = await page.evaluate(() => ItemModelUI.cameraPosition());
+    const before = await page.evaluate(() => ItemModelUI.getState());
+    // le long de la flèche, vers l'extérieur
+    const len = Math.hypot(start.x - start.ox, start.y - start.oy);
+    const ux = (start.x - start.ox) / len, uy = (start.y - start.oy) / len;
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(start.x + 6 * i * ux, start.y + 6 * i * uy);
+    await page.mouse.up();
+    const after = await page.evaluate(() => ItemModelUI.getState());
+    const cam1 = await page.evaluate(() => ItemModelUI.cameraPosition());
+    expect(after.current.entry.head.translation[0]).not.toBe(before.current.entry.head.translation[0]);
+    expect(after.current.entry.head.translation[1]).toBe(-23);
+    expect(after.current.entry.head.translation[2]).toBe(0);
+    expect(after.history.undo).toBe(1);
+    cam1.forEach((v, i) => expect(v).toBeCloseTo(cam0[i], 6));
+    await expect(page.locator('#bc-translation-0')).toHaveValue(String(after.current.entry.head.translation[0]));
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('mannequin : peau et armure 1.8', () => {
+  test('armures du pack listées (64×32, 128×64, layer.png, incomplète refusée) et dessinées sur le joueur', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await armorPackFiles(page));
+    const s = await page.evaluate(() => ItemModelUI.getState());
+    expect(s.mannequin.armorSets).toEqual([
+      { name: 'fer_test', ok: true, problem: '', custom: false },
+      { name: 'hd_test', ok: true, problem: '', custom: false },
+      { name: 'incomplete', ok: false, problem: 'layer_2.png absente (ni layer.png)', custom: false },
+      { name: 'seule', ok: true, problem: '', custom: false }]);
+    await expect(page.locator('#bcArmor option')).toHaveText(['aucune', 'fer_test', 'hd_test', 'incomplete — refusé : layer_2.png absente (ni layer.png)', 'seule']);
+    await expect(page.locator('#bcArmor option[value="incomplete"]')).toHaveJSProperty('disabled', true);
+    await page.click('#bcTabs button[data-ctx="thirdperson"]');
+    await page.evaluate(() => { ItemModelUI.setGizmoMode('off'); ItemModelUI.setShowItem(false); });
+    // sans armure : t-shirt du mannequin sur le torse
+    await playerColor(page, 'body', [0, 4, -3], 'g > 80 && b > 80 && r < 110 && Math.abs(g - b) < 40');
+    // fer_test (64 × 32) : plastron magenta (couche 1, gonflé de 1), jambières cyan (couche 2, 0,5)
+    await page.selectOption('#bcArmor', 'fer_test');
+    await page.waitForFunction(() => ItemModelUI.getState().mannequin.armor);
+    await playerColor(page, 'body', [0, 4, -3], 'r > 120 && b > 120 && g < 60');
+    await playerColor(page, 'rightLeg', [0, 5, -2.5], 'g > 120 && b > 120 && r < 60');
+    await playerColor(page, 'rightArm', [-1, 4, -3], 'r > 120 && b > 120 && g < 60');
+    expect((await page.evaluate(() => ItemModelUI.getState())).mannequin.meshes).toEqual(expect.arrayContaining(['body:armor1', 'body:armor2', 'headwear:armor1', 'leftLeg:armor1']));
+    // hd_test (128 × 64) : mêmes zones, texture HD
+    await page.evaluate(() => ItemModelUI.setArmor('hd_test'));
+    expect((await page.evaluate(() => ItemModelUI.getState())).mannequin.armor).toEqual({ name: 'hd_test', layer1: [128, 64], layer2: [128, 64] });
+    await playerColor(page, 'body', [0, 4, -3], 'r > 120 && g > 120 && b < 60');
+    await playerColor(page, 'rightLeg', [0, 5, -2.5], 'b > 120 && r < 60 && g < 60');
+    // layer.png seule : les deux couches
+    await page.evaluate(() => ItemModelUI.setArmor('seule'));
+    await playerColor(page, 'body', [0, 4, -3], 'r > 150 && g > 50 && g < 140 && b < 50');
+    // incomplète : refusée comme BC (PackBuild.layerSuffixes)
+    const inc = await page.evaluate(() => ItemModelUI.setArmor('incomplete'));
+    expect(inc.mannequin.message.text).toContain('PackBuild.java:766-785');
+    // vue Tête (ailes portées par le porte-armure) : le joueur armé est là aussi ; masquable
+    await page.evaluate(() => ItemModelUI.setArmor('fer_test'));
+    await page.click('#bcTabs button[data-ctx="head"]');
+    expect((await page.evaluate(() => ItemModelUI.getState())).mannequin.visible).toBe(true);
+    await page.uncheck('#bcShowPlayer');
+    expect((await page.evaluate(() => ItemModelUI.getState())).mannequin.visible).toBe(false);
+    // « aucune »
+    await page.check('#bcShowPlayer');
+    await page.selectOption('#bcArmor', '');
+    expect((await page.evaluate(() => ItemModelUI.getState())).mannequin.armor).toBeNull();
+    expect(errors).toEqual([]);
+  });
+
+  test('couches d\'armure chargées sans pack, peau 64×64 et 64×32 (membres gauches en miroir), peau refusée', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await packSrcFiles(page));
+    await page.click('#bcTabs button[data-ctx="thirdperson"]');
+    await page.evaluate(() => { ItemModelUI.setGizmoMode('off'); ItemModelUI.setShowItem(false); });
+    // couches chargées à la main par le sélecteur de fichiers
+    await page.setInputFiles('#bcArmorFiles', [
+      { name: 'layer_1.png', mimeType: 'image/png', buffer: await rectPng(page, 64, 32, layer1('#ff00ff')) },
+      { name: 'layer_2.png', mimeType: 'image/png', buffer: await rectPng(page, 64, 32, layer2('#00ffff')) }]);
+    await page.waitForFunction(() => ItemModelUI.getState().mannequin.armor);
+    await expect(page.locator('#bcArmor')).toHaveValue('couches chargées');
+    await playerColor(page, 'rightLeg', [0, 5, -2.5], 'g > 120 && b > 120 && r < 60');
+    await page.selectOption('#bcArmor', '');
+    // peau 64 × 64 : face avant du torse verte
+    await page.setInputFiles('#bcSkinFile', { name: 'skin.png', mimeType: 'image/png', buffer: await rectPng(page, 64, 64, [[20, 20, 8, 12, '#00ff00']]) });
+    await page.waitForFunction(() => ItemModelUI.getState().mannequin.skin === 'custom');
+    await playerColor(page, 'body', [0, 6, -2], 'g > 120 && r < 60 && b < 60');
+    // peau 64 × 32 : la face avant de la jambe droite (rouge) est recopiée sur la jambe gauche (ImageBufferDownload)
+    const legacy = (await rectPng(page, 64, 32, [[4, 20, 4, 12, '#ff0000']])).toString('base64');
+    await page.evaluate(b64 => ItemModelUI.setSkin(b64), legacy);
+    await playerColor(page, 'leftLeg', [0, 6, -2], 'r > 120 && g < 60 && b < 60');
+    await playerColor(page, 'rightLeg', [0, 6, -2], 'r > 120 && g < 60 && b < 60');
+    // taille refusée par le client 1.8 : message, peau inchangée
+    const bad = (await rectPng(page, 32, 32, [[0, 0, 32, 32, '#123456']], 32)).toString('base64');
+    const st = await page.evaluate(b64 => ItemModelUI.setSkin(b64), bad);
+    expect(st.mannequin.message.text).toContain('64 × 64 ou 64 × 32');
+    // retour au mannequin par défaut
+    await page.selectOption('#bcSkin', 'default');
+    await playerColor(page, 'body', [0, 4, -2], 'g > 80 && b > 80 && r < 110 && Math.abs(g - b) < 40');
+    expect(errors).toEqual([]);
+  });
+
+  test('téléphone 375 px : curseurs et barre de poignée sans défilement horizontal, vue 3D dégagée, poignée au toucher', async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+    const page = await context.newPage();
+    const errors = collectErrors(page);
+    await openPanel(page);
+    await loadZip(page, await armorPackFiles(page));
+    await page.evaluate(() => ItemModelUI.setArmor('hd_test'));
+    for (const ctx of ['thirdperson', 'head', 'gui', 'ground', 'fixed', 'firstperson']) {
+      await page.click(`#bcTabs button[data-ctx="${ctx}"]`);
+      const w = await page.evaluate(() => {
+        const v = document.getElementById('bcView').getBoundingClientRect();
+        const t = document.getElementById('bcTools').getBoundingClientRect();
+        const hud = document.querySelector('.bc-hud').getBoundingClientRect();
+        const sl = document.getElementById('bc-translation-1-r').getBoundingClientRect();
+        return { doc: document.documentElement.scrollWidth, sidebar: document.getElementById('sidebar').scrollWidth, sidebarClient: document.getElementById('sidebar').clientWidth,
+          toolsRight: t.right, viewRight: v.right, hudH: hud.height, viewH: v.height, sliderW: sl.width };
+      });
+      expect(w.doc, ctx).toBeLessThanOrEqual(375);
+      expect(w.sidebar, ctx).toBeLessThanOrEqual(w.sidebarClient);
+      expect(w.toolsRight, ctx).toBeLessThanOrEqual(w.viewRight);
+      expect(w.hudH, ctx).toBeLessThan(w.viewH * 0.5);
+      expect(w.sliderW, ctx).toBeGreaterThan(80); // curseur utilisable au doigt
+    }
+    // geste au toucher (événements pointeur « touch ») sur la flèche X, vue Tête
+    await page.click('#bcTabs button[data-ctx="head"]');
+    await page.evaluate(() => ItemModelUI.setShowPlayer(false));
+    await page.waitForFunction(() => ItemModelUI.gizmoHandlePoint('X'));
+    const before = (await page.evaluate(() => ItemModelUI.getState())).current.entry.head.translation.slice();
+    await page.evaluate(async () => {
+      const p = ItemModelUI.gizmoHandlePoint('X');
+      const cv = document.querySelector('#bcView canvas');
+      const ev = (type, x, y, buttons) => new PointerEvent(type, { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: type === 'pointermove' ? -1 : 0, buttons, bubbles: true });
+      cv.dispatchEvent(ev('pointerdown', p.x, p.y, 1));
+      for (let i = 1; i <= 6; i++) document.dispatchEvent(ev('pointermove', p.x - 5 * i, p.y, 1));
+      document.dispatchEvent(ev('pointerup', p.x - 30, p.y, 0));
+    });
+    const after = (await page.evaluate(() => ItemModelUI.getState())).current.entry.head.translation;
+    expect(after[0]).not.toBe(before[0]);
+    expect(after.slice(1)).toEqual(before.slice(1));
+    expect(errors).toEqual([]);
+    await context.close();
+  });
+});
