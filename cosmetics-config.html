@@ -11,11 +11,6 @@
 <script src="studio-nav.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
-  @font-face {
-    font-family: 'MinecraftPreview';
-    src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft@1.0.0/files/minecraft.woff2') format('woff2');
-    font-display: swap;
-  }
   * { box-sizing: border-box; }
   body { font-size: 14px; line-height: 1.5; min-height: 100vh; }
   .lead { color: var(--st-muted); margin: 0 0 12px; max-width: 110ch; font-size: 13.5px; }
@@ -2200,7 +2195,7 @@
     const entries = S.report ? S.report.slots[S.slot].entries : [];
     $('legend').innerHTML = esc(entries.length + ' entrée(s) valide(s), coffre de ' + lay.size + ' cases (' + rows + ' rangées) : ' + L.PER_PAGE + ' par page, barrière case ' + lay.removeSlot + ', préférences case ' + lay.optionsSlot + (lay.pages > 1 ? ', flèches cases ' + (lay.previousSlot >= 0 ? lay.previousSlot : '-') + ' / ' + (lay.nextSlot >= 0 ? lay.nextSlot : '-') : '') + '. ')
       + '<span class="sw" style="background:#a855f7"></span>modèle du pack (non rendu ici' + (S.pack ? '' : ' ; chargez le pack pour savoir s\'il existe') + '), <span class="sw" style="background:#7f7f7f"></span>pierre : aucun modèle. '
-      + (Font.ascii ? 'Texte rendu avec ascii.png (exact).' : 'Texte latin approché (police web) : chargez le .jar 1.8.9 pour l\'exact.');
+      + (Font.ascii ? 'Texte rendu avec ascii.png (exact).' : 'Texte latin approché (police de remplacement) : chargez le .jar 1.8.9 pour l\'exact.');
   }
   function renderTooltip(item) {
     const cv = $('tip');
@@ -2360,7 +2355,7 @@
       const p = S.pack;
       items.push([p.jsonError ? 'warn' : 'ok', 'Pack « ' + S.packOrigin + ' » : ' + p.ids.wings.size + ' ailes, ' + p.ids.auras.size + ' auras, ' + p.ids.motes.size + ' modèles d\'objets' + (p.packJsonPath ? ' (pack.json lu)' : ' (sans pack.json)') + (p.icons.size ? ', ' + p.icons.size + ' icon.png' : '') + (p.jsonError ? ' - pack.json illisible : ' + p.jsonError : '')]);
     } else items.push(['', 'Pack : non chargé (croisement des modèles désactivé)']);
-    items.push([Font.ascii ? 'ok' : '', 'Texte : ' + (Font.ascii ? 'ascii.png de « ' + Font.ascii.origin + ' » (exact)' : 'police web approchée')]);
+    items.push([Font.ascii ? 'ok' : '', 'Texte : ' + (Font.ascii ? 'ascii.png de « ' + Font.ascii.origin + ' » (exact)' : 'police de remplacement')]);
     $('filesList').innerHTML = items.map(([k, t]) => '<li><span class="dot ' + k + '"></span>' + esc(t) + '</li>').join('');
     $('clearPackBtn').hidden = !S.pack;
     const ml = $('moteList');
@@ -2477,7 +2472,7 @@
       clearTimeout(srcTimer);
       srcTimer = setTimeout(() => { if ($('source').value !== S.text) { S.history.push(S.text); setText($('source').value, { fromSource: true }); } }, 250);
     });
-    if (document.fonts && document.fonts.load) document.fonts.load('8px MinecraftPreview').then(() => renderAll()).catch(() => {});
+
   }
 
   buildSettings();

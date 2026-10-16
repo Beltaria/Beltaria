@@ -10,11 +10,6 @@
 <link rel="stylesheet" href="studio.css">
 <script src="studio-nav.js" defer></script>
 <style>
-  @font-face {
-    font-family: 'MinecraftPreview';
-    src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft@1.0.0/files/minecraft.woff2') format('woff2');
-    font-display: swap;
-  }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   body { font-size: 14px; line-height: 1.5; min-height: 100vh; }
@@ -228,7 +223,7 @@
         <ul id="filesList" class="files-list"></ul>
         <details>
           <summary>Ce que l'outil lit</summary>
-          <p>Chaque icône est un dossier <code>glyphs/&lt;id&gt;/texture.png</code> : l'identifiant vient du dossier (dans un zip ou un dossier déposé), sinon du nom du fichier — modifiable. <code>glyphs/chars.json</code> est la mémoire des caractères ; <code>pack.json</code> peut en imposer (<code>"glyphs": { "vip": { "char": "F900" } }</code>). Le client <code>.minecraft/versions/1.8.9/1.8.9.jar</code> (ou son <code>ascii.png</code>) rend le texte latin au pixel près ; sans lui, le texte latin est approché par une police web — les icônes, elles, sont toujours rendues comme en jeu.</p>
+          <p>Chaque icône est un dossier <code>glyphs/&lt;id&gt;/texture.png</code> : l'identifiant vient du dossier (dans un zip ou un dossier déposé), sinon du nom du fichier — modifiable. <code>glyphs/chars.json</code> est la mémoire des caractères ; <code>pack.json</code> peut en imposer (<code>"glyphs": { "vip": { "char": "F900" } }</code>). Le client <code>.minecraft/versions/1.8.9/1.8.9.jar</code> (ou son <code>ascii.png</code>) rend le texte latin au pixel près ; sans lui, le texte latin est approché par une police de remplacement — les icônes, elles, sont toujours rendues comme en jeu.</p>
           <p>Glissez-déposez fichiers, dossiers et zips n'importe où sur la page.</p>
         </details>
       </section>
@@ -1415,7 +1410,7 @@
     items.push([S.icons.length ? 'ok' : '', 'Icônes : ' + (S.icons.length ? S.icons.length : 'aucune') + (S.folders.size ? ' (+ ' + S.folders.size + ' dossier(s) sans texture.png)' : '')]);
     items.push([S.charsJson ? (S.result.charsBroken ? 'error' : 'ok') : 'warn', 'chars.json : ' + (S.charsJson ? '« ' + S.charsJson.origin + ' »' : 'absent — prédiction d\'un premier assemblage, les caractères réels peuvent différer')]);
     items.push([S.packJson ? (S.result.fatal.some(f => f.startsWith('pack.json')) ? 'error' : 'ok') : '', 'pack.json : ' + (S.packJson ? '« ' + S.packJson.origin + ' »' : 'absent (aucun caractère imposé)')]);
-    items.push([S.ascii ? 'ok' : '', 'Texte latin : ' + (S.ascii ? 'ascii.png de « ' + S.ascii.origin + ' » (exact)' : 'police web approchée (chargez le .jar 1.8.9 pour l\'exact)')]);
+    items.push([S.ascii ? 'ok' : '', 'Texte latin : ' + (S.ascii ? 'ascii.png de « ' + S.ascii.origin + ' » (exact)' : 'police de remplacement (chargez le .jar 1.8.9 pour l\'exact)')]);
     if (S.assetPaths.size) items.push(['', 'pack-src/assets : ' + S.assetPaths.size + ' fichier(s) vérifiés contre la police générée']);
     if (S.ignored) items.push(['', S.ignored + ' fichier(s) ignoré(s) (ni icône, ni chars.json, ni pack.json)']);
     const ul = $('filesList');
@@ -1967,7 +1962,7 @@
 
     const note = [];
     if (t.kind === 'level' && !t.resolved) note.push('Ce niveau ne se résout pas (' + (L.levelDigits(L.javaTrim(t.level)) == null ? 'pas un nombre de 1 à 9 chiffres' : 'pièce manquante') + ') : PlaceholderAPI laisse le placeholder tel quel, comme ci-dessus.');
-    note.push(S.ascii ? 'Texte latin rendu avec ascii.png (exact).' : 'Texte latin approché (police web) : chargez le .jar 1.8.9 ou ascii.png pour l\'exact. Les icônes sont rendues comme en jeu : pages et largeurs prévues, recul d\'un pixel entre les cases.');
+    note.push(S.ascii ? 'Texte latin rendu avec ascii.png (exact).' : 'Texte latin approché (police de remplacement) : chargez le .jar 1.8.9 ou ascii.png pour l\'exact. Les icônes sont rendues comme en jeu : pages et largeurs prévues, recul d\'un pixel entre les cases.');
     note.push('Canevas en pixels réels, à l\'échelle GUI choisie.');
     $('pvNote').textContent = note.join(' ');
   }
@@ -2194,7 +2189,7 @@
       // A dropped file named chars.json / pack.json is recognised by name in ingestBatch.
       handleFiles(files, dirs);
     });
-    if (document.fonts && document.fonts.load) document.fonts.load('16px MinecraftPreview').then(() => { quadCache.clear(); renderPreview(); }, () => {});
+
   }
 
   window.GlyphChecker = {
