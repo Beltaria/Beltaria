@@ -299,6 +299,13 @@
                     <span>⬇ Télécharger PNG</span>
                 </button>
             </div>
+            <label class="flex items-center justify-between gap-2 text-[11px] text-slate-400 min-w-0">
+                <span class="shrink-0">Nom du PNG :</span>
+                <select id="selDownloadName" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 min-w-0 flex-1">
+                    <option value="original">Nom d'origine (image 1)</option>
+                    <option value="dims">pixelpalette_&lt;L&gt;x&lt;H&gt;.png</option>
+                </select>
+            </label>
 
             <!-- Réglages fins des variations -->
             <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5">
@@ -1082,6 +1089,23 @@
         }
 
         // --- 10. Import d'Images 100% Fiable et Sans Redimensionnement ---
+        /** Nom du PNG exporté : celui de l'image 1 (ramené en .png), sinon pixelpalette_<L>x<H>.png. */
+        function exportFileName(w, h) {
+            const sel = document.getElementById('selDownloadName');
+            const original = state.img1FileName ? state.img1FileName.replace(/\.[^/.]+$/, '') + '.png' : null;
+            if (sel && sel.value === 'original' && original) return original;
+            return `pixelpalette_${w}x${h}.png`;
+        }
+        function updateDownloadNameOption() {
+            const opt = document.querySelector('#selDownloadName option[value="original"]');
+            if (!opt) return;
+            const original = state.img1FileName ? state.img1FileName.replace(/\.[^/.]+$/, '') + '.png' : null;
+            opt.textContent = original ? `Nom d'origine (${original})` : 'Nom d\'origine (image 1 chargée depuis un fichier)';
+            opt.disabled = !original;
+            if (!original) document.getElementById('selDownloadName').value = 'dims';
+            else document.getElementById('selDownloadName').value = 'original';
+        }
+
         function importImageFile(file, slotNumber) {
             if (!file) return;
             if (!file.type.startsWith('image/')) {
@@ -1117,6 +1141,9 @@
                     const imgData = offCtx.getImageData(0, 0, w, h);
 
                     if (slotNumber === 1) {
+                        // Nom d'origine gardé pour l'export (texture.png reste texture.png pour BeltariaContent)
+                        state.img1FileName = file.name || null;
+                        updateDownloadNameOption();
                         state.originalImg1Data = new ImageData(new Uint8ClampedArray(imgData.data), w, h);
                         state.img1Data = imgData;
                         state.historyStack = [];
@@ -1404,6 +1431,8 @@
             state.originalImg1Data = new ImageData(new Uint8ClampedArray(img1.data), img1.width, img1.height);
             state.img1Data = img1;
             state.img2Data = img2;
+            state.img1FileName = null; // démo : pas de nom d'origine
+            updateDownloadNameOption();
             state.historyStack = [];
             document.getElementById('btnUndo').disabled = true;
 
@@ -1718,11 +1747,12 @@
                 exportCanvas.getContext('2d').putImageData(state.resultData, 0, 0);
 
                 const link = document.createElement('a');
-                link.download = `pixelpalette_${exportCanvas.width}x${exportCanvas.height}.png`;
+                link.download = exportFileName(exportCanvas.width, exportCanvas.height);
                 link.href = exportCanvas.toDataURL('image/png');
                 link.click();
-                showToast(`PNG exporté en ${exportCanvas.width}×${exportCanvas.height} px !`, 'success');
+                showToast(`PNG exporté en ${exportCanvas.width}×${exportCanvas.height} px : ${link.download}`, 'success');
             });
+            updateDownloadNameOption();
 
             // Contrôles de Zoom simples sur les 3 panneaux
             function setupZoom(suffix, propName, canvasId) {

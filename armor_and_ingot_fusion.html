@@ -165,6 +165,20 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Télécharger la texture
                 </button>
+                <div class="flex flex-col gap-1.5">
+                    <label for="download-name" class="text-xs font-medium text-slate-300">Nom du fichier téléchargé</label>
+                    <select id="download-name" class="st-select w-full min-w-0">
+                        <option value="recolor">Nom de l'armure + _recolor.png</option>
+                        <option value="layer_1.png">layer_1.png — casque, plastron, bottes</option>
+                        <option value="layer_2.png">layer_2.png — jambières</option>
+                        <option value="layer.png">layer.png — sert aux deux couches</option>
+                        <option value="helmet.png">helmet.png — icône du casque</option>
+                        <option value="chestplate.png">chestplate.png — icône du plastron</option>
+                        <option value="leggings.png">leggings.png — icône des jambières</option>
+                        <option value="boots.png">boots.png — icône des bottes</option>
+                    </select>
+                    <p id="download-hint" class="text-[11px] text-slate-400 st-mono break-all"></p>
+                </div>
             </section>
 
     </main>
@@ -208,13 +222,35 @@
         let baseImageData = null; 
         let originalFileName = "armure_coloree.png";
 
+        // Noms qu'attend BeltariaContent dans armor/<set>/ : layer_1.png + layer_2.png, ou layer.png
+        // seule pour les deux (PackBuild.java:766-786), et helmet|chestplate|leggings|boots.png
+        // pour les icônes (PackBuild.java:263-265, 724-728).
+        const BC_ARMOR_NAMES = ['layer_1.png', 'layer_2.png', 'layer.png', 'helmet.png', 'chestplate.png', 'leggings.png', 'boots.png'];
+        const downloadName = document.getElementById('download-name');
+        const downloadHint = document.getElementById('download-hint');
+        function currentDownloadName() {
+            return downloadName.value === 'recolor' ? originalFileName : downloadName.value;
+        }
+        function updateDownloadHint() {
+            const name = currentDownloadName();
+            downloadHint.textContent = BC_ARMOR_NAMES.includes(name)
+                ? `Dossier BC : pack-src/armor/<set>/${name}`
+                : `${name} — renommez-le layer_1.png, layer_2.png, layer.png ou <pièce>.png pour BeltariaContent.`;
+        }
+        downloadName.addEventListener('change', updateDownloadHint);
+        updateDownloadHint();
+
         function handleFile(input, imgElement, previewElement, placeholderElement, callback) {
             input.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                
+
                 if (input === els.inputArmor) {
                     originalFileName = file.name.replace(/\.[^/.]+$/, "") + "_recolor.png";
+                    // Un fichier déjà nommé à la BC (layer_1.png, helmet.png…) garde son nom par défaut
+                    const base = file.name.toLowerCase();
+                    if (BC_ARMOR_NAMES.includes(base)) downloadName.value = base;
+                    updateDownloadHint();
                 }
 
                 const reader = new FileReader();
@@ -424,7 +460,7 @@
         els.btnDownload.addEventListener('click', () => {
             if (!baseImageData) return;
             const link = document.createElement('a');
-            link.download = originalFileName;
+            link.download = currentDownloadName();
             link.href = els.canvas.toDataURL('image/png');
             link.click();
         });
