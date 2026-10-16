@@ -4,163 +4,342 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beltaria Studio</title>
-<meta name="description" content="Outils pixel art Minecraft 1.8 de Beltaria : animations, recoloriage, armures, items 3D, lore et spritesheets.">
+<meta name="description" content="Outils pixel art Minecraft 1.8 de Beltaria : animations, recoloriage, armures, items 3D, icônes du texte, lore et spritesheets.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%231a1426'/%3E%3Cpath fill='%23c084fc' d='M1 1h4v1H1zM1 2h1v5H1zM5 2h1v2H5zM2 4h3v1H2zM5 5h2v2H5zM2 6h3v1H2z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="studio.css">
 <style>
-  :root {
-    --bg: #0d0b14;
-    --surface: #16121f;
-    --surface-hover: #1d1829;
-    --border: #2a2338;
-    --border-hover: #6d4fa3;
-    --text: #ece8f4;
-    --muted: #9a92ad;
-    --accent: #c084fc;
-    --accent-2: #e879f9;
-    --tag: #241d33;
-  }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    min-height: 100vh;
+  html { scroll-behavior: smooth; }
+  body { min-height: 100vh; font-size: 15px; line-height: 1.5; }
+  .st-logo .pix { width: 22px; height: 22px; }
+
+  /* Introduction */
+  .home { max-width: 1240px; padding-top: 28px; padding-bottom: 40px; }
+  .hero { margin-bottom: 24px; }
+  .hero-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .hero-title {
+    margin: 0; max-width: 24ch; font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em;
+    background: var(--st-gradient-title); -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 16px 40px; }
-  header { margin-bottom: 40px; }
-  .brand { display: flex; align-items: center; gap: 14px; }
-  .logo { width: 44px; height: 44px; image-rendering: pixelated; flex: none; }
-  h1 {
-    margin: 0; font-size: clamp(28px, 5vw, 40px); font-weight: 800; letter-spacing: -0.02em;
-    background: linear-gradient(90deg, #fff, #e9d5ff 55%, var(--accent-2));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+  .lead { margin: 12px 0 0; max-width: 64ch; color: var(--st-muted); }
+  .ref {
+    display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; max-width: 72ch;
+    font-size: 13px; color: var(--st-text);
   }
-  .lead { color: var(--muted); margin: 12px 0 0; max-width: 60ch; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .ref svg { flex: none; width: 16px; height: 16px; margin-top: 2px; color: var(--st-ok); }
+  .ref strong { color: var(--st-text-strong); }
+
+  /* Mise en page : colonne latérale (sections + « Quel outil ? ») et sections d'outils */
+  .layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .side {
+    position: sticky; top: calc(var(--hdr, 65px) + 16px); display: flex; flex-direction: column; gap: 16px;
+    max-height: calc(100vh - var(--hdr, 65px) - 32px); overflow-y: auto; scrollbar-width: thin;
+  }
+  .side-nav { order: 1; }
+  .quick { order: 2; }
+  .side-title { margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--st-faint); }
+  .toc { display: flex; flex-direction: column; gap: 2px; }
+  .toc a {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    min-height: 36px; padding: 6px 10px; border-radius: var(--st-radius-sm);
+    color: var(--st-muted); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap;
+    border: 1px solid transparent; transition: background-color .15s, color .15s, border-color .15s;
+  }
+  .toc a:hover { background: var(--st-surface-2); color: var(--st-text); }
+  .toc a.on { background: var(--st-accent-soft); border-color: var(--st-accent-line); color: var(--st-accent-text); }
+  .toc a:focus-visible, .pick:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+  .toc .count { font: 600 11px/1 var(--st-mono); color: var(--st-faint); }
+  .toc a.on .count { color: var(--st-accent-text); }
+
+  .quick { padding: 14px; }
+  .quick-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .quick-head svg { width: 18px; height: 18px; color: var(--st-fuchsia); flex: none; }
+  .quick-title { margin: 0; font-size: 14px; font-weight: 700; color: var(--st-text-strong); }
+  .quick-hint { margin: 0 0 10px; font-size: 12px; color: var(--st-muted); }
+  .picks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .pick {
+    display: flex; flex-direction: column; gap: 1px; min-height: 36px; padding: 6px 10px;
+    border-radius: var(--st-radius-sm); border: 1px solid var(--st-border); background: var(--st-inset);
+    color: var(--st-text); text-decoration: none; font-size: 13px; line-height: 1.3;
+    transition: border-color .15s, background-color .15s;
+  }
+  .pick:hover { border-color: var(--st-accent-line); background: var(--st-surface-2); }
+  .pick b { font-size: 11px; font-weight: 600; color: var(--st-accent-text); }
+
+  /* Sections d'outils */
+  .sections { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+  .group { scroll-margin-top: calc(var(--hdr, 65px) + 16px); }
+  .group-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .group-icon {
+    flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--st-accent-soft); border: 1px solid var(--st-accent-line); color: var(--st-accent-text);
+  }
+  .group-icon svg { width: 18px; height: 18px; }
+  .group-title { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--st-text-strong); }
+  .group-desc { margin: 2px 0 0; font-size: 13px; color: var(--st-muted); }
+  .group-head .st-badge { margin-left: auto; flex: none; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .card {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 20px; border-radius: 12px;
-    background: var(--surface); border: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    padding: 18px; border-radius: var(--st-radius);
+    background: var(--st-surface); border: 1px solid var(--st-border); box-shadow: var(--st-shadow);
     color: inherit; text-decoration: none;
     transition: border-color .15s, background-color .15s, transform .15s;
   }
-  .card:hover { background: var(--surface-hover); border-color: var(--border-hover); transform: translateY(-2px); }
-  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card:hover { border-color: var(--st-accent-line); background: var(--st-surface-solid); transform: translateY(-2px); }
+  .card:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
   .card-head { display: flex; align-items: center; gap: 12px; }
   .icon {
-    width: 40px; height: 40px; flex: none; border-radius: 10px;
-    display: grid; place-items: center;
-    background: var(--tag); color: var(--accent);
+    width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center;
+    background: var(--st-inset); border: 1px solid var(--st-border-strong); color: var(--st-fuchsia);
   }
   .icon svg { width: 22px; height: 22px; }
-  .card h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  .card p { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+  .card h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--st-text-strong); }
+  .card p { margin: 0; color: var(--st-muted); font-size: 14px; flex: 1; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--tag); color: #cbbfe0; }
-  footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
-  footer a { color: var(--accent); }
-  @media (max-width: 400px) { .grid { grid-template-columns: 1fr; } .wrap { padding-top: 36px; } }
-  @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+  .open { font-size: 13px; font-weight: 600; color: var(--st-accent-text); white-space: nowrap; transition: transform .15s; }
+  .card:hover .open { transform: translateX(3px); }
+
+  .home-foot {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--st-border);
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--st-faint); font-size: 13px;
+  }
+  .home-foot a { color: var(--st-accent-text); }
+
+  /* Tablette et téléphone : la colonne latérale passe au-dessus, sections en barre collante */
+  @media (max-width: 1023px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    /* display: contents : la barre des sections reste collante sur toute la liste, pas seulement dans la colonne */
+    .side { display: contents; }
+    .sections { order: 3; }
+    .toc {
+      position: sticky; top: var(--hdr, 61px); z-index: 20; flex-direction: row; gap: 6px;
+      overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 8px 16px;
+      background: rgba(11, 14, 23, 0.92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--st-border);
+    }
+    .toc::-webkit-scrollbar { display: none; }
+    .toc a { flex: none; border-color: var(--st-border-strong); background: var(--st-surface-2); color: var(--st-text); border-radius: 999px; padding: 6px 12px; }
+    .side-nav .side-title { display: none; }
+    .side-nav { position: sticky; top: var(--hdr, 61px); z-index: 20; order: 2; }
+    .quick { order: 1; }
+    .picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .group { scroll-margin-top: calc(var(--hdr, 61px) + 64px); }
+  }
+  @media (max-width: 640px) {
+    .home { padding-top: 20px; }
+    .toc { margin: 0 -12px; padding: 8px 12px; }
+    .picks { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .pick { padding: 6px 8px; font-size: 12px; }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .card { padding: 14px; }
+    .group-desc { font-size: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .card, .open, .toc a, .pick { transition: none; }
+    .card:hover { transform: none; }
+    .card:hover .open { transform: none; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <svg class="logo" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect width="8" height="8" rx="1" fill="#1a1426"/><path fill="#c084fc" d="M1 1h4v1H1zM1 2h1v5H1zM5 2h1v2H5zM2 4h3v1H2zM5 5h2v2H5zM2 6h3v1H2z"/></svg>
-      <h1>Beltaria Studio</h1>
-    </div>
-    <p class="lead">Les outils pixel art Minecraft 1.8 de Beltaria. Tout tourne dans le navigateur : vos images restent sur votre machine.</p>
-  </header>
+<header class="st-header"><div class="st-header-inner">
+  <div class="st-brand">
+    <div class="st-logo"><span><svg class="pix" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M1 1h4v1H1zM1 2h1v5H1zM5 2h1v2H5zM2 4h3v1H2zM5 5h2v2H5zM2 6h3v1H2z"/></svg></span></div>
+    <div><h1 class="st-title">Beltaria Studio</h1><p class="st-subtitle">Outils pixel art Minecraft 1.8.9 de Beltaria</p></div>
+  </div>
+  <div class="st-actions">
+    <a class="st-btn" href="https://github.com/Beltaria/Beltaria" title="Code source sur GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>Code source</a>
+  </div>
+</div></header>
 
-  <main class="grid">
+<main class="st-main home">
+  <section class="hero">
+    <p class="hero-badges"><span class="st-badge st-badge-accent">9 outils</span><span class="st-badge st-badge-ok">100 % dans le navigateur</span><span class="st-badge">Minecraft 1.8.9</span></p>
+    <h2 class="hero-title">Les outils de contenu Beltaria, au même endroit.</h2>
+    <p class="lead">Textures, armures, items 3D, icônes du texte et lore. Tout tourne dans le navigateur : vos images restent sur votre machine.</p>
+    <p class="ref"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.6-4A12 12 0 0112 3a12 12 0 01-8.6 3 12 12 0 00.6 9c1.4 3 4.2 5.2 8 6 3.8-.8 6.6-3 8-6a12 12 0 00.6-9z"/></svg><span><strong>BeltariaContent fait référence</strong> : les outils suivent ses règles d'assemblage du pack ; en cas d'écart, c'est BeltariaContent qui a raison.</span></p>
+  </section>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="st-panel quick">
+        <div class="quick-head"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg><h2 class="quick-title">Quel outil ?</h2></div>
+        <p class="quick-hint">Je veux…</p>
+        <ul class="picks">
+          <li><a class="pick" href="rank-generator.html">créer un grade ou un badge de niveau <b>Générateur de grades</b></a></li>
+          <li><a class="pick" href="glyph-checker.html">vérifier une icône du texte <b>Vérificateur d'icônes</b></a></li>
+          <li><a class="pick" href="animforge.html">animer une texture <b>MC AnimForge</b></a></li>
+          <li><a class="pick" href="pixelpalette_studio.html">recolorer une texture <b>PixelPalette Studio</b></a></li>
+          <li><a class="pick" href="armor_layer_preview.html">voir une armure en 3D <b>Aperçu d'armure 3D</b></a></li>
+          <li><a class="pick" href="item-3d-maker.html">régler un item 3D (pack.json) <b>Items 3D</b></a></li>
+          <li><a class="pick" href="lore-preview.html">écrire le lore d'un item <b>Lore &amp; tooltips</b></a></li>
+          <li><a class="pick" href="gif_to_spritesheet.html">convertir un GIF <b>GIF vers spritesheet</b></a></li>
+        </ul>
+      </div>
+      <nav class="side-nav" aria-label="Sections">
+        <p class="side-title">Sections</p>
+        <div class="toc">
+          <a href="#textures">Textures &amp; animations <span class="count">4</span></a>
+          <a href="#modeles-3d">Armures &amp; modèles 3D <span class="count">2</span></a>
+          <a href="#icones">Icônes du texte <span class="count">2</span></a>
+          <a href="#texte">Texte &amp; items <span class="count">1</span></a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="sections">
+      <section class="group" id="textures" aria-labelledby="textures-title">
+        <div class="group-head">
+          <span class="group-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 15l4-4 4 4 3-3 5 5"/></svg></span>
+          <div><h2 class="group-title" id="textures-title">Textures &amp; animations</h2><p class="group-desc">Animer, recolorer et assembler les textures d'items et d'armures.</p></div>
+          <span class="st-badge">4 outils</span>
+        </div>
+        <div class="grid">
     <a class="card" href="animforge.html">
       <div class="card-head">
         <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></span>
-        <h2>MC AnimForge</h2>
+        <h3>MC AnimForge</h3>
       </div>
       <p>Génère des animations pixel art : glint sur la tête ou la lame, particules flottantes, gouttes et aura, sans redimensionnement.</p>
-      <div class="tags"><span class="tag">Animation</span><span class="tag">.mcmeta</span></div>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Animation</span><span class="st-badge">.mcmeta</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
     </a>
 
     <a class="card" href="pixelpalette_studio.html">
       <div class="card-head">
         <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg></span>
-        <h2>PixelPalette Studio</h2>
+        <h3>PixelPalette Studio</h3>
       </div>
       <p>Recoloriage intelligent : choisissez les couleurs à remplacer sur une image et appliquez les teintes d'une autre, avec variations automatiques.</p>
-      <div class="tags"><span class="tag">Couleurs</span><span class="tag">Recoloriage</span></div>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Couleurs</span><span class="st-badge">Recoloriage</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
     </a>
 
     <a class="card" href="armor_and_ingot_fusion.html">
       <div class="card-head">
         <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg></span>
-        <h2>Fusion armure &amp; lingot</h2>
+        <h3>Fusion armure &amp; lingot</h3>
       </div>
       <p>Applique les couleurs d'un lingot à une armure en conservant la luminosité de la texture d'origine, puis permet d'ajuster teinte, saturation, luminosité et contraste.</p>
-      <div class="tags"><span class="tag">Armure</span><span class="tag">Couleurs</span></div>
-    </a>
-
-    <a class="card" href="armor_layer_preview.html">
-      <div class="card-head">
-        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/></svg></span>
-        <h2>Aperçu d'armure 3D</h2>
-      </div>
-      <p>Visualise les couches d'armure 1.8 sur un joueur en 3D, avec l'effet d'enchantement animé.</p>
-      <div class="tags"><span class="tag">Armure</span><span class="tag">3D</span></div>
-    </a>
-
-    <a class="card" href="item-3d-maker.html">
-      <div class="card-head">
-        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zm0 0v18m8-13.5l-8 4.5-8-4.5"/></svg></span>
-        <h2>Items 3D &amp; réglage d'entrée</h2>
-      </div>
-      <p>Affiche une texture d'item en relief 3D avec ses animations, et règle une entrée BeltariaContent (ailes, blocs, items en volume) : modèle réel dans les 6 contextes 1.8.9, pack.json validé comme le pack et exporté à l'octet près.</p>
-      <div class="tags"><span class="tag">Item</span><span class="tag">3D</span><span class="tag">pack.json</span></div>
-    </a>
-
-    <a class="card" href="rank-generator.html">
-      <div class="card-head">
-        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2"/><path stroke-linecap="round" d="M7 12h3M13 12h4"/></svg></span>
-        <h2>Générateur de grades</h2>
-      </div>
-      <p>Dessine les badges de grade et les 12 pièces des badges de niveau pour les icônes du texte (glyphs/), avec l'aperçu à l'avance réelle du client 1.8.</p>
-      <div class="tags"><span class="tag">Icônes du texte</span><span class="tag">Grades</span></div>
-    </a>
-
-    <a class="card" href="glyph-checker.html">
-      <div class="card-head">
-        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20l6-16h2l6 16M7 14h8"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l2 2 4-4"/></svg></span>
-        <h2>Vérificateur d'icônes</h2>
-      </div>
-      <p>Vérifie les icônes du texte (glyphs/&lt;id&gt;/texture.png) comme BeltariaContent les assemble : caractères prédits, largeurs, rendu 1.8 en chat, tab, nametag, scoreboard et lore, placeholders et séquences à coller.</p>
-      <div class="tags"><span class="tag">Icônes du texte</span><span class="tag">BeltariaContent</span></div>
-    </a>
-
-    <a class="card" href="lore-preview.html">
-      <div class="card-head">
-        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg></span>
-        <h2>Lore &amp; tooltips</h2>
-      </div>
-      <p>Compose le nom et le lore d'un item avec les codes couleur et de formatage, et voit le tooltip tel qu'en jeu.</p>
-      <div class="tags"><span class="tag">Texte</span><span class="tag">Codes §</span></div>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Armure</span><span class="st-badge">Couleurs</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
     </a>
 
     <a class="card" href="gif_to_spritesheet.html">
       <div class="card-head">
         <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v4H4zM4 10h16v4H4zM4 16h16v4H4z"/></svg></span>
-        <h2>GIF vers spritesheet</h2>
+        <h3>GIF vers spritesheet</h3>
       </div>
       <p>Découpe les images d'un GIF, les redimensionne en pixel art et les empile verticalement en une spritesheet.</p>
-      <div class="tags"><span class="tag">Animation</span><span class="tag">GIF</span></div>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Animation</span><span class="st-badge">GIF</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
     </a>
-  </main>
+        </div>
+      </section>
 
-  <footer>
+      <section class="group" id="modeles-3d" aria-labelledby="modeles-3d-title">
+        <div class="group-head">
+          <span class="group-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zm0 0v18m8-13.5l-8 4.5-8-4.5"/></svg></span>
+          <div><h2 class="group-title" id="modeles-3d-title">Armures &amp; modèles 3D</h2><p class="group-desc">Voir une armure portée par un joueur, mettre un item en volume et régler son entrée pack.json.</p></div>
+          <span class="st-badge">2 outils</span>
+        </div>
+        <div class="grid">
+    <a class="card" href="armor_layer_preview.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/></svg></span>
+        <h3>Aperçu d'armure 3D</h3>
+      </div>
+      <p>Visualise les couches d'armure 1.8 (64x32 ou HD) sur un joueur en 3D, avec l'effet d'enchantement animé.</p>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Armure</span><span class="st-badge">3D</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
+    </a>
+
+    <a class="card" href="item-3d-maker.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zm0 0v18m8-13.5l-8 4.5-8-4.5"/></svg></span>
+        <h3>Items 3D &amp; réglage d'entrée</h3>
+      </div>
+      <p>Affiche une texture d'item en relief 3D avec ses animations, et règle une entrée BeltariaContent (ailes, blocs, items en volume) : modèle réel dans les 6 contextes 1.8.9, pack.json validé comme le pack et exporté à l'octet près.</p>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Item</span><span class="st-badge">3D</span><span class="st-badge">pack.json</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
+    </a>
+        </div>
+      </section>
+
+      <section class="group" id="icones" aria-labelledby="icones-title">
+        <div class="group-head">
+          <span class="group-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9L12 3z"/></svg></span>
+          <div><h2 class="group-title" id="icones-title">Icônes du texte</h2><p class="group-desc">Grades, badges de niveau et icônes affichées dans le chat, le tab, les nametags et le lore (glyphs/).</p></div>
+          <span class="st-badge">2 outils</span>
+        </div>
+        <div class="grid">
+    <a class="card" href="rank-generator.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2"/><path stroke-linecap="round" d="M7 12h3M13 12h4"/></svg></span>
+        <h3>Générateur de grades</h3>
+      </div>
+      <p>Dessine les badges de grade et les 12 pièces des badges de niveau pour les icônes du texte (glyphs/), avec l'aperçu à l'avance réelle du client 1.8.</p>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Grades</span><span class="st-badge">Badges de niveau</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
+    </a>
+
+    <a class="card" href="glyph-checker.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20l6-16h2l6 16M7 14h8"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l2 2 4-4"/></svg></span>
+        <h3>Vérificateur d'icônes</h3>
+      </div>
+      <p>Vérifie les icônes du texte (glyphs/&lt;id&gt;/texture.png) comme BeltariaContent les assemble : caractères prédits, largeurs, rendu 1.8 en chat, tab, nametag, scoreboard et lore, placeholders et séquences à coller.</p>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Vérification</span><span class="st-badge">BeltariaContent</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
+    </a>
+        </div>
+      </section>
+
+      <section class="group" id="texte" aria-labelledby="texte-title">
+        <div class="group-head">
+          <span class="group-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg></span>
+          <div><h2 class="group-title" id="texte-title">Texte &amp; items</h2><p class="group-desc">Nom et lore des items avec les codes couleur et de formatage.</p></div>
+          <span class="st-badge">1 outil</span>
+        </div>
+        <div class="grid">
+    <a class="card" href="lore-preview.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg></span>
+        <h3>Lore &amp; tooltips</h3>
+      </div>
+      <p>Compose le nom et le lore d'un item avec les codes couleur et de formatage, et voit le tooltip tel qu'en jeu.</p>
+      <div class="card-foot"><div class="tags"><span class="st-badge">Texte</span><span class="st-badge">Codes §</span></div><span class="open" aria-hidden="true">Ouvrir →</span></div>
+    </a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="home-foot">
+    <span>Beltaria Studio · outils autonomes, aucune image envoyée sur un serveur.</span>
     <a href="https://github.com/Beltaria/Beltaria">Code source sur GitHub</a>
   </footer>
-</div>
+</main>
+<script>
+  // Hauteur réelle de l'en-tête collant (elle varie avec la largeur) : sert aux ancres et à la barre des sections.
+  (() => {
+    const header = document.querySelector('.st-header');
+    const setHdr = () => document.documentElement.style.setProperty('--hdr', header.offsetHeight + 'px');
+    setHdr();
+    if ('ResizeObserver' in window) new ResizeObserver(setHdr).observe(header);
+
+    // Section visible surlignée dans le sommaire.
+    const links = [...document.querySelectorAll('.toc a')];
+    if (!('IntersectionObserver' in window)) return;
+    const visible = new Map();
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => visible.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0));
+      const best = [...visible].filter(([, r]) => r > 0).sort((a, b) => b[1] - a[1])[0];
+      links.forEach(a => a.classList.toggle('on', !!best && a.getAttribute('href') === '#' + best[0]));
+      // Barre horizontale (tablette, téléphone) : la section active reste visible dans la barre
+      const on = links.find(a => a.classList.contains('on'));
+      const bar = on && on.parentElement;
+      if (bar && bar.scrollWidth > bar.clientWidth) bar.scrollTo({ left: bar.scrollLeft + on.getBoundingClientRect().left - bar.getBoundingClientRect().left - 12, behavior: 'smooth' });
+    }, { rootMargin: '-20% 0px -45% 0px', threshold: [0, 0.25, 0.5, 1] });
+    document.querySelectorAll('.group').forEach(s => io.observe(s));
+  })();
+</script>
 </body>
 </html>
