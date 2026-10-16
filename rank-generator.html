@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Générateur de grades Beltaria (icônes du texte)</title>
+<!--
+  Badge de grade pour les icônes du texte de BeltariaContent (pack/glyphs/<id>/texture.png).
+
+  Toujours 16 pixels de haut, sur toute la hauteur : le client 1.8 dessine une icône à la hauteur
+  d'une lettre (8 pixels d'interface), et une image dont le dessin n'occupe que le milieu sort
+  écrasée. La largeur est libre ; le plugin la découpe en cases de 16 et les recolle.
+  Police pixel propre à cet outil : majuscules, chiffres, quelques signes ; les accents sont
+  retirés (une capitale accentuée ne tient pas dans 9 lignes). Réglables : épaisseur du trait,
+  espacement, contour et ombre des lettres, épaisseur de bordure, liseré, coins, marges, dégradé.
+
+  Mode niveau : les douze pièces d'un badge de niveau (LevelBadge) - bord gauche, chiffres 0 à 9
+  sur leur morceau de fond, bord droit -, en une archive zip à décompresser dans pack/glyphs/.
+  Chaque pièce fait au plus 8 px de large, une demi-case : au-delà, le client l'avance d'une case
+  entière et un trou la sépare de la suivante. Et une largeur paire : le client tronque l'avance
+  au pixel d'interface entier, et une pièce impaire perdrait sa dernière colonne.
+-->
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; background: #1d1f23; color: #e6e6e6; margin: 0; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 20px; color: #a8adb5; }
+  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
+  fieldset { border: 1px solid #3a3e45; border-radius: 6px; padding: 12px 14px; margin: 0 0 14px; }
+  legend { color: #a8adb5; padding: 0 6px; }
+  label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
+  input[type=text] { width: 100%; box-sizing: border-box; padding: 8px; font-size: 16px;
+    background: #2a2d33; color: #fff; border: 1px solid #454a52; border-radius: 4px; }
+  select { background: #2a2d33; color: #fff; border: 1px solid #454a52; border-radius: 4px; padding: 4px; }
+  button { background: #3d6bd9; color: #fff; border: 0; border-radius: 4px; padding: 10px 16px;
+    font-size: 15px; cursor: pointer; }
+  button:hover { background: #4b78e6; }
+  .stage { background: #6b6f76 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='8' height='8' fill='%23777b82'/><rect x='8' y='8' width='8' height='8' fill='%23777b82'/></svg>");
+    border-radius: 6px; padding: 18px; margin-bottom: 12px; overflow-x: auto; }
+  canvas { image-rendering: pixelated; display: block; }
+  .facts { font-size: 14px; line-height: 1.6; color: #c9ccd1; }
+  .facts b { color: #fff; }
+  .warn { color: #ffcf66; }
+  .bad { color: #ff7070; }
+  code { background: #2a2d33; padding: 1px 5px; border-radius: 3px; }
+  small { color: #8c919a; }
+  .grid > div { min-width: 0; }
+  @media (max-width: 720px) {
+    main { padding: 16px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;margin-bottom:12px">← Beltaria Studio</a>
+  <h1>Générateur de grades — icônes du texte</h1>
+  <p class="lead">Badge en 16 px de haut sur toute la hauteur, pour <code>pack/glyphs/&lt;id&gt;/texture.png</code>.
+    Aperçu dessiné comme le client 1.8 : hauteur d'une lettre, ombre du texte comprise.</p>
+
+  <div class="grid">
+    <div>
+      <fieldset>
+        <legend>Icône</legend>
+        <label>Type
+          <select id="mode"><option value="rank" selected>Grade (texte en entier)</option><option value="level">Niveau (12 pièces)</option></select>
+        </label>
+      </fieldset>
+
+      <fieldset id="textBox">
+        <legend>Texte</legend>
+        <input id="text" type="text" value="Légendaire" maxlength="40" spellcheck="false">
+        <small>Majuscules, chiffres et <code>- + ! ? . : [ ] ' *</code>. Accents retirés.</small>
+        <label>Identifiant <input id="rankId" type="text" value="" maxlength="40" spellcheck="false"
+          placeholder="d'après le texte"></label>
+        <small>Le dossier <code>pack/glyphs/&lt;id&gt;</code> : minuscules, chiffres, <code>_ . -</code>,
+          sans <code>raw_</code> au début. Vide : tiré du texte.</small>
+      </fieldset>
+
+      <fieldset id="levelBox" hidden>
+        <legend>Niveau</legend>
+        <label>Style <input id="style" type="text" value="niveau" maxlength="24" spellcheck="false"></label>
+        <label>Niveau d'aperçu <input id="sample" type="text" value="475" maxlength="9" spellcheck="false"></label>
+        <small>Le style nomme les pièces : <code>&lt;style&gt;_left</code>, <code>_0</code> à <code>_9</code>,
+          <code>_right</code>. Un style par couleur.</small>
+      </fieldset>
+
+      <fieldset>
+        <legend>Couleurs</legend>
+        <label>Préréglage
+          <select id="preset"></select>
+        </label>
+        <label>Lettres <input id="fg" type="color" value="#ffffff"></label>
+        <label>Fond <input id="bg" type="color" value="#2b0f0f"></label>
+        <label>Effet du fond
+          <select id="bgMode">
+            <option value="flat" selected>Uni</option>
+            <option value="vertical">Dégradé vertical</option>
+            <option value="horizontal">Dégradé horizontal</option>
+            <option value="diagonal">Dégradé diagonal</option>
+            <option value="bulge">Bombé (clair au milieu)</option>
+            <option value="gloss">Reflet (bande claire en haut)</option>
+          </select>
+        </label>
+        <label>Seconde couleur du fond <input id="bg2" type="color" value="#140707"></label>
+        <label><span><input id="bevelOn" type="checkbox"> Relief (biseau)</span>
+          <input id="bevel" type="range" min="1" max="5" value="2"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Lettres</legend>
+        <label>Hauteur des lettres <input id="rows" type="range" min="5" max="14" value="9"><output id="rowsOut"></output></label>
+        <small>9 lignes : le dessin d'origine. En dessous de 7, certains signes et chiffres s'abîment.</small>
+        <label>Largeur
+          <select id="wide"><option value="1" selected>Normale</option><option value="2">Large (×2)</option></select>
+        </label>
+        <label>Épaisseur du trait
+          <select id="weight"><option value="1" selected>Fine (1 px)</option><option value="2">Grasse (2 px)</option></select>
+        </label>
+        <label>Espacement <input id="spacing" type="range" min="0" max="3" value="1"><output id="spacingOut"></output></label>
+        <label><span><input id="outlineOn" type="checkbox"> Contour</span>
+          <input id="outline" type="color" value="#000000"></label>
+        <label><span><input id="shadowOn" type="checkbox" checked> Ombre</span>
+          <input id="shadow" type="color" value="#491a1a"></label>
+        <label>Décalage de l'ombre
+          <select id="shadowDir"><option value="1,1" selected>Bas-droite</option><option value="0,1">Bas</option><option value="1,0">Droite</option></select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Bordure et forme</legend>
+        <label>Épaisseur de bordure <input id="borderWidth" type="range" min="0" max="3" value="1"><output id="borderWidthOut"></output></label>
+        <label>Couleur de bordure <input id="border" type="color" value="#952525"></label>
+        <label><span><input id="innerOn" type="checkbox"> Liseré intérieur</span>
+          <input id="inner" type="color" value="#5a1515"></label>
+        <label>Coins
+          <select id="corners"><option value="0" selected>Carrés</option><option value="1">Arrondis</option><option value="2">Très arrondis</option></select>
+        </label>
+        <label>Marge gauche / droite <input id="padX" type="range" min="0" max="8" value="2"><output id="padXOut"></output></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Aperçu</legend>
+        <label>Échelle d'interface
+          <select id="gui"><option>2</option><option selected>3</option><option>4</option></select>
+        </label>
+        <label><span><input id="cuts" type="checkbox"> Montrer les coupures en cases</span></label>
+      </fieldset>
+
+      <button id="download">Télécharger texture.png</button>
+      <button id="downloadLevel" hidden>Télécharger les 12 pièces (.zip)</button>
+      <p><small><a href="glyph-checker.html" style="color:#8fb3ff">Vérifier l'icône → glyph-checker.html</a></small></p>
+    </div>
+
+    <div>
+      <div class="stage"><canvas id="game"></canvas></div>
+      <div class="stage"><canvas id="zoom"></canvas></div>
+      <div class="facts" id="facts"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+// ---- Police : 9 lignes, un caractère par chaîne de lignes ('#' = pixel) -------------------
+const GLYPHS = {
+  "A": [".###.","#...#","#...#","#...#","#####","#...#","#...#","#...#","#...#"],
+  "B": ["####.","#...#","#...#","#...#","####.","#...#","#...#","#...#","####."],
+  "C": [".###.","#...#","#....","#....","#....","#....","#....","#...#",".###."],
+  "D": ["####.","#...#","#...#","#...#","#...#","#...#","#...#","#...#","####."],
+  "E": ["#####","#....","#....","#....","####.","#....","#....","#....","#####"],
+  "F": ["#####","#....","#....","#....","####.","#....","#....","#....","#...."],
+  "G": [".###.","#...#","#....","#....","#.###","#...#","#...#","#...#",".###."],
+  "H": ["#...#","#...#","#...#","#...#","#####","#...#","#...#","#...#","#...#"],
+  "I": ["###",".#.",".#.",".#.",".#.",".#.",".#.",".#.","###"],
+  "J": ["....#","....#","....#","....#","....#","....#","#...#","#...#",".###."],
+  "K": ["#...#","#...#","#..#.","#.#..","##...","#.#..","#..#.","#...#","#...#"],
+  "L": ["#....","#....","#....","#....","#....","#....","#....","#....","#####"],
+  "M": ["#...#","##.##","#.#.#","#.#.#","#...#","#...#","#...#","#...#","#...#"],
+  "N": ["#...#","##..#","##..#","#.#.#","#.#.#","#..##","#..##","#...#","#...#"],
+  "O": [".###.","#...#","#...#","#...#","#...#","#...#","#...#","#...#",".###."],
+  "P": ["####.","#...#","#...#","#...#","####.","#....","#....","#....","#...."],
+  "Q": [".###.","#...#","#...#","#...#","#...#","#...#","#.#.#","#..#.",".##.#"],
+  "R": ["####.","#...#","#...#","#...#","####.","#.#..","#..#.","#...#","#...#"],
+  "S": [".###.","#...#","#....","#....",".###.","....#","....#","#...#",".###."],
+  "T": ["#####","..#..","..#..","..#..","..#..","..#..","..#..","..#..","..#.."],
+  "U": ["#...#","#...#","#...#","#...#","#...#","#...#","#...#","#...#",".###."],
+  "V": ["#...#","#...#","#...#","#...#","#...#","#...#",".#.#.",".#.#.","..#.."],
+  "W": ["#...#","#...#","#...#","#...#","#...#","#.#.#","#.#.#","##.##","#...#"],
+  "X": ["#...#","#...#",".#.#.",".#.#.","..#..",".#.#.",".#.#.","#...#","#...#"],
+  "Y": ["#...#","#...#",".#.#.",".#.#.","..#..","..#..","..#..","..#..","..#.."],
+  "Z": ["#####","....#","...#.","...#.","..#..",".#...",".#...","#....","#####"],
+  "0": [".###.","#...#","#..##","#.#.#","#.#.#","##..#","#...#","#...#",".###."],
+  "1": [".#.","##.",".#.",".#.",".#.",".#.",".#.",".#.","###"],
+  "2": [".###.","#...#","....#","....#","...#.","..#..",".#...","#....","#####"],
+  "3": [".###.","#...#","....#","....#","..##.","....#","....#","#...#",".###."],
+  "4": ["...#.","..##.",".#.#.","#..#.","#..#.","#####","...#.","...#.","...#."],
+  "5": ["#####","#....","#....","####.","....#","....#","....#","#...#",".###."],
+  "6": [".###.","#....","#....","####.","#...#","#...#","#...#","#...#",".###."],
+  "7": ["#####","....#","...#.","...#.","..#..","..#..","..#..","..#..","..#.."],
+  "8": [".###.","#...#","#...#","#...#",".###.","#...#","#...#","#...#",".###."],
+  "9": [".###.","#...#","#...#","#...#",".####","....#","....#","....#",".###."],
+  "-": ["...","...","...","...","###","...","...","...","..."],
+  "+": [".....",".....","..#..","..#..","#####","..#..","..#..",".....","....."],
+  "!": ["#","#","#","#","#","#","#",".","#"],
+  "?": [".###.","#...#","....#","...#.","..#..","..#..","..#..",".....","..#.."],
+  ".": [".",".",".",".",".",".",".",".","#"],
+  ":": [".",".","#",".",".",".","#",".","."],
+  "[": ["##","#.","#.","#.","#.","#.","#.","#.","##"],
+  "]": ["##",".#",".#",".#",".#",".#",".#",".#","##"],
+  "'": ["#","#",".",".",".",".",".",".","."],
+  "*": [".....","#.#.#",".###.","#####",".###.","#.#.#",".....",".....","....."],
+  " ": ["...","...","...","...","...","...","...","...","..."]
+};
+const GLYPH_ROWS = 9;
+
+// ---- Mise en page : 16 lignes, toujours ---------------------------------------------------
+// Le bloc des lettres (9 lignes, plus 2 de contour, plus 1 d'ombre) est centré verticalement dans
+// ce que la bordure laisse ; s'il n'y tient pas, l'outil le dit plutôt que de couper le dessin.
+const HEIGHT = 16;
+const CELL = 16;          // largeur d'une case : le plugin coupe l'image tous les 16 px
+const MAX_CELLS = 32;     // GlyphAtlas.MAX_CELLS
+
+/**
+ * La place qu'une image de `width` px (marges transparentes retirées) prend vraiment dans le
+ * texte. BeltariaContent, GlyphAtlas.size :
+ *     int end = (width * GRID - 1) / height;
+ *     if (end > 7) { end = 15; }
+ *     return (byte) Math.max(end, 1);
+ * et Glyph : `if (i > 0) { text.append(JOIN); }` avec JOIN = BACKSPACE (U+FAFF, -1 px
+ * d'interface) + ZERO_WIDTH (U+FAFE). Toutes les cases sauf la dernière font 16 px et avancent
+ * de 9 - 1 = 8 px d'interface ; la dernière avance de (end + 1) / 2 + 1, tronqué à l'entier
+ * (renderStringAtPos). Plus large qu'une demi-case, elle compte une case entière : le texte qui
+ * suit commence après un trou transparent de `gap` px d'image.
+ */
+function advanceOf(width) {
+  const cells = Math.max(1, Math.ceil(width / CELL));
+  const last = width - CELL * (cells - 1);
+  let end = Math.floor((last * 16 - 1) / HEIGHT);
+  if (end > 7) end = 15;
+  end = Math.max(end, 1);
+  const drawn = (end + 1) * HEIGHT / 16;   // px d'image que le client réserve à la dernière case
+  return { cells, last, drawn, gap: drawn - last, footprint: CELL * (cells - 1) + drawn,
+           gui: 8 * (cells - 1) + Math.trunc((end + 1) / 2 + 1) };
+}
+
+/**
+ * PackBuild.checkGlyphId :
+ *     if (!Entry.ID.matcher(id).matches() || id.startsWith(GLYPH_RESERVED_PREFIX)) {
+ * avec Entry.ID = Pattern.compile("[a-z0-9_.-]+") et GLYPH_RESERVED_PREFIX = "raw_".
+ * @return le message d'erreur, ou null si le pack accepte cet identifiant
+ */
+function glyphIdProblem(id) {
+  if (!/^[a-z0-9_.-]+$/.test(id)) {
+    return `Identifiant <code>${escapeHtml(id)}</code> invalide : minuscules, chiffres, `
+      + `<code>_ . -</code> seulement - c'est un nom de dossier et la fin d'un placeholder. `
+      + `Le pack refuserait cette icône.`;
+  }
+  if (id.startsWith("raw_")) {
+    return `Un identifiant ne commence pas par <code>raw_</code> : <code>%beltaria_glyph_raw_&lt;id&gt;%</code> `
+      + `est la forme brute d'une autre icône. Le pack refuserait cette icône.`;
+  }
+  return null;
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+}
+
+// Couleurs des grades de TAB/groups.yml (codes &), plus le Légendaire d'origine.
+const MC = { "4": "#aa0000", "c": "#ff5555", "d": "#ff55ff", "8": "#555555", "3": "#00aaaa",
+             "6": "#ffaa00", "5": "#aa00aa", "9": "#5555ff", "2": "#00aa00", "7": "#aaaaaa",
+             "e": "#ffff55", "b": "#55ffff", "a": "#55ff55" };
+const PRESETS = {
+  "Légendaire (actuel)": { bg: "#2b0f0f", border: "#952525", shadow: "#491a1a", fg: "#ffffff",
+                           bg2: "#140707", inner: "#5a1515", outline: "#000000" },
+  "Fondateur": tone(MC["4"]), "Admin": tone(MC["c"]), "Modo-Joueur": tone(MC["d"]),
+  "Netherite": tone(MC["8"]), "Ultime": tone(MC["c"]), "Suprême": tone(MC["3"]),
+  "Empereur": tone(MC["6"]), "Seigneur": tone(MC["5"]), "Duc": tone(MC["9"]),
+  "Chevalier": tone(MC["2"]), "Beltarien": tone(MC["7"]),
+  "Or": tone(MC["e"]), "Diamant": tone(MC["b"]), "Émeraude": tone(MC["a"])
+};
+
+function rgb(hex) { return [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); }
+function hex(c) { return "#" + c.map(v => Math.max(0, Math.min(255, Math.round(v)))
+  .toString(16).padStart(2, "0")).join(""); }
+function scale(hexColor, k) { return hex(rgb(hexColor).map(v => v * k)); }
+function mix(a, b, t) { const x = rgb(a), y = rgb(b); return hex(x.map((v, i) => v + (y[i] - v) * t)); }
+/** Un grade dans sa couleur : bordure vive, fond sombre, ombre et liseré entre les deux. */
+function tone(color) {
+  return { border: color, bg: scale(color, 0.2), shadow: scale(color, 0.38), fg: "#ffffff",
+           bg2: scale(color, 0.1), inner: scale(color, 0.55), outline: "#000000" };
+}
+
+const $ = id => document.getElementById(id);
+
+/** Le texte tel que la police le dessine : majuscules, accents retirés, inconnus écartés. */
+function normalize(text) {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toUpperCase()
+    .split("").filter(c => GLYPHS[c]).join("");
+}
+
+/**
+ * Une lettre de la police (9 lignes) à une autre hauteur.
+ *
+ * Pas un simple étirement : la lettre est lue en trois morceaux - le haut (lignes 0 à 3), la barre
+ * du milieu (ligne 4), le bas (lignes 5 à 8) - et chaque morceau garde sa première et sa dernière
+ * ligne. Réduite à 5 lignes, un E garde ses trois barres et un S ses deux courbes ; agrandie, les
+ * lignes intérieures de chaque morceau sont répétées.
+ */
+function resizeGlyph(glyph, rows) {
+  if (rows === GLYPH_ROWS) return glyph;
+  const pick = (from, n) => {
+    if (n <= 0) return [];
+    if (n === 1) return [from[0]];
+    return Array.from({ length: n }, (_, i) => from[Math.round(i * (from.length - 1) / (n - 1))]);
+  };
+  const top = Math.floor((rows - 1) / 2);
+  return pick(glyph.slice(0, 4), top).concat([glyph[4]], pick(glyph.slice(5), rows - 1 - top));
+}
+
+/**
+ * Les pixels des lettres, en grille : mask[y][x]. Les lettres larges doublent chaque colonne ; le
+ * trait gras double ensuite chaque pixel vers la droite, ce qui élargit la lettre d'une colonne.
+ */
+function textMask(glyphs, weight, spacing, rows, wide) {
+  const shaped = glyphs.map(g => resizeGlyph(g, rows));
+  const widths = shaped.map(g => g[0].length * wide + (weight - 1));
+  const width = widths.reduce((a, b) => a + b, 0) + spacing * Math.max(0, shaped.length - 1);
+  const mask = Array.from({ length: rows }, () => new Array(Math.max(width, 0)).fill(false));
+  let x = 0;
+  shaped.forEach((glyph, i) => {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < glyph[row].length; col++) {
+        if (glyph[row][col] !== "#") continue;
+        for (let w = 0; w < wide + weight - 1; w++) mask[row][x + col * wide + w] = true;
+      }
+    }
+    x += widths[i] + spacing;
+  });
+  return mask;
+}
+
+/** Le masque agrandi d'un pixel tout autour : le contour des lettres. */
+function dilate(mask) {
+  const h = mask.length, w = h ? mask[0].length : 0;
+  const out = Array.from({ length: h + 2 }, () => new Array(w + 2).fill(false));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!mask[y][x]) continue;
+      for (let dy = 0; dy <= 2; dy++) for (let dx = 0; dx <= 2; dx++) out[y + dy][x + dx] = true;
+    }
+  }
+  return out;
+}
+
+function settings() {
+  const [sx, sy] = $("shadowDir").value.split(",").map(Number);
+  return {
+    weight: Number($("weight").value), spacing: Number($("spacing").value),
+    rows: Number($("rows").value), wide: Number($("wide").value),
+    outlineOn: $("outlineOn").checked, shadowOn: $("shadowOn").checked, sx, sy,
+    border: Number($("borderWidth").value), innerOn: $("innerOn").checked,
+    corners: Number($("corners").value), padX: Number($("padX").value),
+    bgMode: $("bgMode").value, bevelOn: $("bevelOn").checked,
+    bevel: Number($("bevel").value) / 10
+  };
+}
+
+/** Les lettres d'un texte, et la place qu'elles prennent contour et ombre compris. */
+function letterBlock(s, text) {
+  const letters = textMask(text.split("").map(c => GLYPHS[c]), s.weight, s.spacing, s.rows, s.wide);
+  const halo = s.outlineOn ? dilate(letters) : null;
+  // Le dessin des lettres, contour compris, et ce que l'ombre y ajoute.
+  const shape = halo || letters;
+  const shapeW = shape.length ? shape[0].length : 0;
+  return { letters, halo, shape,
+           width: shapeW + (s.shadowOn ? s.sx : 0),
+           height: shape.length + (s.shadowOn ? s.sy : 0) };
+}
+
+/** Épaisseur de la bordure et du liseré, en pixels. */
+function frameOf(s) { return s.border + (s.innerOn ? 1 : 0); }
+
+/** Dessine le badge à sa taille réelle ; rend l'image et ce qu'il faut en savoir. */
+function render() {
+  const s = settings();
+  const text = normalize($("text").value);
+  const block = letterBlock(s, text);
+  const frame = frameOf(s);
+  const width = Math.max(1, 2 * frame + 2 * s.padX + block.width);
+  const room = HEIGHT - 2 * frame;
+  const canvas = drawStrip(s, width, block, frame + s.padX, true, true);
+  return { canvas, text, width, fits: block.height <= room, blockH: block.height, room,
+           advance: advanceOf(width) };
+}
+
+/**
+ * Les douze pièces d'un badge de niveau : bord gauche, chiffres 0 à 9, bord droit.
+ *
+ * Chaque pièce a une largeur paire : un nombre entier de pixels d'interface. Le client tronque
+ * l'avance de chaque caractère à l'entier (FontRenderer.renderStringAtPos) ; une pièce impaire,
+ * dessinée sur un demi-pixel de plus que son avance, verrait sa dernière colonne recouverte par la
+ * suivante. Une colonne de fond complète une pièce impaire, du côté ouvert.
+ *
+ * L'espacement des lettres est partagé entre les deux côtés de chaque chiffre - deux chiffres
+ * voisins sont donc espacés comme dans un grade -, et le bord droit est réglé pour que les marges
+ * de part et d'autre du chiffre 0 soient égales.
+ */
+function renderLevel() {
+  const s = settings();
+  const frame = frameOf(s);
+  const room = HEIGHT - 2 * frame;
+  const even = n => n + (n % 2);
+  const lead = Math.ceil(s.spacing / 2);
+  const left = even(Math.max(1, frame + s.padX));
+  const pieces = [{ name: "left", width: left, canvas: drawStrip(s, left, null, 0, true, false) }];
+  let blockH = 0;
+  for (let d = 0; d <= 9; d++) {
+    const block = letterBlock(s, String(d));
+    const width = even(lead + block.width + Math.floor(s.spacing / 2));
+    blockH = block.height;
+    pieces.push({ name: String(d), width, canvas: drawStrip(s, width, block, lead, false, false) });
+  }
+  const zeroTrail = pieces[1].width - lead - letterBlock(s, "0").width;
+  const right = even(Math.max(1, left + lead - zeroTrail));
+  pieces.push({ name: "right", width: right, canvas: drawStrip(s, right, null, 0, false, true) });
+  return { pieces, fits: blockH <= room, blockH, room };
+}
+
+/**
+ * Le badge d'un niveau tel que le client l'affiche : les pièces bout à bout - le recul qui suit
+ * chacune annule l'avance d'un pixel d'interface que le client ajoute après tout caractère.
+ */
+function assembleLevel(level, pieces) {
+  const byName = Object.fromEntries(pieces.map(p => [p.name, p]));
+  const seq = ["left"].concat(level.split(""), ["right"]).map(n => byName[n]);
+  const width = seq.reduce((sum, p) => sum + p.width, 0);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = HEIGHT;
+  const g = canvas.getContext("2d");
+  const cuts = [];
+  let x = 0;
+  for (const p of seq) {
+    if (x > 0) cuts.push(x);
+    g.drawImage(p.canvas, x, 0);
+    x += p.width;
+  }
+  return { canvas, width, cuts };
+}
+
+/**
+ * Une bande de badge : fond, bordure, relief, lettres, coins. Un grade a ses deux bords ; une
+ * pièce de niveau n'a que les siens - le bord gauche, le droit, ou aucun pour un chiffre - et ses
+ * rangées de bordure et de relief vont jusqu'à ses côtés ouverts, pour se raccorder à la voisine.
+ *
+ * @param block les lettres (letterBlock), ou null pour une bande sans lettres
+ * @param x0 la colonne où commencent les lettres
+ */
+function drawStrip(s, width, block, x0, left, right) {
+  const frame = frameOf(s);
+  const room = HEIGHT - 2 * frame;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = HEIGHT;
+  const g = canvas.getContext("2d");
+  const px = (x, y, color) => { g.fillStyle = color; g.fillRect(x, y, 1, 1); };
+
+  // Fond, pixel par pixel : la couleur principale, mêlée à la seconde selon l'effet choisi.
+  const bg = $("bg").value, bg2 = $("bg2").value;
+  const amount = (x, y) => {
+    const v = y / (HEIGHT - 1), h = width > 1 ? x / (width - 1) : 0;
+    switch (s.bgMode) {
+      case "vertical": return v;
+      case "horizontal": return h;
+      case "diagonal": return (v + h) / 2;
+      case "bulge": return Math.abs(v - 0.5) * 2;      // seconde couleur aux bords
+      case "gloss": return y < HEIGHT / 2 ? 0 : 1;       // haut : couleur principale
+      default: return 0;
+    }
+  };
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < width; x++) {
+      px(x, y, mix(bg, bg2, amount(x, y)));
+    }
+  }
+  // Bordure, puis liseré juste à l'intérieur.
+  const ring = (inset, color) => {
+    g.fillStyle = color;
+    const from = left ? inset : 0, to = right ? width - 1 - inset : width - 1;
+    if (to >= from) {
+      g.fillRect(from, inset, to - from + 1, 1);
+      g.fillRect(from, HEIGHT - 1 - inset, to - from + 1, 1);
+    }
+    if (left) g.fillRect(inset, inset, 1, HEIGHT - 2 * inset);
+    if (right) g.fillRect(width - 1 - inset, inset, 1, HEIGHT - 2 * inset);
+  };
+  for (let i = 0; i < s.border; i++) ring(i, $("border").value);
+  if (s.innerOn) ring(s.border, $("inner").value);
+
+  // Relief : la première rangée du fond, éclaircie en haut et à gauche, assombrie en bas et à
+  // droite - la lumière vient d'en haut à gauche, comme les boutons du jeu.
+  if (s.bevelOn) {
+    const shade = (x, y, toward, k) => {
+      const d = g.getImageData(x, y, 1, 1).data;
+      px(x, y, mix(hex([d[0], d[1], d[2]]), toward, k));
+    };
+    const top = frame, bottom = HEIGHT - 1 - frame;
+    const first = left ? frame : 0, last = right ? width - 1 - frame : width - 1;
+    for (let x = first; x <= last; x++) {
+      shade(x, top, "#ffffff", s.bevel);
+      shade(x, bottom, "#000000", s.bevel * 1.4);
+    }
+    for (let y = top + 1; y < bottom; y++) {
+      if (left) shade(first, y, "#ffffff", s.bevel);
+      if (right) shade(last, y, "#000000", s.bevel * 1.4);
+    }
+  }
+
+  // Lettres : ombre, contour, puis lettres, le bloc centré verticalement dans la place laissée.
+  if (block) {
+    const y0 = frame + Math.floor((room - block.height) / 2);
+    const paint = (mask, dx, dy, color) => {
+      for (let y = 0; y < mask.length; y++) {
+        for (let x = 0; x < mask[y].length; x++) {
+          if (mask[y][x]) px(x0 + x + dx, y0 + y + dy, color);
+        }
+      }
+    };
+    const inset = block.halo ? 1 : 0;
+    if (s.shadowOn) paint(block.shape, s.sx, s.sy, $("shadow").value);
+    if (block.halo) paint(block.halo, 0, 0, $("outline").value);
+    paint(block.letters, inset, inset, $("fg").value);
+  }
+
+  // Coins : les pixels d'angle deviennent transparents - seulement du côté des bords présents.
+  const cut = [[0, 0]].concat(s.corners >= 2 ? [[1, 0], [0, 1]] : []);
+  const sides = (x) => [].concat(left ? [x] : [], right ? [width - 1 - x] : []);
+  if (s.corners >= 1) {
+    for (const [cx, cy] of cut) {
+      for (const x of sides(cx)) {
+        g.clearRect(x, cy, 1, 1);
+        g.clearRect(x, HEIGHT - 1 - cy, 1, 1);
+      }
+    }
+    if (s.corners >= 2 && s.border > 0) {
+      for (const x of sides(1)) {
+        px(x, 1, $("border").value);
+        px(x, HEIGHT - 2, $("border").value);
+      }
+    }
+  }
+  return canvas;
+}
+
+/**
+ * Ce que le client 1.8 en montre, à l'échelle d'interface choisie : 8 pixels d'interface de
+ * haut, les cases recollées, et l'ombre du texte - la même image au quart de sa luminosité,
+ * décalée d'un pixel d'interface vers la droite et le bas, dessinée dessous.
+ */
+function preview(badge, gui) {
+  const unit = gui * 8 / HEIGHT;          // pixels d'écran par pixel d'image
+  const w = Math.round(badge.width * unit), h = 8 * gui;
+  // La place réservée par le client (advanceOf) : un trou suit une dernière case trop large.
+  const next = gui * (badge.advance ? badge.advance.gui : badge.width / 2 + 1);
+  const out = $("game");
+  out.width = Math.max(w + gui, next + gui) + 16;
+  out.height = h + gui + 16;
+  const g = out.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, out.width, out.height);
+  const shadow = document.createElement("canvas");
+  shadow.width = badge.width;
+  shadow.height = HEIGHT;
+  const s = shadow.getContext("2d");
+  s.drawImage(badge.canvas, 0, 0);
+  const data = s.getImageData(0, 0, badge.width, HEIGHT);
+  for (let i = 0; i < data.data.length; i += 4) {
+    data.data[i] >>= 2; data.data[i + 1] >>= 2; data.data[i + 2] >>= 2;
+  }
+  s.putImageData(data, 0, 0);
+  g.drawImage(shadow, 8 + gui, 8 + gui, w, h);
+  g.drawImage(badge.canvas, 8, 8, w, h);
+  // Où le client pose le caractère suivant : après la place réservée et son pixel d'espace.
+  g.fillStyle = "#ffcf66";
+  g.fillRect(8 + next, 8, Math.max(1, gui / 2), h);
+}
+
+/** @param cuts les colonnes où l'image change de caractère : cases d'un grade, pièces d'un niveau */
+function zoom(badge, cuts) {
+  const k = 8;
+  const out = $("zoom");
+  const gap = badge.advance ? badge.advance.gap : 0;
+  out.width = (badge.width + gap) * k;
+  out.height = HEIGHT * k;
+  const g = out.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  g.drawImage(badge.canvas, 0, 0, badge.width * k, out.height);
+  if (gap > 0) {
+    // Le trou que le client laisse après une dernière case plus large qu'une demi-case.
+    g.fillStyle = "rgba(255, 112, 112, 0.45)";
+    g.fillRect(badge.width * k, 0, gap * k, out.height);
+  }
+  if ($("cuts").checked) {
+    g.strokeStyle = "#00ffcc";
+    g.setLineDash([6, 4]);
+    for (const x of cuts) {
+      g.beginPath();
+      g.moveTo(x * k + 0.5, 0);
+      g.lineTo(x * k + 0.5, out.height);
+      g.stroke();
+    }
+  }
+}
+
+/** L'identifiant du grade : celui saisi tel quel (vérifié, pas corrigé), sinon tiré du texte. */
+function rankId(text) {
+  return $("rankId").value.trim()
+    || text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "grade";
+}
+
+function facts(badge) {
+  const cells = Math.ceil(badge.width / CELL);
+  const adv = badge.advance;
+  const rawId = rankId(badge.text), id = escapeHtml(rawId);
+  const lines = [
+    `<b>${badge.width} × ${HEIGHT}</b> px — <b>${cells}</b> case${cells > 1 ? "s" : ""} `
+      + `(<b>${adv.footprint / 2}</b> px d'interface de large dans le texte, `
+      + `<b>${adv.gui}</b> avec l'espace qui suit)`,
+    `À déposer dans <code>pack/glyphs/${id}/texture.png</code>, puis <code>/content pack</code> ; `
+      + `dans TAB : <code>%beltaria_glyph_${id}%</code>.`,
+    `Coût dans un préfixe : <b>${3 * cells}</b> caractères (<code>%beltaria_glyph_${id}%</code>), `
+      + `<b>${3 * cells - 2}</b> en forme brute.`
+  ];
+  if (cells > MAX_CELLS) {
+    lines.push(`<span class="bad">Trop large : ${MAX_CELLS} cases au plus (${MAX_CELLS * CELL} px). `
+      + `Le plugin laissera cette icône de côté.</span>`);
+  }
+  if (adv.gap > 0) {
+    const half = CELL * (cells - 1) + CELL / 2;
+    lines.push(`<span class="warn" id="gapWarn">Trou après le badge : la dernière case n'a que `
+      + `${adv.last} px sur ${CELL}. Plus large qu'une demi-case, le client l'avance d'une case `
+      + `entière et laisse ${adv.gap} px vides (${adv.gap / 2} px d'interface) avant le texte qui `
+      + `suit. Rogner à ${half} px au plus (marge, espacement, bordure) ou remplir la case jusqu'à `
+      + `${CELL * cells} px (marge).</span>`);
+  }
+  const idProblem = glyphIdProblem(rawId);
+  if (idProblem) {
+    lines.unshift(`<span class="bad" id="idError">${idProblem}</span>`);
+  }
+  if (3 * cells > 16) {
+    lines.push(`<span class="warn">Plus de 16 caractères : trop long pour un préfixe de nametag `
+      + `1.8 (TAB coupe).</span>`);
+  }
+  if (cells > 1) {
+    lines.push(`<span class="warn">Nametag : sur les clients PvP qui redessinent les nametags, `
+      + `un joint d'un pixel apparaît entre les cases. Pour le nametag, préférer une icône `
+      + `d'une seule case (16 px de large au plus). Le tab, lui, recolle les cases sans joint.</span>`);
+  }
+  if (!badge.fits) {
+    lines.unshift(`<span class="bad">Les lettres (${badge.blockH} lignes avec contour et ombre) ne `
+      + `tiennent pas dans les ${badge.room} lignes que la bordure laisse sur 16 : réduire la `
+      + `hauteur des lettres ou la bordure, retirer le liseré, le contour ou l'ombre.</span>`);
+  }
+  if (!badge.text) {
+    lines.unshift(`<span class="bad">Aucun caractère dessinable dans ce texte.</span>`);
+  }
+  $("facts").innerHTML = lines.map(l => `<div>${l}</div>`).join("");
+}
+
+/** Plus large qu'une demi-case, une pièce compterait une case entière : un trou la suivrait. */
+const MAX_PIECE = HEIGHT / 2;
+
+/** L'identifiant du style, tel que le pack l'accepte. */
+function styleId() {
+  return $("style").value.toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "")
+    || "niveau";
+}
+
+/** Le niveau d'aperçu : ses chiffres, sans zéros de tête (LevelBadge fait de même). */
+function sampleLevel() {
+  const digits = $("sample").value.replace(/[^0-9]/g, "").replace(/^0+(?=.)/, "");
+  return digits || "0";
+}
+
+function levelFacts(level, badge, sample) {
+  const style = styleId();
+  const widths = level.pieces.map(p => p.width);
+  const digits = level.pieces.slice(1, 11).map(p => p.width);
+  const wide = level.pieces.filter(p => p.width > MAX_PIECE);
+  const cost = 3 * sample.length + 6;
+  const lines = [
+    `Pièces : bord gauche <b>${widths[0]}</b> px, chiffres <b>${Math.min(...digits)}</b> à `
+      + `<b>${Math.max(...digits)}</b> px, bord droit <b>${widths[11]}</b> px, sur ${HEIGHT} de haut. `
+      + `Niveau ${sample} : <b>${badge.width} × ${HEIGHT}</b> px (<b>${badge.width / 2}</b> px d'interface).`,
+    `Archive <code>${style}.zip</code> à décompresser dans <code>pack/glyphs/</code> : douze dossiers, `
+      + `<code>${style}_left</code>, <code>${style}_0</code> à <code>${style}_9</code>, `
+      + `<code>${style}_right</code>. Puis <code>/content pack</code>.`,
+    `Dans TAB : <code>%beltaria_level_${style}_{player_level}%</code> - le niveau d'un autre `
+      + `placeholder, entre accolades - ou <code>%beltaria_level_${style}_${sample}%</code>.`,
+    `Coût : <b>${cost}</b> caractères pour ${sample.length} chiffre${sample.length > 1 ? "s" : ""} `
+      + `(3 par chiffre, plus 6).`
+  ];
+  if (wide.length) {
+    lines.unshift(`<span class="bad">Trop large : ${wide.map(p => `<code>${p.name}</code> (${p.width} px)`)
+      .join(", ")}. Une pièce fait au plus ${MAX_PIECE} px, une demi-case : au-delà, le client `
+      + `l'avance d'une case entière et un trou la sépare de la suivante. Réduire l'espacement, la `
+      + `marge, la bordure, retirer le contour ou la largeur ×2.</span>`);
+  }
+  if (style.startsWith("raw_")) {
+    lines.unshift(`<span class="bad">Un style ne commence pas par <code>raw_</code> : le pack refuse `
+      + `ces identifiants.</span>`);
+  }
+  if (cost > 16) {
+    lines.push(`<span class="warn">Plus de 16 caractères : trop long pour un préfixe de nametag `
+      + `1.8 (TAB coupe). Le tab, lui, n'a pas cette limite.</span>`);
+  }
+  if (horizontalBackground()) {
+    lines.push(`<span class="warn">Dégradé horizontal ou diagonal : chaque pièce a le sien, le badge `
+      + `assemblé le répète par morceaux. Préférer uni, vertical, bombé ou reflet.</span>`);
+  }
+  lines.push(`<span class="warn">Nametag : sur les clients PvP qui redessinent les nametags, un `
+    + `joint d'un pixel apparaît entre les pièces. Le tab les recolle sans joint.</span>`);
+  if (!level.fits) {
+    lines.unshift(`<span class="bad">Les chiffres (${level.blockH} lignes avec contour et ombre) ne `
+      + `tiennent pas dans les ${level.room} lignes que la bordure laisse sur 16.</span>`);
+  }
+  $("facts").innerHTML = lines.map(l => `<div>${l}</div>`).join("");
+}
+
+function horizontalBackground() { return ["horizontal", "diagonal"].includes($("bgMode").value); }
+
+function update() {
+  for (const id of ["rows", "spacing", "borderWidth", "padX"]) {
+    $(id + "Out").textContent = $(id).value + " px";
+  }
+  const levelMode = $("mode").value === "level";
+  $("textBox").hidden = levelMode;
+  $("levelBox").hidden = !levelMode;
+  $("download").hidden = levelMode;
+  $("downloadLevel").hidden = !levelMode;
+  if (levelMode) {
+    const level = renderLevel();
+    const sample = sampleLevel();
+    const badge = assembleLevel(sample, level.pieces);
+    preview(badge, Number($("gui").value));
+    zoom(badge, badge.cuts);
+    levelFacts(level, badge, sample);
+    return level;
+  }
+  const badge = render();
+  preview(badge, Number($("gui").value));
+  const cuts = [];
+  for (let x = CELL; x < badge.width; x += CELL) cuts.push(x);
+  zoom(badge, cuts);
+  facts(badge);
+  return badge;
+}
+
+// ---- Archive zip des pièces : sans compression, les PNG le sont déjà ------------------------
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/** @param files [{ name, data: Uint8Array }] ; rend l'archive : en-têtes locaux, puis répertoire. */
+function zip(files) {
+  const utf8 = new TextEncoder();
+  const body = [], directory = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = utf8.encode(file.name), crc = crc32(file.data), size = file.data.length;
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true);
+    local.setUint16(4, 20, true);              // version 2.0
+    local.setUint16(12, 0x21, true);           // 1er janvier 1980 : la date n'apprend rien
+    local.setUint32(14, crc, true);
+    local.setUint32(18, size, true);
+    local.setUint32(22, size, true);
+    local.setUint16(26, name.length, true);
+    body.push(local.buffer, name, file.data);
+    const entry = new DataView(new ArrayBuffer(46));
+    entry.setUint32(0, 0x02014b50, true);
+    entry.setUint16(4, 20, true);
+    entry.setUint16(6, 20, true);
+    entry.setUint16(14, 0x21, true);
+    entry.setUint32(16, crc, true);
+    entry.setUint32(20, size, true);
+    entry.setUint32(24, size, true);
+    entry.setUint16(28, name.length, true);
+    entry.setUint32(42, offset, true);
+    directory.push(entry.buffer, name);
+    offset += 30 + name.length + size;
+  }
+  const directorySize = directory.reduce((sum, part) => sum + part.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, files.length, true);
+  end.setUint16(10, files.length, true);
+  end.setUint32(12, directorySize, true);
+  end.setUint32(16, offset, true);
+  return new Blob(body.concat(directory, [end.buffer]), { type: "application/zip" });
+}
+
+function pngBytes(canvas) {
+  return new Promise(done => canvas.toBlob(done, "image/png"))
+    .then(blob => blob.arrayBuffer()).then(buffer => new Uint8Array(buffer));
+}
+
+/** L'archive des douze pièces : <style>_<pièce>/texture.png. */
+async function levelZip() {
+  const style = styleId();
+  const files = [];
+  for (const piece of renderLevel().pieces) {
+    files.push({ name: `${style}_${piece.name}/texture.png`, data: await pngBytes(piece.canvas) });
+  }
+  return zip(files);
+}
+
+function save(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+const presetSelect = $("preset");
+presetSelect.add(new Option("— choisir —", ""));
+for (const name of Object.keys(PRESETS)) {
+  presetSelect.add(new Option(name, name));
+}
+presetSelect.addEventListener("change", () => {
+  const p = PRESETS[presetSelect.value];
+  if (!p) return;
+  for (const key of ["bg", "bg2", "border", "inner", "shadow", "outline", "fg"]) {
+    $(key).value = p[key];
+  }
+  update();
+});
+for (const id of ["mode", "text", "rankId", "style", "sample", "fg", "bg", "bg2", "bgMode", "bevelOn", "bevel", "rows", "wide", "weight", "spacing", "outlineOn",
+                  "outline", "shadowOn", "shadow", "shadowDir", "borderWidth", "border",
+                  "innerOn", "inner", "corners", "padX", "gui", "cuts"]) {
+  $(id).addEventListener("input", update);
+  $(id).addEventListener("change", update);
+}
+$("download").addEventListener("click", () => {
+  const badge = update();
+  badge.canvas.toBlob(blob => save(blob, "texture.png"), "image/png");
+});
+$("downloadLevel").addEventListener("click", () => {
+  update();
+  levelZip().then(blob => save(blob, styleId() + ".zip"));
+});
+update();
+// Point d'accès des tests (tests/rank-generator.spec.js), sans effet sur l'outil.
+window.RankGen = { advanceOf, glyphIdProblem, render, renderLevel, levelZip, update };
+</script>
+</body>
+</html>
