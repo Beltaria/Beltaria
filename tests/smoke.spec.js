@@ -28,6 +28,13 @@ test('index page renders', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page).toHaveTitle('Beltaria Studio');
   await expect(page.locator('a.card')).toHaveCount(toolLinks.length);
+  await expect(page.locator('.hero-badges .st-badge-accent')).toHaveText(`${toolLinks.length} outils`);
+  for (const group of await page.locator('section.group').all()) {
+    const id = await group.getAttribute('id');
+    const cards = await group.locator('a.card').count();
+    await expect(group.locator('.group-head .st-badge')).toHaveText(`${cards} outil${cards > 1 ? 's' : ''}`);
+    await expect(page.locator(`.toc a[href="#${id}"] .count`)).toHaveText(String(cards));
+  }
   await expect(page.locator('link[rel="stylesheet"][href="studio.css"]')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
