@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vérificateur d'icônes</title>
+<meta name="description" content="Vérifie les icônes du texte de BeltariaContent (glyphs/<id>/texture.png) : validation, caractères prédits, largeurs et rendu du client 1.8.9, placeholders et séquences à coller.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%231a1426'/%3E%3Cpath fill='%23c084fc' d='M1 1h6v1H1zM1 2h1v4H1zM6 2h1v4H6zM1 6h6v1H1zM3 3h2v2H3z'/%3E%3C/svg%3E">
+<style>
+  @font-face {
+    font-family: 'MinecraftPreview';
+    src: url('https://cdn.jsdelivr.net/gh/South-Paw/typeface-minecraft@1.0.0/files/minecraft.woff2') format('woff2');
+    font-display: swap;
+  }
+  :root {
+    --bg: #0d0b14;
+    --surface: #16121f;
+    --surface-2: #1d1829;
+    --border: #2a2338;
+    --border-hover: #6d4fa3;
+    --text: #ece8f4;
+    --muted: #9a92ad;
+    --accent: #c084fc;
+    --accent-2: #e879f9;
+    --tag: #241d33;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --err: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 6px; }
+  h1 {
+    margin: 0; font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #fff, #e9d5ff 55%, var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lead { color: var(--muted); margin: 0 0 12px; max-width: 86ch; font-size: 14px; }
+  .callouts { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; margin: 0 0 14px; }
+  @media (max-width: 900px) { .callouts { grid-template-columns: minmax(0, 1fr); } }
+  .callout { padding: 10px 12px; border-radius: 10px; background: #1a1426; border: 1px solid #3b2a5c; font-size: 13.5px; overflow-wrap: anywhere; }
+  .callout.alt { background: #141a26; border-color: #2a3d5c; }
+  .callout a { color: #c4b5fd; font-weight: 700; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    .col { display: contents; }
+    .card[data-order="1"] { order: 1; } .card[data-order="2"] { order: 2; } .card[data-order="3"] { order: 3; }
+    .card[data-order="4"] { order: 4; } .card[data-order="5"] { order: 5; } .card[data-order="6"] { order: 6; }
+  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .card h2 .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--tag); color: var(--accent); font-size: 12px; flex: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .small { font-size: 12px; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+  input[type="text"], input[type="number"], select {
+    background: #100d18; border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    padding: 7px 9px; font: inherit; font-size: 14px; min-width: 0; max-width: 100%;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--tag); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 12px; font: 600 13px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+  }
+  .btn:hover { border-color: var(--border-hover); background: var(--surface-2); }
+  .btn.primary { background: #5b21b6; border-color: #7c3aed; }
+  .btn.primary:hover { background: #6d28d9; }
+  .btn.small { padding: 4px 8px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .file-btn { position: relative; overflow: hidden; }
+  .file-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .status { min-height: 22px; margin: 0 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; overflow-wrap: anywhere; }
+  .status.ok { border-color: #166534; color: var(--ok); }
+  .status.warn { border-color: #854d0e; color: var(--warn); }
+  .status.error { border-color: #991b1b; color: var(--err); }
+  .notes { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .notes li { font-size: 13px; padding: 6px 10px; border-radius: 8px; background: #1a1524; border-left: 3px solid var(--border-hover); overflow-wrap: anywhere; }
+  .notes li.warn { border-left-color: var(--warn); }
+  .notes li.error { border-left-color: var(--err); }
+  .notes li.ok { border-left-color: var(--ok); }
+  .notes li .bc { display: block; font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #cbbfe0; margin-top: 2px; }
+  canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  .files-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+  .files-list li { overflow-wrap: anywhere; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.error { background: var(--err); }
+  .icons { display: flex; flex-direction: column; gap: 10px; }
+  .icon { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #120f1a; min-width: 0; }
+  .icon.bad { border-color: #7f1d1d; }
+  .icon.sel { border-color: var(--accent); }
+  .icon-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .thumb { flex: none; max-width: 100%; height: auto; border-radius: 4px; background:
+    repeating-conic-gradient(#2a2338 0% 25%, #1a1524 0% 50%) 0 0 / 8px 8px; cursor: pointer; }
+  .icon-id { display: flex; align-items: center; gap: 6px; flex: 1 1 180px; min-width: 0; }
+  .icon-id input { width: 100%; font-family: ui-monospace, Consolas, monospace; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--tag); color: #cbbfe0; font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+  .chip.ok { background: #12301f; color: var(--ok); }
+  .chip.error { background: #3a1414; color: var(--err); }
+  .chip.warn { background: #3a2a0c; color: var(--warn); }
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; margin-top: 8px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+  .stage {
+    background: linear-gradient(#5a86c5, #87b2e6 55%, #5f9a3b 55%, #4c7d2e);
+    border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; overflow-x: auto; border: 1px solid var(--border);
+  }
+  .stage canvas { max-width: none; }
+  .stage .lbl { font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; }
+  .stage .lbl:first-child { margin-top: 0; }
+  .stage .info { font-size: 12px; color: #fff; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere; }
+  .stage .info.over { color: #fecaca; font-weight: 700; }
+  pre.snippet { margin: 8px 0 0; padding: 10px; background: #0b0911; border: 1px solid var(--border); border-radius: 8px; font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; max-width: 100%; white-space: pre; color: #e9d5ff; }
+  table.forms { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  table.forms th, table.forms td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+  table.forms th { color: var(--muted); font-weight: 600; }
+  table.forms td.c { width: 5.5em; }
+  table.forms td.a { width: 4.6em; }
+  @media (max-width: 520px) { table.forms td.c { width: 4.4em; } }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: .92em; color: #e9d5ff; overflow-wrap: anywhere; }
+  details { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--text); }
+  .pages { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .pages figure { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .pages canvas { width: 160px; height: 160px; background: repeating-conic-gradient(#2a2338 0% 25%, #1a1524 0% 50%) 0 0 / 10px 10px; border: 1px solid var(--border); border-radius: 6px; }
+  .pages figcaption { font-size: 12px; overflow-wrap: anywhere; max-width: 160px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 10px; border: 1px dashed var(--border); border-radius: 8px; }
+  body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap">← Beltaria Studio</a>
+    <h1>Vérificateur d'icônes</h1>
+  </header>
+  <p class="lead">Déposez vos icônes du texte (<code>glyphs/&lt;id&gt;/texture.png</code>) : l'outil les valide et prédit leurs caractères exactement comme BeltariaContent les assemble, montre le rendu du client 1.8.9 (chat, tab, nametag, scoreboard, lore) et donne le texte à coller dans vos configurations. Tout reste dans votre navigateur.</p>
+  <div class="callouts">
+    <div class="callout" id="bcBuilds"><b>C'est BeltariaContent qui construit la police</b> : <code>/content pack</code> génère les pages et la table des largeurs, <code>/content glyphs</code> donne placeholders et séquences. Cet outil vérifie et prévisualise seulement : il ne produit jamais <code>glyph_sizes.bin</code> ni <code>unicode_page_*.png</code> — un tel fichier déposé sous <code>assets/</code> ferait échouer l'assemblage.</div>
+    <div class="callout alt"><a href="rank-generator.html">Dessiner un grade</a> ou un badge de niveau avec le générateur, puis <b>vérifier ici</b> : déposez son <code>texture.png</code> ou le <code>.zip</code> des 12 pièces.</div>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite">Prêt. Déposez des PNG, un dossier <code>glyphs/</code> ou un zip — et le <code>chars.json</code> du dépôt pour une prédiction exacte.</div>
+
+  <div class="layout">
+    <div class="col">
+      <section class="card" data-order="1" aria-labelledby="h-files">
+        <h2 id="h-files"><span class="n">1</span>Fichiers</h2>
+        <div class="row">
+          <span class="btn file-btn primary">Images PNG<input id="filePngs" type="file" accept="image/png,.png" multiple aria-label="Charger des images d'icône PNG"></span>
+          <span class="btn file-btn">Dossier glyphs/<input id="fileFolder" type="file" webkitdirectory multiple aria-label="Charger un dossier glyphs ou pack-src"></span>
+          <span class="btn file-btn">Archive .zip<input id="fileZip" type="file" accept=".zip,application/zip" multiple aria-label="Charger un zip : pack-src, dossier glyphs ou pièces de niveau"></span>
+        </div>
+        <div class="row">
+          <span class="btn file-btn">chars.json<input id="fileChars" type="file" accept=".json,application/json" aria-label="Charger glyphs/chars.json"></span>
+          <span class="btn file-btn">pack.json<input id="filePackJson" type="file" accept=".json,application/json" aria-label="Charger pack.json"></span>
+          <span class="btn file-btn">Client 1.8.9 .jar / ascii.png<input id="fileFont" type="file" accept=".jar,.png,application/java-archive,image/png" aria-label="Charger le client 1.8.9 ou ascii.png pour un texte exact"></span>
+        </div>
+        <div class="row">
+          <button id="demoBtn" type="button" class="btn small">Charger un exemple</button>
+          <button id="clearBtn" type="button" class="btn small">Tout retirer</button>
+        </div>
+        <ul id="filesList" class="files-list"></ul>
+        <details>
+          <summary>Ce que l'outil lit</summary>
+          <p>Chaque icône est un dossier <code>glyphs/&lt;id&gt;/texture.png</code> : l'identifiant vient du dossier (dans un zip ou un dossier déposé), sinon du nom du fichier — modifiable. <code>glyphs/chars.json</code> est la mémoire des caractères ; <code>pack.json</code> peut en imposer (<code>"glyphs": { "vip": { "char": "F900" } }</code>). Le client <code>.minecraft/versions/1.8.9/1.8.9.jar</code> (ou son <code>ascii.png</code>) rend le texte latin au pixel près ; sans lui, le texte latin est approché par une police web — les icônes, elles, sont toujours rendues comme en jeu.</p>
+          <p>Glissez-déposez fichiers, dossiers et zips n'importe où sur la page.</p>
+        </details>
+      </section>
+
+      <section class="card" data-order="2" aria-labelledby="h-icons">
+        <h2 id="h-icons"><span class="n">2</span>Icônes</h2>
+        <div id="iconList" class="icons"><p class="empty">Aucune icône chargée.</p></div>
+      </section>
+
+      <section class="card" data-order="5" aria-labelledby="h-report">
+        <h2 id="h-report"><span class="n">5</span>Assemblage prévu</h2>
+        <p class="muted" style="margin:0">Ce que <code>/content pack</code> dirait et écrirait, calculé avec la logique de BeltariaContent (GlyphChars, GlyphAtlas).</p>
+        <ul id="reportNotes" class="notes"></ul>
+        <h3 style="font-size:14px;margin:14px 0 4px">chars.json que BeltariaContent écrirait</h3>
+        <p id="charsState" class="muted small" style="margin:0"></p>
+        <pre id="charsOut" class="snippet" data-testid="chars-out"></pre>
+        <details>
+          <summary>Pages de police prévues (aperçu — générées par BeltariaContent, jamais exportées)</summary>
+          <div id="pagesInfo" class="pages"></div>
+        </details>
+      </section>
+
+      <section class="card" data-order="6" aria-labelledby="h-export">
+        <h2 id="h-export"><span class="n">6</span>Télécharger</h2>
+        <div class="row">
+          <button id="exportZip" type="button" class="btn primary">glyphs.zip (images d'origine)</button>
+          <label class="row muted small" style="gap:6px"><input id="withChars" type="checkbox" checked> avec le chars.json prédit</label>
+        </div>
+        <ul class="notes">
+          <li>Le zip contient uniquement <code>glyphs/&lt;id&gt;/texture.png</code> (les images telles que déposées, octet pour octet : BeltariaContent retire lui-même les marges) et, si coché, <code>glyphs/chars.json</code>. À décompresser dans <code>pack-src/</code>, puis <code>/content pack</code>.</li>
+          <li>Jamais de <code>glyph_sizes.bin</code> ni de <code>unicode_page_*.png</code> : la police est générée par BeltariaContent.</li>
+        </ul>
+        <p id="exportInfo" class="muted small" style="margin:8px 0 0"></p>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card" data-order="3" aria-labelledby="h-preview">
+        <h2 id="h-preview"><span class="n">3</span>Aperçu en jeu (client 1.8.9)</h2>
+        <div class="row">
+          <label class="field" style="flex:1 1 200px">Icône ou badge
+            <select id="pvSubject" aria-label="Icône ou badge à prévisualiser"></select>
+          </label>
+          <label class="field">Échelle GUI
+            <select id="pvScale" aria-label="Échelle GUI">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </label>
+          <label class="field">Niveau (badge)
+            <input id="pvLevel" type="text" value="475" inputmode="numeric" style="width:7em" aria-label="Niveau du badge">
+          </label>
+        </div>
+        <div id="stage" class="stage" style="margin-top:10px">
+          <span class="lbl">Chat</span><canvas id="pvChat" class="pixel"></canvas>
+          <span class="lbl">Tab</span><canvas id="pvTab" class="pixel"></canvas>
+          <span class="lbl">Nametag</span><canvas id="pvTag" class="pixel"></canvas><span id="pvTagInfo" class="info"></span>
+          <span class="lbl">Scoreboard</span><canvas id="pvBoard" class="pixel"></canvas>
+          <span class="lbl">Lore d'objet</span><canvas id="pvLore" class="pixel"></canvas>
+        </div>
+        <p id="pvNote" class="muted small" style="margin:8px 0 0"></p>
+      </section>
+
+      <section class="card" data-order="4" aria-labelledby="h-use">
+        <h2 id="h-use"><span class="n">4</span>Utiliser</h2>
+        <div id="useBox"><p class="empty">Choisissez une icône valide.</p></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+ * GlyphLogic: BeltariaContent's text-icon model, ported to JS without DOM.
+ * Every rule cites the Java it mirrors (BeltariaContent, src/main/java/fr/
+ * beltaria/content/...). Exposed on window for the Playwright parity tests.
+ * Maps are null-prototype objects keyed by id ("__proto__" is a legal id:
+ * it matches [a-z0-9_.-]+), iterated in sorted order where Java uses TreeMap
+ * (String.compareTo and Array.prototype.sort both compare UTF-16 units).
+ * ========================================================================== */
+(function () {
+  'use strict';
+
+  // ---- glyphs/Glyph.java ----
+  const FIRST = 0xF900;                                        // Glyph.java:47
+  const LAST = 0xFDFF;                                         // Glyph.java:50
+  const BACKSPACE = 0xFAFF;                                    // Glyph.java:59
+  const ZERO_WIDTH = 0xFAFE;                                   // Glyph.java:71
+  const LAST_FREE = 0xFDFF;                                    // Glyph.java:74
+  const JOIN = String.fromCharCode(BACKSPACE, ZERO_WIDTH);     // Glyph.java:77
+  const WHITE = '§f';                                     // Glyph.java:86
+  // ---- glyphs/GlyphText.java ----
+  const PRIVATE_FIRST = 0xE000;                                // GlyphText.java:18
+  // ---- pack/PackBuild.java ----
+  const DESCRIPTOR = 'pack.json';                              // PackBuild.java:133
+  const GLYPHS = 'glyphs';                                     // PackBuild.java:226
+  const GLYPH_RESERVED_PREFIX = 'raw_';                        // PackBuild.java:233
+  const TEXTURE_FILE = 'texture.png';                          // PackBuild.java:257,277
+  const ID_PATTERN = /^[a-z0-9_.-]+$/;                         // PackBuild.java:1493 (Entry.ID)
+  // ---- pack/GlyphAtlas.java ----
+  const SIZES_PATH = 'assets/minecraft/font/glyph_sizes.bin';  // GlyphAtlas.java:51
+  const SIZES_LENGTH = 65536;                                  // GlyphAtlas.java:54
+  const GRID = 16;                                             // GlyphAtlas.java:57
+  const HEIGHTS = Object.freeze([8, 16, 32, 64]);              // GlyphAtlas.java:60
+  const MAX_CELLS = 32;                                        // GlyphAtlas.java:66
+  const BACKSPACE_SIZE = 0x50;                                 // GlyphAtlas.java:73
+  // ---- pack/GlyphChars.java ----
+  const CHARS_FILE = 'chars.json';                             // GlyphChars.java:31 (FILE)
+  // ---- glyphs/GlyphPlaceholders.java ----
+  const IDENTIFIER = 'beltaria';                               // GlyphPlaceholders.java:377
+  const GLYPH_PREFIX = 'glyph_';                               // GlyphPlaceholders.java:380
+  const RAW_PREFIX = GLYPH_PREFIX + 'raw_';                    // GlyphPlaceholders.java:383
+  const LEVEL_PREFIX = 'level_';                               // GlyphPlaceholders.java:386
+  // ---- glyphs/LevelBadge.java ----
+  const LEFT = '_left';                                        // LevelBadge.java:38
+  const RIGHT = '_right';                                      // LevelBadge.java:41
+  const MAX_DIGITS = 9;                                        // LevelBadge.java:47
+  /** 1.8 team prefix limit (GlyphPlaceholders.java:360-361 javadoc, README "seize"). */
+  const NAMETAG_PREFIX_MAX = 16;
+
+  /** Java's IllegalArgumentException: the message is BeltariaContent's, verbatim. */
+  function bcError(message) { const e = new Error(message); e.name = 'IllegalArgumentException'; return e; }
+  const newMap = () => Object.create(null);
+  const has = (m, k) => m != null && Object.prototype.hasOwnProperty.call(m, k);
+  const get = (m, k) => (has(m, k) ? m[k] : undefined);
+  const sortedKeys = m => Object.keys(m).sort();
+  function toMap(obj) { const m = newMap(); if (obj) for (const k of Object.keys(obj)) m[k] = obj[k]; return m; }
+
+  /** Glyph.hex (Glyph.java:157): upper-case, padded to 4. */
+  function hex(c) { return (c >>> 0).toString(16).toUpperCase().padStart(4, '0'); }
+  /** Glyph.codePoint (Glyph.java:152). */
+  function codePoint(c) { return 'U+' + hex(c); }
+
+  /** Glyph.isFree (Glyph.java:140-144). */
+  function isFree(first, cells) {
+    const last = first + cells - 1;
+    return cells >= 1 && first >= FIRST && last <= LAST_FREE && (last < ZERO_WIDTH || first > BACKSPACE);
+  }
+  /** Glyph.isGlyph (Glyph.java:147). */
+  function isGlyph(c) { return c >= FIRST && c <= LAST; }
+  /** GlyphText.isIcon (GlyphText.java:23-25): what GlyphInputFilter strips from player input. */
+  function isIcon(c) { return c >= PRIVATE_FIRST && c <= LAST; }
+  function containsPrivate(text) {                             // GlyphText.java:28-37
+    if (text == null) return false;
+    for (let i = 0; i < text.length; i++) if (isIcon(text.charCodeAt(i))) return true;
+    return false;
+  }
+  function strip(text) {                                       // GlyphText.java:44-56
+    if (!containsPrivate(text)) return text;
+    let kept = '';
+    for (let i = 0; i < text.length; i++) if (!isIcon(text.charCodeAt(i))) kept += text[i];
+    return kept;
+  }
+
+  /** Glyph.of (Glyph.java:119-134) and the constructor's raw text (Glyph.java:93-105). */
+  function glyph(id, first, cells) {
+    if (cells === undefined) cells = 1;
+    if (id == null || id === '') throw bcError("Identifiant d'icone absent");
+    if (cells < 1) throw bcError(id + ' : au moins une case attendue');
+    if (!isFree(first, cells)) {
+      throw bcError(id + ' : ' + codePoint(first) + (cells > 1 ? ' sur ' + cells + ' cases' : '') + ' hors de '
+        + codePoint(FIRST) + '-' + codePoint(LAST_FREE) + ' ; ' + codePoint(ZERO_WIDTH) + ' et ' + codePoint(BACKSPACE)
+        + ' sont reserves');
+    }
+    let raw = '';
+    for (let i = 0; i < cells; i++) {
+      if (i > 0) raw += JOIN;
+      raw += String.fromCharCode(first + i);
+    }
+    return Object.freeze({
+      id, first, cells, raw,
+      text: WHITE + raw,                                        // Glyph.text (Glyph.java:195-197)
+      label: id + ' ' + codePoint(first) + (cells > 1 ? '-' + codePoint(first + cells - 1) : '') // Glyph.toString (Glyph.java:215-218)
+    });
+  }
+  /** Glyph.cell (Glyph.java:181-187). */
+  function glyphCell(g, index) {
+    if (index < 0 || index >= g.cells) throw new RangeError(g.id + ' : case ' + index + ' sur ' + g.cells);
+    return g.first + index;
+  }
+
+  /** PackBuild.checkGlyphId (PackBuild.java:1179-1185). */
+  function checkGlyphId(id, what) {
+    if (!ID_PATTERN.test(id) || id.startsWith(GLYPH_RESERVED_PREFIX)) {
+      throw bcError(what + ' : identifiant invalide, attendu en minuscules sur [a-z0-9_.-], sans le prefixe '
+        + GLYPH_RESERVED_PREFIX + " - c'est un nom de dossier et la fin d'un placeholder");
+    }
+  }
+
+  /* ---------- GlyphAtlas ---------- */
+  /** GlyphAtlas.opaqueColumn (GlyphAtlas.java:306-313): any alpha != 0 counts. image = {width, height, data RGBA}. */
+  function opaqueColumn(img, x) {
+    const w = img.width, d = img.data;
+    for (let y = 0; y < img.height; y++) if (d[(y * w + x) * 4 + 3] !== 0) return true;
+    return false;
+  }
+  function firstOpaqueColumn(img) {                            // GlyphAtlas.java:287-294
+    for (let x = 0; x < img.width; x++) if (opaqueColumn(img, x)) return x;
+    return -1;
+  }
+  function lastOpaqueColumn(img) {                             // GlyphAtlas.java:297-304
+    for (let x = img.width - 1; x >= 0; x--) if (opaqueColumn(img, x)) return x;
+    return -1;
+  }
+  /** The columns BeltariaContent keeps: transparent left/right margins removed. */
+  function trimOf(img) {
+    const left = firstOpaqueColumn(img);
+    if (left < 0) return null;
+    const right = lastOpaqueColumn(img);
+    return { left, right, width: right - left + 1, marginLeft: left, marginRight: img.width - 1 - right };
+  }
+
+  /** GlyphAtlas.cellsOf (GlyphAtlas.java:127-149). */
+  function cellsOf(img, what) {
+    const height = img.height;
+    if (HEIGHTS.indexOf(height) < 0) {
+      throw bcError(what + ' : image haute de ' + height + " pixels, attendu 8, 16, 32 ou 64 - toujours dessinee a la hauteur d'une"
+        + ' lettre, en plus ou moins fin');
+    }
+    const left = firstOpaqueColumn(img);
+    if (left < 0) throw bcError(what + ' : image entierement transparente');
+    const width = lastOpaqueColumn(img) - left + 1;
+    const cells = Math.floor((width + height - 1) / height);
+    if (cells > MAX_CELLS) {
+      throw bcError(what + ' : ' + width + ' pixels de large pour ' + height + ' de haut, soit ' + cells + ' cases ; '
+        + MAX_CELLS + ' au plus');
+    }
+    return cells;
+  }
+
+  /** GlyphAtlas.size (GlyphAtlas.java:278-284): start column 0, end in sixteenths, >7 -> 15, never 0. */
+  function size(width, height) {
+    let end = Math.floor((width * GRID - 1) / height);
+    if (end > 7) end = 15;
+    return Math.max(end, 1);
+  }
+
+  /** GlyphAtlas.pagePath (GlyphAtlas.java:79-82). */
+  function pagePath(c) { return 'assets/minecraft/textures/font/unicode_page_' + (c >> 8).toString(16).padStart(2, '0') + '.png'; }
+
+  /**
+   * GlyphAtlas.build (GlyphAtlas.java:162-217) + drawPage (238-263).
+   * sources: [{glyph, image, what}]; vanillaSizes: 65536 bytes, not modified.
+   * Returns {files: [[path, value]...] in BC's order, sizes, pages}. Pages are kept in memory
+   * for the preview only: this tool never writes them.
+   */
+  function buildAtlas(sources, vanillaSizes) {
+    if (!vanillaSizes || vanillaSizes.length !== SIZES_LENGTH) {
+      throw bcError('Table des largeurs du client attendue sur ' + SIZES_LENGTH + ' octets');
+    }
+    const files = [];
+    if (!sources.length) return { files, sizes: null, pages: [] };
+    const cells = new Map();
+    for (const source of sources) {
+      if (!source.glyph || !source.image) throw bcError(source.what + ' : icone ou image absente'); // GlyphAtlas.java:92-94
+      const count = cellsOf(source.image, source.what);
+      if (count !== source.glyph.cells) {
+        throw bcError(source.what + " : l'image demande " + count + " cases, l'icone en declare " + source.glyph.cells);
+      }
+      const height = source.image.height;
+      const left = firstOpaqueColumn(source.image);
+      const width = lastOpaqueColumn(source.image) - left + 1;
+      for (let i = 0; i < count; i++) {
+        const character = source.glyph.first + i;
+        const cell = { character, image: source.image, from: left + i * height, width: Math.min(height, width - i * height), what: source.what };
+        const other = cells.get(character);
+        cells.set(character, cell);
+        if (other) throw bcError(source.what + ' : ' + codePoint(character) + ' deja pris par ' + other.what);
+      }
+    }
+    const pages = new Map();
+    const pageOf = c => { const p = c >> 8; let l = pages.get(p); if (!l) { l = []; pages.set(p, l); } return l; };
+    for (const c of [...cells.keys()].sort((a, b) => a - b)) pageOf(c).push(cells.get(c));
+    // GlyphAtlas.java:198-201: the backspace page exists as soon as one icon exists.
+    pageOf(BACKSPACE);
+    const sizes = Uint8Array.from(vanillaSizes);
+    const pageList = [];
+    for (const p of [...pages.keys()].sort((a, b) => a - b)) {
+      const first = p << 8;
+      for (let i = 0; i < 256; i++) sizes[first + i] = 0;      // GlyphAtlas.java:208-211
+      const page = drawPage(pages.get(p), sizes);
+      page.page = p;
+      page.path = pagePath(first);
+      files.push([page.path, page]);
+      pageList.push(page);
+    }
+    sizes[BACKSPACE] = BACKSPACE_SIZE;                         // GlyphAtlas.java:214
+    files.push([SIZES_PATH, sizes]);
+    return { files, sizes, pages: pageList };
+  }
+
+  /** GlyphAtlas.drawPage (GlyphAtlas.java:238-263): tallest image sets the cell, others scaled up by an integer, nearest neighbour, left-aligned. */
+  function drawPage(cells, sizes) {
+    let side = HEIGHTS[0];
+    for (const c of cells) side = Math.max(side, c.image.height);
+    const dim = GRID * side, data = new Uint8ClampedArray(dim * dim * 4);
+    for (const cell of cells) {
+      const x0 = (cell.character & 0x0f) * side, y0 = ((cell.character >> 4) & 0x0f) * side;
+      const height = cell.image.height, scale = side / height, src = cell.image.data, sw = cell.image.width;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < cell.width; x++) {
+          const si = (y * sw + cell.from + x) * 4;
+          for (let dy = 0; dy < scale; dy++) {
+            for (let dx = 0; dx < scale; dx++) {
+              const di = ((y0 + y * scale + dy) * dim + x0 + x * scale + dx) * 4;
+              data[di] = src[si]; data[di + 1] = src[si + 1]; data[di + 2] = src[si + 2]; data[di + 3] = src[si + 3];
+            }
+          }
+        }
+      }
+      sizes[cell.character] = size(cell.width, height);
+    }
+    return {
+      side, dim, data,
+      cells: cells.map(c => ({ character: c.character, width: c.width, height: c.image.height, scale: side / c.image.height, what: c.what }))
+    };
+  }
+  /** ARGB of a page pixel, like BufferedImage.getRGB (for parity tests). */
+  function pageRGB(page, x, y) {
+    const i = (y * page.dim + x) * 4, d = page.data;
+    return ((d[i + 3] << 24) | (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]) | 0;
+  }
+
+  /* ---------- GlyphChars ---------- */
+  function run(first, cells) { return { first, cells }; }       // GlyphChars.Run (GlyphChars.java:57-106)
+  function runInArea(r) { return isFree(r.first, r.cells); }    // GlyphChars.java:68-70
+  function runFits(r, taken) {                                 // GlyphChars.java:72-82
+    if (!runInArea(r)) return false;
+    for (let i = 0; i < r.cells; i++) if (taken.has(r.first + i)) return false;
+    return true;
+  }
+  function runClaim(r, taken) { for (let i = 0; i < r.cells; i++) taken.add(r.first + i); } // GlyphChars.java:84-88
+  function runLabel(r) { return codePoint(r.first) + (r.cells > 1 ? ' sur ' + r.cells + ' cases' : ''); } // GlyphChars.java:102-105
+
+  /**
+   * GlyphChars.allocate (GlyphChars.java:138-234).
+   * cells: {id: count}; imposed: {id: charCode}; remembered: {id: {first, cells}}.
+   * Returns {firsts: {id: charCode}, remembered: {id: Run}, notes: [BC text], noteIds: [id per note]}.
+   */
+  function allocate(cellsIn, imposedIn, rememberedIn) {
+    const cells = toMap(cellsIn), imposed = toMap(imposedIn), remembered = toMap(rememberedIn);
+    const taken = new Set(), decided = newMap(), notes = [], noteIds = [], refused = new Set();
+    const note = (id, text) => { notes.push(text); noteIds.push(id); };
+
+    for (const id of sortedKeys(imposed)) {                    // GlyphChars.java:145-159
+      const count = get(cells, id);
+      const r = run(imposed[id], count == null ? 1 : count);
+      if (!runFits(r, taken)) {
+        refused.add(id);
+        note(id, GLYPHS + '/' + id + ' : caractere impose ' + runLabel(r) + ' deja pris par une autre icone imposee, ou hors de '
+          + codePoint(FIRST) + '-' + codePoint(LAST_FREE) + ' ; icone laissee de cote');
+        continue;
+      }
+      runClaim(r, taken);
+      decided[id] = r;
+    }
+
+    // GlyphChars.java:161-191: two passes, unchanged icons first, then the grown ones.
+    const placing = [], grown = [];
+    for (const id of sortedKeys(cells)) {
+      if (has(decided, id) || refused.has(id)) continue;
+      const before = get(remembered, id);
+      if (before == null) {
+        placing.push(id);
+      } else if (!runInArea(before)) {
+        placing.push(id);
+        note(id, GLYPHS + '/' + id + ' : ' + runLabel(before) + ' hors de la zone des icones ' + codePoint(FIRST) + '-'
+          + codePoint(LAST_FREE) + ', deplacee');
+      } else if (cells[id] > before.cells) {
+        grown.push(id);
+      } else {
+        keepOrMove(id, before, cells[id], taken, decided, placing, note);
+      }
+    }
+    for (const id of grown) keepOrMove(id, remembered[id], cells[id], taken, decided, placing, note);
+
+    // GlyphChars.java:193-207: retired icons keep their characters.
+    const retired = newMap();
+    for (const id of sortedKeys(remembered)) {
+      const r = remembered[id];
+      if (has(cells, id) || !runInArea(r)) continue;
+      if (runFits(r, taken)) {
+        runClaim(r, taken);
+        retired[id] = r;
+      } else {
+        note(id, GLYPHS + '/' + id + ' (retiree) : ' + runLabel(r) + ' repris par une icone imposee, oublie');
+      }
+    }
+
+    for (const id of placing) {                                // GlyphChars.java:209-225
+      const r = firstFree(taken, cells[id]);
+      if (r == null) {
+        note(id, GLYPHS + '/' + id + ' : plus de ' + cells[id] + ' caractere(s) libres consecutifs de ' + codePoint(FIRST)
+          + ' a ' + codePoint(LAST_FREE) + ' ; icone laissee de cote. Retirer de ' + GLYPHS + '/' + CHARS_FILE
+          + ' les icones disparues libere leurs caracteres');
+        continue;
+      }
+      runClaim(r, taken);
+      decided[id] = r;
+      if (!has(remembered, id)) note(id, GLYPHS + '/' + id + ' : ' + runLabel(r) + ' attribue, retenu dans ' + GLYPHS + '/' + CHARS_FILE);
+    }
+
+    const firsts = newMap();
+    for (const id of sortedKeys(decided)) firsts[id] = decided[id].first;
+    const memory = newMap();                                   // GlyphChars.java:231-232: retired, then decided over it
+    const merged = Object.assign(newMap(), retired, decided);
+    for (const id of sortedKeys(merged)) memory[id] = merged[id];
+    return { firsts, remembered: memory, notes, noteIds };
+  }
+
+  /** GlyphChars.keepOrMove (GlyphChars.java:237-248). */
+  function keepOrMove(id, before, count, taken, decided, placing, note) {
+    const r = run(before.first, count);
+    if (runFits(r, taken)) {
+      runClaim(r, taken);
+      decided[id] = r;
+      return;
+    }
+    placing.push(id);
+    note(id, GLYPHS + '/' + id + ' : ' + runLabel(before) + ' ne tient plus ' + count
+      + " case(s), deplacee - un prefixe qui cite l'ancien caractere est a refaire");
+  }
+
+  /** GlyphChars.firstFree (GlyphChars.java:251-259). */
+  function firstFree(taken, cells) {
+    for (let first = FIRST; first + cells - 1 <= LAST_FREE; first++) {
+      const r = run(first, cells);
+      if (runFits(r, taken)) return r;
+    }
+    return null;
+  }
+
+  function isJsonObject(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+
+  /**
+   * GlyphChars.read (GlyphChars.java:266-300). Gson's JsonParser is lenient (comments, single
+   * quotes); JSON.parse is strict, so only standard JSON is accepted here - a stricter check.
+   */
+  function readChars(text) {
+    const remembered = newMap();
+    if (text == null) return remembered;
+    const what = GLYPHS + '/' + CHARS_FILE;
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (e) { throw bcError(what + ' : JSON invalide : ' + e.message); }
+    if (!isJsonObject(parsed)) throw bcError(what + ' : objet attendu a la racine');
+    for (const key of Object.keys(parsed)) {
+      const at = what + ' : ' + key;
+      const value = parsed[key];
+      if (!isJsonObject(value)) throw bcError(at + ' : { "char": "F900", "cells": 1 } attendu');
+      const first = parseHex(get(value, 'char'), at + '.char');
+      const count = get(value, 'cells');
+      // Gson getAsInt truncates a decimal (BigDecimal.intValue).
+      if (count == null || typeof count !== 'number' || Math.trunc(count) < 1) throw bcError(at + '.cells : entier positif attendu');
+      remembered[key] = run(first, Math.trunc(count));
+    }
+    return remembered;
+  }
+
+  /** GlyphChars.write (GlyphChars.java:303-313): sorted, one icon per line, keys written as-is. */
+  function writeChars(rememberedIn) {
+    const remembered = toMap(rememberedIn);
+    const keys = sortedKeys(remembered);
+    let json = '{\n';
+    keys.forEach((k, i) => {
+      json += '  "' + k + '": { "char": "' + hex(remembered[k].first) + '", "cells": ' + remembered[k].cells + ' }' + (i + 1 < keys.length ? ',\n' : '\n');
+    });
+    return json + '}\n';
+  }
+
+  /** GlyphChars.parseHex (GlyphChars.java:321-333). */
+  function parseHex(raw, what) {
+    if (typeof raw !== 'string') throw bcError(what + ' : chaine "F900" attendue');
+    const hexText = raw.length >= 2 && raw.slice(0, 2).toUpperCase() === 'U+' ? raw.slice(2) : raw;
+    if (!/^[0-9A-Fa-f]{4}$/.test(hexText)) {
+      throw bcError(what + ' : ' + raw + ' ; quatre chiffres hexadecimaux attendus, de ' + hex(FIRST) + ' a ' + hex(LAST_FREE));
+    }
+    return parseInt(hexText, 16);
+  }
+
+  /** GlyphChars.parseChar (GlyphChars.java:340-349). */
+  function parseChar(raw, what) {
+    const c = parseHex(raw, what);
+    if (!isFree(c, 1)) {
+      throw bcError(what + ' : ' + codePoint(c) + ' hors de ' + codePoint(FIRST) + '-' + codePoint(LAST_FREE) + ' ; '
+        + codePoint(ZERO_WIDTH) + ' et ' + codePoint(BACKSPACE) + ' sont reserves');
+    }
+    return c;
+  }
+
+  function sameRuns(a, b) {
+    const ka = sortedKeys(a), kb = sortedKeys(b);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k, i) => k === kb[i] && a[k].first === b[k].first && a[k].cells === b[k].cells);
+  }
+
+  /**
+   * PackBuild.emitGlyphs (PackBuild.java:1078-1173), as one pure function.
+   * input.folders: [{id, hasTexture, image|null, unreadable: null | {kind:'format'|'io', detail}}]
+   *   - one per glyphs/<id>/ folder (Descriptor.subfolders, PackBuild.java:1395-1412, sorted).
+   * input.packJson / input.charsJson: file text or null (absent).
+   * input.assetPaths: paths under pack-src/assets/ (relative to pack-src), for the collisions
+   *   ResourcePack.adopt refuses (ResourcePack.java:140-152, ordering PackBuild.java:399-401).
+   * input.vanillaSizes: the 1.8.9 glyph_sizes.bin, or null (zeros: only our pages matter here).
+   */
+  function assemble(input) {
+    const notes = [];                                          // {id|null, text, level}
+    const note = (id, text, level) => notes.push({ id, text, level: level || 'error' });
+    const fatal = [];
+    const folders = (input.folders || []).slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const folderIds = new Set(folders.map(f => f.id));
+    const images = newMap(), cells = newMap();
+
+    for (const f of folders) {                                 // PackBuild.java:1083-1104
+      const id = f.id, what = GLYPHS + '/' + id;
+      try {
+        checkGlyphId(id, what);
+        if (!f.hasTexture) throw bcError(what + ' : ' + TEXTURE_FILE + ' attendue dans ' + what);
+        if (f.unreadable && f.unreadable.kind === 'io') {
+          note(id, what + ' : image illisible (' + f.unreadable.detail + ') ; icone laissee de cote');
+          continue;
+        }
+        if (!f.image) throw bcError(what + ' : ' + what + '/' + TEXTURE_FILE + " n'est pas une image lisible");
+        cells[id] = cellsOf(f.image, what);
+        images[id] = f.image;
+      } catch (e) {
+        if (e.name !== 'IllegalArgumentException') throw e;
+        note(id, e.message + ' ; icone laissee de cote');
+      }
+    }
+
+    const imposed = newMap();
+    let declared = newMap();
+    if (input.packJson != null) {
+      let root = null;
+      try { root = JSON.parse(input.packJson); } catch (e) { fatal.push(DESCRIPTOR + ' : JSON invalide : ' + e.message); }
+      if (root != null && !isJsonObject(root)) fatal.push(DESCRIPTOR + ' : objet attendu a la racine');
+      else if (root != null && has(root, GLYPHS)) {
+        // Descriptor.section (PackBuild.java:1459-1468): a non-object section fails the whole pack.
+        if (!isJsonObject(root[GLYPHS])) fatal.push(DESCRIPTOR + ' : ' + GLYPHS + ' doit etre un objet identifiant -> reglages');
+        else declared = root[GLYPHS];
+      }
+    }
+    for (const key of Object.keys(declared)) {                 // PackBuild.java:1106-1134
+      const what = DESCRIPTOR + ' : ' + GLYPHS + '.' + key;
+      try {
+        const settings = declared[key];
+        if (!isJsonObject(settings)) throw bcError(what + ' : objet attendu, { "char": "F900" } pour imposer un caractere');
+        if (has(settings, 'char')) imposed[key] = parseChar(settings.char, what + '.char');
+      } catch (e) {
+        if (e.name !== 'IllegalArgumentException') throw e;
+        delete cells[key];
+        delete images[key];
+        note(key, e.message + ' ; icone laissee de cote');
+        continue;
+      }
+      if (!has(images, key) && !folderIds.has(key)) {
+        note(key, what + ' : dossier ' + GLYPHS + '/' + key + ' absent, reglage ignore', 'warn');
+      }
+    }
+    for (const k of Object.keys(imposed)) if (!has(images, k)) delete imposed[k]; // PackBuild.java:1135
+
+    const base = { notes, fatal, imposed, images, cells, glyphs: newMap(), remembered: newMap(), allocation: null,
+      charsOut: null, charsChanged: false, charsInput: input.charsJson != null, charsBroken: false, atlas: null, collisions: [] };
+
+    let remembered;
+    try { remembered = readChars(input.charsJson); }           // PackBuild.java:1136-1149
+    catch (e) {
+      if (e.name !== 'IllegalArgumentException') throw e;
+      note(null, e.message + " ; aucune icone tant qu'il n'est pas repare");
+      base.charsBroken = true;
+      return base;
+    }
+    base.remembered = remembered;
+    if (!Object.keys(images).length && !Object.keys(remembered).length) return base;
+
+    const allocation = allocate(cells, imposed, remembered);   // PackBuild.java:1151-1158
+    base.allocation = allocation;
+    base.charsOut = writeChars(allocation.remembered);
+    base.charsChanged = !sameRuns(allocation.remembered, remembered);
+    allocation.notes.forEach((t, i) => {
+      const placedNew = / attribue, retenu dans /.test(t);
+      note(allocation.noteIds[i], t, placedNew ? 'ok' : (/deplacee|oublie$/.test(t) ? 'warn' : 'error'));
+    });
+
+    const sources = [];                                        // PackBuild.java:1159-1166
+    for (const id of sortedKeys(allocation.firsts)) {
+      const g = glyph(id, allocation.firsts[id], cells[id]);
+      sources.push({ glyph: g, image: images[id], what: GLYPHS + '/' + id });
+      base.glyphs[id] = g;
+    }
+    const vanilla = sources.length ? (input.vanillaSizes || new Uint8Array(SIZES_LENGTH)) : new Uint8Array(SIZES_LENGTH);
+    base.atlas = buildAtlas(sources, vanilla);
+    const assets = new Set(input.assetPaths || []);
+    for (const [path] of base.atlas.files) {
+      if (assets.has(path)) {
+        base.collisions.push(path);
+        fatal.push('Chemin deja present dans le pack : ' + path);
+      }
+    }
+    return base;
+  }
+
+  /* ---------- LevelBadge / GlyphPlaceholders / GlyphsCommand ---------- */
+  /** String.trim: strips every char <= U+0020 at both ends. */
+  function javaTrim(s) {
+    let a = 0, b = s.length;
+    while (a < b && s.charCodeAt(a) <= 32) a++;
+    while (b > a && s.charCodeAt(b - 1) <= 32) b--;
+    return s.slice(a, b);
+  }
+  /** LevelBadge.digits (LevelBadge.java:84-100). */
+  function levelDigits(level) {
+    if (level === '') return null;
+    for (let i = 0; i < level.length; i++) {
+      const c = level[i];
+      if (c < '0' || c > '9') return null;
+    }
+    let start = 0;
+    while (start < level.length - 1 && level[start] === '0') start++;
+    const digits = level.slice(start);
+    return digits.length > MAX_DIGITS ? null : digits;
+  }
+  /** LevelBadge.render (LevelBadge.java:59-81). */
+  function levelRender(glyphs, style, level) {
+    if (glyphs == null || style == null || style === '' || level == null) return null;
+    const digits = levelDigits(javaTrim(level));
+    if (digits == null) return null;
+    const left = get(glyphs, style + LEFT), right = get(glyphs, style + RIGHT);
+    if (!left || !right) return null;
+    let text = WHITE + left.raw;
+    for (let i = 0; i < digits.length; i++) {
+      const digit = get(glyphs, style + '_' + digits[i]);
+      if (!digit) return null;
+      text += JOIN + digit.raw;
+    }
+    return text + JOIN + right.raw;
+  }
+  /** GlyphPlaceholders.resolve (GlyphPlaceholders.java:422-444). */
+  function resolve(glyphs, params) {
+    if (params == null) return null;
+    if (params.startsWith(RAW_PREFIX)) { const g = get(glyphs, params.slice(RAW_PREFIX.length)); return g ? g.raw : null; }
+    if (params.startsWith(GLYPH_PREFIX)) { const g = get(glyphs, params.slice(GLYPH_PREFIX.length)); return g ? g.text : null; }
+    if (params.startsWith(LEVEL_PREFIX)) {
+      const rest = params.slice(LEVEL_PREFIX.length), split = rest.lastIndexOf('_');
+      return split < 0 ? null : levelRender(glyphs, rest.slice(0, split), rest.slice(split + 1));
+    }
+    return null;
+  }
+  /** %beltaria_<params>% as PlaceholderAPI shows it: resolved, or left as typed when null. */
+  function placeholder(glyphs, params) {
+    const r = resolve(glyphs, params);
+    return r == null ? '%' + IDENTIFIER + '_' + params + '%' : r;
+  }
+  /** GlyphsCommand.escaped (GlyphsCommand.java:599-605). */
+  function escaped(text) {
+    let out = '';
+    for (let i = 0; i < text.length; i++) out += '\\u' + hex(text.charCodeAt(i));
+    return out;
+  }
+  /** GlyphsCommand.lines (GlyphsCommand.java:581-596), ChatColor as § codes. */
+  function commandLines(glyphsIn) {
+    const glyphs = toMap(glyphsIn), ids = sortedKeys(glyphs);
+    if (!ids.length) return ['§7Aucune icone dans le pack servi : deposer glyphs/<id>/texture.png, puis /content pack.'];
+    const lines = ['§6' + ids.length + ' icone(s) - placeholder, puis sequence YAML entre guillemets doubles :'];
+    for (const id of ids) {
+      const g = glyphs[id];
+      lines.push(g.text + '§7 ' + g.id + ' §8' + g.label + ' §e%' + IDENTIFIER + '_' + GLYPH_PREFIX + g.id + '% §f' + escaped(g.raw));
+    }
+    return lines;
+  }
+
+  /* ---------- 1.8.9 FontRenderer metrics (MCP names) ---------- */
+  // FontRenderer's ascii.png lookup string (256 chars), verbatim.
+  const ASCII_TABLE = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000";
+  const STYLE_CODES = '0123456789abcdefklmnor';
+  function asciiIndex(c) { return ASCII_TABLE.indexOf(String.fromCharCode(c)); }
+  /** glyphWidth is a Java byte[]: `glyphWidth[c] >>> 4` sign-extends first. */
+  function javaStart(b) { return ((b << 24) >> 24) >>> 4; }
+  /** getCharWidth, unicode-page branch: end > 7 counts as 15 from column 0. */
+  function unicodeCharWidth(b) {
+    b &= 255;
+    if (b === 0) return 0;
+    let j = javaStart(b), k = b & 15;
+    if (k > 7) { k = 15; j = 0; }
+    k++;
+    return Math.trunc((k - j) / 2) + 1;
+  }
+  /** renderUnicodeChar's return value (float). */
+  function unicodeRenderWidth(b) {
+    b &= 255;
+    if (b === 0) return 0;
+    return ((b & 15) + 1 - javaStart(b)) / 2 + 1;
+  }
+  /** What renderStringAtPos actually advances: posX += (int) f. */
+  function unicodeAdvance(b) { return Math.trunc(unicodeRenderWidth(b)); }
+  /** getCharWidth (asciiWidth(j) for ascii.png chars; sizeOf(c) the glyph_sizes byte). */
+  function charWidth(c, sizeOf, asciiWidth) {
+    if (c === 167) return -1;
+    if (c === 32) return 4;
+    const j = asciiIndex(c);
+    if (c > 0 && j !== -1) return asciiWidth(j, c);
+    return unicodeCharWidth(sizeOf(c));
+  }
+  /** getStringWidth: a negative width is taken for a § code and the next char skipped. */
+  function stringWidth(text, sizeOf, asciiWidth) {
+    let w = 0, bold = false;
+    for (let i = 0; i < text.length; i++) {
+      let k = charWidth(text.charCodeAt(i), sizeOf, asciiWidth);
+      if (k < 0 && i < text.length - 1) {
+        const c = text.charCodeAt(++i);
+        if (c !== 108 && c !== 76) { if (c === 114 || c === 82) bold = false; } else bold = true;
+        k = 0;
+      }
+      w += k;
+      if (bold && k > 0) w++;
+    }
+    return w;
+  }
+  /** renderStringAtPos's pen movement, without drawing. */
+  function drawnAdvance(text, sizeOf, asciiWidth) {
+    let x = 0, bold = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charCodeAt(i);
+      if (c === 167 && i + 1 < text.length) {
+        const k = STYLE_CODES.indexOf(text[i + 1].toLowerCase());
+        if (k < 16) bold = false; else if (k === 17) bold = true; else if (k === 21) bold = false;
+        i++;
+        continue;
+      }
+      const j = asciiIndex(c);
+      let f = c === 32 ? 4 : (j !== -1 ? asciiWidth(j, c) : unicodeRenderWidth(sizeOf(c)));
+      if (bold) f++;
+      x += Math.trunc(f);
+    }
+    return x;
+  }
+  /** FontRenderer constructor colour table (anaglyph off): 0-15 normal, 16-31 shadow. */
+  function mcColorTable() {
+    const t = [];
+    for (let i = 0; i < 32; i++) {
+      const j = ((i >> 3) & 1) * 85;
+      let k = ((i >> 2) & 1) * 170 + j, l = ((i >> 1) & 1) * 170 + j, m = (i & 1) * 170 + j;
+      if (i === 6) k += 85;
+      if (i >= 16) { k = (k / 4) | 0; l = (l / 4) | 0; m = (m / 4) | 0; }
+      t.push(((k & 255) << 16) | ((l & 255) << 8) | (m & 255));
+    }
+    return t;
+  }
+  /** readFontTexture: per-char widths of ascii.png (RGBA, w x h). */
+  function asciiWidths(rgba, w, h) {
+    const cw = w / 16, ch = h / 16, f = 8 / cw, out = new Array(256);
+    for (let c = 0; c < 256; c++) {
+      const cx = c % 16, cy = (c / 16) | 0;
+      let col;
+      for (col = cw - 1; col >= 0; col--) {
+        let empty = true;
+        for (let y = 0; y < ch && empty; y++) if (rgba[((cy * ch + y) * w + cx * cw + col) * 4 + 3] !== 0) empty = false;
+        if (!empty) break;
+      }
+      col++;
+      out[c] = Math.trunc(0.5 + col * f) + 1;
+    }
+    return out;
+  }
+
+  /* ---------- checks from the README / LevelBadge javadoc (not enforced by BC) ---------- */
+  /** GlyphAtlasTest.java:233: where the next piece starts after a piece and its JOIN. */
+  function joinAdvance(width, height) {
+    return unicodeAdvance(size(width, height)) + unicodeAdvance(BACKSPACE_SIZE) + unicodeAdvance(0);
+  }
+  /**
+   * A level piece (LevelBadge.java:625-631, README "Un badge de niveau"): at most half a cell,
+   * and a width that lands on a whole GUI pixel ("paire" for 16 px high), else the next piece
+   * covers its last column. Returns [] or issue objects.
+   */
+  function levelPieceIssues(width, height) {
+    const issues = [];
+    const drawn = width * 8 / height;
+    if (width * 2 > height) {
+      issues.push({ code: 'wide', drawn, half: height / 2 });
+    } else {
+      const next = joinAdvance(width, height);
+      if (next * height !== width * 8) issues.push({ code: 'odd', drawn, next, multiple: height / 8 });
+    }
+    return issues;
+  }
+  /** Last cell wider than half a cell: GlyphAtlas.size declares it full, the client advances 8 + 1 GUI px. */
+  function lastCellGap(width, height) {
+    const cells = Math.floor((width + height - 1) / height);
+    const last = width - (cells - 1) * height;
+    if (last * 2 > height && last < height) return { last, drawn: last * 8 / height, gap: 8 - last * 8 / height };
+    return null;
+  }
+  const PIECES = ['left', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'right'];
+  /** Level styles among these ids: <style>_left/_0.._9/_right. A style needs an edge or three digits to count. */
+  function levelStyles(ids) {
+    const by = newMap();
+    for (const id of ids) {
+      const m = /^(.+)_(left|right|[0-9])$/.exec(id);
+      if (!m) continue;
+      (by[m[1]] || (by[m[1]] = new Set())).add(m[2]);
+    }
+    const out = [];
+    for (const style of sortedKeys(by)) {
+      const p = by[style], digits = PIECES.filter(x => /^[0-9]$/.test(x) && p.has(x)).length;
+      if (!(p.has('left') || p.has('right') || digits >= 3)) continue;
+      out.push({ style, present: PIECES.filter(x => p.has(x)).map(x => style + '_' + x), missing: PIECES.filter(x => !p.has(x)).map(x => style + '_' + x) });
+    }
+    return out;
+  }
+
+  /* ---------- CRC32 + minimal ZIP (STORE writer, STORE/DEFLATE reader) ---------- */
+  function toBytes(input) {
+    if (input instanceof Uint8Array) return input;
+    if (input instanceof ArrayBuffer) return new Uint8Array(input);
+    if (ArrayBuffer.isView(input)) return new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
+    if (typeof input === 'string') return new TextEncoder().encode(input);
+    throw new TypeError('Données binaires attendues.');
+  }
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(input) {
+    const bytes = toBytes(input);
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function dosDateTime(d) {
+    const y = Math.max(1980, d.getFullYear());
+    return { time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date: ((y - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate() };
+  }
+  /** entries: [{name, data}] -> Uint8Array (.zip, STORE). */
+  function makeZip(entries, when) {
+    if (!Array.isArray(entries) || entries.length === 0) throw new Error('Rien à mettre dans le zip.');
+    const enc = new TextEncoder();
+    const { time, date } = dosDateTime(when || new Date());
+    const seen = new Set();
+    const prepared = entries.map(e => {
+      const name = String(e.name || '');
+      if (!name || name.startsWith('/') || name.includes('\\') || name.split('/').includes('..')) throw new Error('Chemin de fichier invalide dans le zip : « ' + name + ' ».');
+      if (seen.has(name)) throw new Error('Fichier en double dans le zip : ' + name);
+      seen.add(name);
+      const data = toBytes(e.data);
+      return { nameBytes: enc.encode(name), data, crc: crc32(data) };
+    });
+    let total = 22;
+    for (const p of prepared) total += 30 + p.nameBytes.length + p.data.length + 46 + p.nameBytes.length;
+    const out = new Uint8Array(total), dv = new DataView(out.buffer);
+    let o = 0;
+    const offsets = [];
+    for (const p of prepared) {
+      offsets.push(o);
+      dv.setUint32(o, 0x04034b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 0x0800, true); dv.setUint16(o + 8, 0, true);
+      dv.setUint16(o + 10, time, true); dv.setUint16(o + 12, date, true); dv.setUint32(o + 14, p.crc, true);
+      dv.setUint32(o + 18, p.data.length, true); dv.setUint32(o + 22, p.data.length, true);
+      dv.setUint16(o + 26, p.nameBytes.length, true); dv.setUint16(o + 28, 0, true);
+      out.set(p.nameBytes, o + 30); o += 30 + p.nameBytes.length;
+      out.set(p.data, o); o += p.data.length;
+    }
+    const cdStart = o;
+    prepared.forEach((p, i) => {
+      dv.setUint32(o, 0x02014b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 20, true); dv.setUint16(o + 8, 0x0800, true);
+      dv.setUint16(o + 10, 0, true); dv.setUint16(o + 12, time, true); dv.setUint16(o + 14, date, true); dv.setUint32(o + 16, p.crc, true);
+      dv.setUint32(o + 20, p.data.length, true); dv.setUint32(o + 24, p.data.length, true); dv.setUint16(o + 28, p.nameBytes.length, true);
+      dv.setUint16(o + 30, 0, true); dv.setUint16(o + 32, 0, true); dv.setUint16(o + 34, 0, true); dv.setUint16(o + 36, 0, true);
+      dv.setUint32(o + 38, 0, true); dv.setUint32(o + 42, offsets[i], true);
+      out.set(p.nameBytes, o + 46); o += 46 + p.nameBytes.length;
+    });
+    dv.setUint32(o, 0x06054b50, true); dv.setUint16(o + 4, 0, true); dv.setUint16(o + 6, 0, true);
+    dv.setUint16(o + 8, prepared.length, true); dv.setUint16(o + 10, prepared.length, true);
+    dv.setUint32(o + 12, o - cdStart, true); dv.setUint32(o + 16, cdStart, true); dv.setUint16(o + 20, 0, true);
+    return out;
+  }
+  /** Central directory of a .zip/.jar -> Map(name -> entry). */
+  function readZipIndex(input) {
+    const u8 = toBytes(input);
+    if (u8.length < 22) throw new Error('Archive .zip/.jar invalide (fichier trop court).');
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('Archive .zip/.jar invalide (répertoire central introuvable).');
+    const count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true);
+    if (count === 0xFFFF || cdOff === 0xFFFFFFFF) throw new Error('Archive ZIP64 non prise en charge.');
+    if (cdOff >= u8.length) throw new Error('Archive .zip/.jar corrompue (répertoire central hors du fichier).');
+    const dec = new TextDecoder();
+    const entries = new Map();
+    let p = cdOff;
+    for (let i = 0; i < count; i++) {
+      if (p + 46 > u8.length || dv.getUint32(p, true) !== 0x02014b50) throw new Error('Archive .zip/.jar corrompue (entrée ' + (i + 1) + ').');
+      const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+      const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+      entries.set(name, {
+        name, flags: dv.getUint16(p + 8, true), method: dv.getUint16(p + 10, true), crc: dv.getUint32(p + 16, true),
+        compSize: dv.getUint32(p + 20, true), size: dv.getUint32(p + 24, true), offset: dv.getUint32(p + 42, true)
+      });
+      p += 46 + nlen + elen + clen;
+    }
+    return entries;
+  }
+  async function inflateRaw(data) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('Ce navigateur ne sait pas décompresser les zip (DecompressionStream absent) : chargez les fichiers séparément.');
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  async function extractZipEntry(input, e) {
+    const u8 = toBytes(input);
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    if (e.flags & 1) throw new Error('Fichier chiffré dans l\'archive : ' + e.name);
+    if (e.offset + 30 > u8.length || dv.getUint32(e.offset, true) !== 0x04034b50) throw new Error('En-tête local invalide pour ' + e.name);
+    const start = e.offset + 30 + dv.getUint16(e.offset + 26, true) + dv.getUint16(e.offset + 28, true);
+    const comp = u8.subarray(start, start + e.compSize);
+    let data;
+    if (e.method === 0) data = new Uint8Array(comp);
+    else if (e.method === 8) data = await inflateRaw(comp);
+    else throw new Error('Méthode de compression ' + e.method + ' non prise en charge pour ' + e.name);
+    if (data.length !== e.size || crc32(data) !== e.crc) throw new Error('Fichier corrompu dans l\'archive (CRC) : ' + e.name);
+    return data;
+  }
+
+  /** Image formats javax.imageio reads out of the box (PNG, JPEG, GIF, BMP); others come back null. */
+  function imageIoFormat(bytes) {
+    const b = toBytes(bytes);
+    if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'png';
+    if (b.length >= 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'jpeg';
+    if (b.length >= 4 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'gif';
+    if (b.length >= 2 && b[0] === 0x42 && b[1] === 0x4D) return 'bmp';
+    return null;
+  }
+  /** A folder-safe id from a bare file name: lower case, accents dropped, other chars as '_'. */
+  function idFromFileName(name) {
+    const base = String(name).replace(/^.*[\\/]/, '').replace(/\.[^.]*$/, '');
+    return base.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9_.-]+/g, '_');
+  }
+
+  window.GlyphLogic = Object.freeze({
+    FIRST, LAST, LAST_FREE, BACKSPACE, ZERO_WIDTH, JOIN, WHITE, PRIVATE_FIRST, DESCRIPTOR, GLYPHS, GLYPH_RESERVED_PREFIX,
+    TEXTURE_FILE, SIZES_PATH, SIZES_LENGTH, HEIGHTS, MAX_CELLS, BACKSPACE_SIZE, CHARS_FILE, IDENTIFIER, GLYPH_PREFIX,
+    RAW_PREFIX, LEVEL_PREFIX, MAX_DIGITS, NAMETAG_PREFIX_MAX, ASCII_TABLE, STYLE_CODES, PIECES,
+    hex, codePoint, isFree, isGlyph, isIcon, containsPrivate, strip, glyph, glyphCell, checkGlyphId,
+    trimOf, cellsOf, size, pagePath, buildAtlas, pageRGB, allocate, readChars, writeChars, parseHex, parseChar, assemble,
+    javaTrim, levelDigits, levelRender, resolve, placeholder, escaped, commandLines,
+    asciiIndex, javaStart, unicodeCharWidth, unicodeRenderWidth, unicodeAdvance, charWidth, stringWidth, drawnAdvance,
+    mcColorTable, asciiWidths, joinAdvance, levelPieceIssues, lastCellGap, levelStyles,
+    crc32, makeZip, readZipIndex, extractZipEntry, imageIoFormat, idFromFileName
+  });
+})();
+
+/* ============================================================================
+ * UI. Single-threaded: all state lives in `S`, mutated only by event handlers;
+ * every change recomputes the whole assembly (it is cheap: a few icons).
+ * ========================================================================== */
+(function () {
+  'use strict';
+  const L = window.GlyphLogic;
+  const $ = id => document.getElementById(id);
+  const COLORS = L.mcColorTable();
+  const SECTION = '§';
+
+  const S = {
+    icons: [],                 // {key, id, origin, bytes, image, unreadable}
+    folders: new Map(),        // glyphs/<id>/ seen without texture.png: id -> origin
+    packJson: null,            // {text, origin}
+    charsJson: null,           // {text, origin}
+    assetPaths: new Set(),     // pack-src/assets/... relative to pack-src
+    ascii: null,               // {size, data, widths, origin}
+    vanilla: null,             // {sizes, origin}
+    ignored: 0,
+    nextKey: 1,
+    selected: '',
+    result: null
+  };
+
+  /* ---------- status ---------- */
+  function say(msg, kind) {
+    const el = $('status');
+    el.textContent = msg;
+    el.className = 'status' + (kind ? ' ' + kind : '');
+  }
+  function fail(err) { say(err && err.message ? err.message : String(err), 'error'); }
+
+  /* ---------- loading ---------- */
+  async function decodeImage(bytes) {
+    const format = L.imageIoFormat(bytes);
+    if (!format) return { image: null, unreadable: { kind: 'format' } };
+    let bmp;
+    try {
+      bmp = await createImageBitmap(new Blob([bytes]), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+    } catch (e) {
+      return { image: null, unreadable: { kind: 'io', detail: 'décodage ' + format.toUpperCase() + ' impossible' } };
+    }
+    const c = document.createElement('canvas');
+    c.width = bmp.width; c.height = bmp.height;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bmp, 0, 0);
+    if (bmp.close) bmp.close();
+    const img = ctx.getImageData(0, 0, c.width, c.height);
+    return { image: { width: img.width, height: img.height, data: img.data }, unreadable: null };
+  }
+
+  function putIcon(id, bytes, decoded, origin, replaced) {
+    const i = S.icons.findIndex(e => e.id === id);
+    const entry = { key: S.nextKey++, id, origin, bytes, image: decoded.image, unreadable: decoded.unreadable };
+    if (i >= 0) { S.icons[i] = entry; replaced.push(id); } else S.icons.push(entry);
+    S.folders.delete(id);
+  }
+
+  const RE_GLYPH_TEXTURE = /(?:^|\/)glyphs\/([^/]+)\/texture\.png$/;
+  const RE_GLYPH_FOLDER = /(?:^|\/)glyphs\/([^/]+)\/(?:.+)?$/;
+  const RE_ASCII = /(?:^|\/)assets\/minecraft\/textures\/font\/ascii\.png$/i;
+  const RE_SIZES = /(?:^|\/)assets\/minecraft\/font\/glyph_sizes\.bin$/i;
+
+  /**
+   * One batch = one archive, or the loose files/folders of one drop. items: [{path, read: async () => Uint8Array}].
+   * glyphs/<id>/texture.png anywhere is an icon; without any glyphs/ folder and without pack.json,
+   * <id>/texture.png is one too (the rank generator's level zip).
+   */
+  async function ingestBatch(items, label, isJar) {
+    const out = { icons: 0, replaced: [], chars: false, pack: false, ascii: false, sizes: false, ignored: 0 };
+    const paths = items.map(it => it.path.replace(/\\/g, '/').replace(/^\/+/, ''));
+    const hasGlyphsDir = paths.some(p => /(^|\/)glyphs\//.test(p));
+    const packJsons = paths.filter(p => /(^|\/)pack\.json$/.test(p)).sort((a, b) => a.length - b.length);
+    const packRoot = packJsons.length ? packJsons[0].slice(0, packJsons[0].length - 'pack.json'.length) : null;
+    for (let n = 0; n < items.length; n++) {
+      const p = paths[n], base = p.slice(p.lastIndexOf('/') + 1);
+      if (isJar) {
+        if (RE_ASCII.test(p)) { await loadAscii(await items[n].read(), label); out.ascii = true; }
+        else if (RE_SIZES.test(p)) { loadVanilla(await items[n].read(), label); out.sizes = true; }
+        continue;
+      }
+      if (packRoot !== null && p.startsWith(packRoot + 'assets/') && !p.endsWith('/')) S.assetPaths.add(p.slice(packRoot.length));
+      let m;
+      if ((m = RE_GLYPH_TEXTURE.exec(p))) {
+        const bytes = await items[n].read();
+        putIcon(m[1], bytes, await decodeImage(bytes), label, out.replaced);
+        out.icons++;
+      } else if ((m = RE_GLYPH_FOLDER.exec(p)) && base !== 'chars.json') {
+        if (!S.icons.some(e => e.id === m[1])) S.folders.set(m[1], label);
+      } else if (base === 'chars.json') {
+        S.charsJson = { text: new TextDecoder().decode(await items[n].read()), origin: label + (p !== base ? ' (' + p + ')' : '') };
+        out.chars = true;
+      } else if (base === 'pack.json' && (packRoot === null || p === packRoot + 'pack.json')) {
+        S.packJson = { text: new TextDecoder().decode(await items[n].read()), origin: label + (p !== base ? ' (' + p + ')' : '') };
+        out.pack = true;
+      } else if (RE_ASCII.test(p) || (!p.includes('/') && base.toLowerCase() === 'ascii.png')) {
+        await loadAscii(await items[n].read(), label);
+        out.ascii = true;
+      } else if (!hasGlyphsDir && packRoot === null && (m = /(?:^|\/)([^/]+)\/texture\.png$/.exec(p))) {
+        const bytes = await items[n].read();
+        putIcon(m[1], bytes, await decodeImage(bytes), label, out.replaced);
+        out.icons++;
+      } else if (!p.includes('/') && /\.png$/i.test(base)) {
+        const bytes = await items[n].read();
+        putIcon(L.idFromFileName(base), bytes, await decodeImage(bytes), base, out.replaced);
+        out.icons++;
+      } else if (!p.endsWith('/')) {
+        out.ignored++;
+      }
+    }
+    return out;
+  }
+
+  async function loadAscii(bytes, origin) {
+    const d = await decodeImage(bytes);
+    const img = d.image;
+    if (!img) throw new Error('ascii.png illisible.');
+    if (img.width !== img.height || img.width < 128 || (img.width & (img.width - 1))) throw new Error('ascii.png doit être carré, puissance de deux, au moins 128 px (reçu ' + img.width + '×' + img.height + ').');
+    S.ascii = { size: img.width, data: img.data, widths: L.asciiWidths(img.data, img.width, img.height), origin };
+    quadCache.clear();
+  }
+  function loadVanilla(bytes, origin) {
+    if (bytes.length !== L.SIZES_LENGTH) throw new Error('glyph_sizes.bin du client : ' + bytes.length + ' octets au lieu de 65 536.');
+    S.vanilla = { sizes: new Uint8Array(bytes), origin };
+  }
+
+  function fileItem(file, path) { return { path: path || file.webkitRelativePath || file.name, read: async () => new Uint8Array(await file.arrayBuffer()) }; }
+
+  async function archiveItems(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const entries = L.readZipIndex(bytes);
+    return [...entries.values()].map(e => ({ path: e.name, read: () => L.extractZipEntry(bytes, e) }));
+  }
+
+  /** files: File[]; dirItems: [{path, file}] from dropped folders. */
+  async function handleFiles(files, dirItems, forced) {
+    const loose = [];
+    const summary = [];
+    let icons = 0, replaced = [];
+    try {
+      for (const f of files) {
+        const name = f.name.toLowerCase();
+        if (/\.(zip|jar)$/.test(name)) {
+          const r = await ingestBatch(await archiveItems(f), f.name, name.endsWith('.jar'));
+          icons += r.icons; replaced = replaced.concat(r.replaced); S.ignored += r.ignored;
+          summary.push('« ' + f.name + ' » : ' + describe(r));
+        } else if (forced === 'chars') {
+          S.charsJson = { text: await f.text(), origin: f.name }; summary.push('chars.json chargé');
+        } else if (forced === 'pack') {
+          S.packJson = { text: await f.text(), origin: f.name }; summary.push('pack.json chargé');
+        } else if (forced === 'font' && name.endsWith('.png')) {
+          await loadAscii(new Uint8Array(await f.arrayBuffer()), f.name); summary.push('ascii.png chargé : texte latin exact');
+        } else {
+          loose.push(fileItem(f));
+        }
+      }
+      for (const d of dirItems || []) loose.push(fileItem(d.file, d.path));
+      if (loose.length) {
+        const r = await ingestBatch(loose, loose.length === 1 ? loose[0].path : 'dépôt', false);
+        icons += r.icons; replaced = replaced.concat(r.replaced); S.ignored += r.ignored;
+        const d = describe(r);
+        if (d) summary.push(d);
+      }
+      recompute();
+      const msg = summary.filter(Boolean).join(' · ') || 'Aucun fichier reconnu.';
+      say(msg + (replaced.length ? ' — remplacée(s) : ' + [...new Set(replaced)].join(', ') : ''), summary.length ? 'ok' : 'warn');
+    } catch (e) {
+      recompute();
+      fail(e);
+    }
+  }
+  function describe(r) {
+    const parts = [];
+    if (r.icons) parts.push(r.icons + ' icône(s)');
+    if (r.chars) parts.push('chars.json');
+    if (r.pack) parts.push('pack.json');
+    if (r.ascii) parts.push('ascii.png (texte exact)');
+    if (r.sizes) parts.push('glyph_sizes.bin du client');
+    if (r.ignored) parts.push(r.ignored + ' fichier(s) ignoré(s)');
+    return parts.join(', ');
+  }
+
+  async function readDirEntry(entry, out) {
+    if (entry.isFile) {
+      const file = await new Promise((res, rej) => entry.file(res, rej));
+      out.push({ path: entry.fullPath.replace(/^\//, ''), file });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      for (;;) {
+        const batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+        if (!batch.length) break;
+        for (const e of batch) await readDirEntry(e, out);
+      }
+    }
+  }
+
+  /* ---------- assembly ---------- */
+  function recompute() {
+    const folders = S.icons.map(e => ({ id: e.id, hasTexture: true, image: e.image, unreadable: e.unreadable }));
+    for (const id of S.folders.keys()) if (!S.icons.some(e => e.id === id)) folders.push({ id, hasTexture: false, image: null, unreadable: null });
+    // Two dropped files under the same id cannot exist in BC (one folder per id): putIcon replaces.
+    S.result = L.assemble({
+      folders,
+      packJson: S.packJson ? S.packJson.text : null,
+      charsJson: S.charsJson ? S.charsJson.text : null,
+      assetPaths: [...S.assetPaths],
+      vanillaSizes: S.vanilla ? S.vanilla.sizes : null
+    });
+    FONT = makeFont(S.result);
+    quadCache.clear();
+    renderFiles();
+    renderIcons();
+    renderReport();
+    syncSubjects();
+    renderPreview();
+    renderUse();
+    renderExport();
+  }
+
+  function notesFor(id) { return S.result.notes.filter(n => n.id === id); }
+
+  /* ---------- 1: files ---------- */
+  function renderFiles() {
+    const items = [];
+    items.push([S.icons.length ? 'ok' : '', 'Icônes : ' + (S.icons.length ? S.icons.length : 'aucune') + (S.folders.size ? ' (+ ' + S.folders.size + ' dossier(s) sans texture.png)' : '')]);
+    items.push([S.charsJson ? (S.result.charsBroken ? 'error' : 'ok') : 'warn', 'chars.json : ' + (S.charsJson ? '« ' + S.charsJson.origin + ' »' : 'absent — prédiction d\'un premier assemblage, les caractères réels peuvent différer')]);
+    items.push([S.packJson ? (S.result.fatal.some(f => f.startsWith('pack.json')) ? 'error' : 'ok') : '', 'pack.json : ' + (S.packJson ? '« ' + S.packJson.origin + ' »' : 'absent (aucun caractère imposé)')]);
+    items.push([S.ascii ? 'ok' : '', 'Texte latin : ' + (S.ascii ? 'ascii.png de « ' + S.ascii.origin + ' » (exact)' : 'police web approchée (chargez le .jar 1.8.9 pour l\'exact)')]);
+    if (S.assetPaths.size) items.push(['', 'pack-src/assets : ' + S.assetPaths.size + ' fichier(s) vérifiés contre la police générée']);
+    if (S.ignored) items.push(['', S.ignored + ' fichier(s) ignoré(s) (ni icône, ni chars.json, ni pack.json)']);
+    const ul = $('filesList');
+    ul.innerHTML = '';
+    for (const [k, t] of items) {
+      const li = document.createElement('li'), d = document.createElement('span');
+      d.className = 'dot ' + k; li.append(d, t); ul.appendChild(li);
+    }
+  }
+
+  /* ---------- 2: icons ---------- */
+  function friendly(text) {
+    if (/image haute de/.test(text)) return 'Hauteur refusée : 8, 16, 32 ou 64 px seulement (l\'image est toujours affichée à la hauteur d\'une lettre).';
+    if (/entierement transparente/.test(text)) return 'Image entièrement transparente : rien à dessiner.';
+    if (/cases ; 32 au plus/.test(text)) return 'Trop large : 32 cases au plus (256 px d\'interface), marges transparentes déjà retirées.';
+    if (/identifiant invalide/.test(text)) return 'Identifiant refusé : minuscules, chiffres, « _ », « . », « - » seulement, et pas de préfixe raw_ (il se confondrait avec %beltaria_glyph_raw_…%). Modifiez-le ci-dessus.';
+    if (/texture\.png attendue/.test(text)) return 'Dossier sans texture.png : BeltariaContent le saute.';
+    if (/pas une image lisible|image illisible/.test(text)) return 'Image illisible par Java (PNG, JPEG, GIF ou BMP attendu).';
+    if (/caractere impose/.test(text)) return 'Le caractère imposé dans pack.json chevauche une autre icône imposée, ou sort de U+F900–U+FDFF.';
+    if (/pack\.json : glyphs\./.test(text) && /reserves|hexadecimaux|chaine|objet attendu/.test(text)) return 'Réglage pack.json invalide : l\'icône est laissée de côté plutôt que placée ailleurs.';
+    if (/ne tient plus/.test(text)) return 'Image élargie : elle ne tient plus dans ses anciens caractères et sera déplacée — tout préfixe qui cite l\'ancien caractère est à refaire.';
+    if (/hors de la zone des icones/.test(text)) return 'Caractère retenu d\'avant la 6.4.0 (zone d\'usage privé) : déplacé dans U+F900–U+FDFF, le placeholder ne change pas.';
+    if (/attribue, retenu/.test(text)) return 'Nouvelle icône : premiers caractères libres, retenus dans chars.json.';
+    if (/plus de .* libres consecutifs/.test(text)) return 'Zone pleine : plus assez de caractères consécutifs libres.';
+    if (/absent, reglage ignore/.test(text)) return 'pack.json règle une icône dont le dossier n\'existe pas.';
+    return '';
+  }
+
+  function noteItem(kind, main, bc) {
+    const li = document.createElement('li');
+    li.className = kind;
+    if (main) li.append(main);
+    if (bc) { const s = document.createElement('span'); s.className = 'bc'; s.textContent = bc; li.appendChild(s); }
+    return li;
+  }
+
+  function iconAnalysis(entry) {
+    const r = S.result, id = entry.id, g = r.glyphs[id];
+    const warn = [];
+    const img = entry.image;
+    const trim = img ? L.trimOf(img) : null;
+    if (img && trim && L.HEIGHTS.indexOf(img.height) >= 0) {
+      if (levelStyleOf(id) !== null) {
+        for (const is of L.levelPieceIssues(trim.width, img.height)) {
+          if (is.code === 'wide') warn.push(['warn', 'Pièce de badge plus large qu\'une demi-case (' + trim.width + ' px pour ' + img.height + ' de haut, ' + is.half + ' au plus) : le client la compte pleine et un trou la sépare de la suivante (LevelBadge, README).']);
+          else warn.push(['warn', 'Pièce de badge de largeur ' + (img.height === 16 ? 'impaire' : 'non multiple de ' + is.multiple) + ' (' + trim.width + ' px) : dessinée sur ' + fmt(is.drawn) + ' px d\'interface, la suivante commence à ' + is.next + ' et recouvre sa dernière colonne (README : largeur paire pour 16 px de haut).']);
+        }
+      } else {
+        const gap = L.lastCellGap(trim.width, img.height);
+        if (gap) warn.push(['', 'Dernière case large de ' + gap.last + ' px sur ' + img.height + ' (plus d\'une demi-case) : déclarée pleine, le client avance de 8 px d\'interface — ' + fmt(gap.gap) + ' px de vide après l\'icône, avant l\'espacement habituel.']);
+      }
+      if (trim.marginLeft || trim.marginRight) warn.push(['', 'Marges transparentes retirées par BeltariaContent : ' + trim.marginLeft + ' px à gauche, ' + trim.marginRight + ' px à droite.']);
+    }
+    return { g, trim, warn };
+  }
+  function levelStyleOf(id) {
+    const ids = S.icons.map(e => e.id).concat([...S.folders.keys()]);
+    const st = L.levelStyles(ids).find(s => s.present.indexOf(id) >= 0);
+    return st ? st.style : null;
+  }
+  function fmt(n) { return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, '').replace('.', ','); }
+
+  function renderIcons() {
+    const box = $('iconList');
+    box.innerHTML = '';
+    const r = S.result;
+    const entries = S.icons.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const orphanFolders = [...S.folders.keys()].filter(id => !S.icons.some(e => e.id === id)).sort();
+    if (!entries.length && !orphanFolders.length) { box.innerHTML = '<p class="empty">Aucune icône chargée.</p>'; return; }
+    for (const entry of entries) {
+      const a = iconAnalysis(entry);
+      const div = document.createElement('div');
+      div.className = 'icon' + (a.g ? '' : ' bad') + (S.selected === 'g:' + entry.id ? ' sel' : '');
+      div.dataset.id = entry.id;
+      div.dataset.testid = 'icon';
+      const head = document.createElement('div');
+      head.className = 'icon-head';
+      if (entry.image) head.appendChild(thumbCanvas(entry, a.trim));
+      const idBox = document.createElement('label');
+      idBox.className = 'icon-id';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.value = entry.id; inp.spellcheck = false;
+      inp.setAttribute('aria-label', 'Identifiant (dossier glyphs/<id>)');
+      inp.dataset.key = String(entry.key);
+      inp.addEventListener('change', () => renameIcon(entry.key, inp.value.trim()));
+      const pre = document.createElement('span'); pre.className = 'muted small'; pre.textContent = 'glyphs/';
+      idBox.append(pre, inp);
+      head.appendChild(idBox);
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'btn small'; rm.textContent = 'Retirer';
+      rm.addEventListener('click', () => { S.icons = S.icons.filter(e => e.key !== entry.key); recompute(); });
+      head.appendChild(rm);
+      div.appendChild(head);
+
+      const chips = document.createElement('div');
+      chips.className = 'chips';
+      const chip = (cls, text, testid) => { const c = document.createElement('span'); c.className = 'chip ' + cls; c.textContent = text; if (testid) c.dataset.testid = testid; chips.appendChild(c); };
+      if (a.g) {
+        chip('ok', L.codePoint(a.g.first) + (a.g.cells > 1 ? '–' + L.codePoint(a.g.first + a.g.cells - 1) : ''), 'char');
+        chip('', a.g.cells + ' case' + (a.g.cells > 1 ? 's' : ''));
+      } else {
+        chip('error', 'laissée de côté', 'char');
+      }
+      if (entry.image) chip('', entry.image.width + '×' + entry.image.height + ' px');
+      div.appendChild(chips);
+
+      if (a.g && r.atlas) {
+        const dl = document.createElement('dl');
+        dl.className = 'kv';
+        const bytes = [];
+        for (let i = 0; i < a.g.cells; i++) bytes.push(L.hex(r.atlas.sizes[a.g.first + i]).slice(2));
+        const sizeOf = c => FONT.sizes[c];
+        const kv = [
+          ['Largeur utile', a.trim.width + ' px (marges ' + a.trim.marginLeft + ' | ' + a.trim.marginRight + ')'],
+          ['glyph_sizes', bytes.join(' ') + ' (+ U+FAFF = 50)'],
+          ['Avance dessinée', L.drawnAdvance(a.g.raw, sizeOf, () => 0) + ' px GUI'],
+          ['getStringWidth', L.stringWidth(a.g.raw, sizeOf, () => 0) + ' px GUI']
+        ];
+        for (const [k, v] of kv) {
+          const dt = document.createElement('dt'), dd = document.createElement('dd');
+          dt.textContent = k; dd.textContent = v; dl.append(dt, dd);
+        }
+        const det = document.createElement('details');
+        det.style.marginTop = '6px';
+        const sum = document.createElement('summary');
+        sum.textContent = 'Largeurs : ' + bytes.join(' ') + ' · ' + kv[2][1];
+        det.append(sum, dl);
+        div.appendChild(det);
+      }
+
+      const ul = document.createElement('ul');
+      ul.className = 'notes';
+      for (const n of notesFor(entry.id)) ul.appendChild(noteItem(n.level, friendly(n.text), n.text));
+      const pieceOf = levelStyleOf(entry.id);
+      if (pieceOf) ul.appendChild(noteItem('', 'Pièce du badge de niveau « ' + pieceOf + ' ».'));
+      for (const [k, t] of a.warn) ul.appendChild(noteItem(k, t));
+      if (ul.children.length) div.appendChild(ul);
+      div.addEventListener('click', ev => {
+        if (ev.target.closest('input,button')) return;
+        if (a.g) { S.selected = 'g:' + entry.id; syncSubjects(); renderIcons(); renderPreview(); renderUse(); }
+      });
+      box.appendChild(div);
+    }
+    for (const id of orphanFolders) {
+      const div = document.createElement('div');
+      div.className = 'icon bad';
+      div.dataset.id = id;
+      div.dataset.testid = 'icon';
+      const t = document.createElement('div');
+      t.className = 'mono';
+      t.textContent = 'glyphs/' + id + '/';
+      div.appendChild(t);
+      const ul = document.createElement('ul');
+      ul.className = 'notes';
+      for (const n of notesFor(id)) ul.appendChild(noteItem(n.level, friendly(n.text), n.text));
+      div.appendChild(ul);
+      box.appendChild(div);
+    }
+  }
+
+  function renameIcon(key, id) {
+    const e = S.icons.find(x => x.key === key);
+    if (!e || !id || id === e.id) return renderIcons();
+    if (S.icons.some(x => x.id === id && x.key !== key)) { say('« ' + id + ' » existe déjà : un seul dossier glyphs/' + id + '/.', 'error'); return renderIcons(); }
+    if (S.selected === 'g:' + e.id) S.selected = 'g:' + id;
+    e.id = id;
+    recompute();
+  }
+
+  function thumbCanvas(entry, trim) {
+    const img = entry.image;
+    const zoom = Math.max(1, Math.min(4, Math.floor(64 / Math.max(1, img.height)), Math.floor(260 / Math.max(1, img.width))));
+    const c = document.createElement('canvas');
+    c.className = 'thumb pixel';
+    c.width = img.width * zoom; c.height = img.height * zoom;
+    c.style.width = c.width + 'px';
+    const off = document.createElement('canvas');
+    off.width = img.width; off.height = img.height;
+    off.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0);
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, c.width, c.height);
+    if (trim && L.HEIGHTS.indexOf(img.height) >= 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, trim.left * zoom, c.height);
+      ctx.fillRect((trim.right + 1) * zoom, 0, c.width - (trim.right + 1) * zoom, c.height);
+      ctx.fillStyle = 'rgba(232,121,249,0.9)';
+      for (let x = trim.left + img.height; x <= trim.right; x += img.height) ctx.fillRect(x * zoom, 0, 1, c.height);
+    }
+    c.title = 'Clic : prévisualiser';
+    return c;
+  }
+
+  /* ---------- 5: report ---------- */
+  function renderReport() {
+    const r = S.result, ul = $('reportNotes');
+    ul.innerHTML = '';
+    for (const f of r.fatal) ul.appendChild(noteItem('error', f.startsWith('Chemin deja present') ? 'Collision : ce fichier existe déjà sous pack-src/assets/. BeltariaContent refuse alors tout l\'assemblage — supprimez-le, la police est générée.' : 'pack.json bloque l\'assemblage.', f));
+    for (const n of r.notes) ul.appendChild(noteItem(n.level, '', n.text));
+    const retired = r.allocation ? Object.keys(r.allocation.remembered).filter(id => !r.glyphs[id] && !r.images[id]) : [];
+    if (retired.length) ul.appendChild(noteItem('', 'Caractères retenus pour des icônes absentes (retrouvés si leur dossier revient) : ' + retired.join(', ') + '.'));
+    if (!ul.children.length) ul.appendChild(noteItem('ok', S.icons.length ? 'Rien à signaler.' : 'Aucune icône : BeltariaContent n\'écrirait aucun fichier de police.'));
+
+    const state = $('charsState');
+    if (r.charsBroken) state.textContent = 'chars.json illisible : BeltariaContent ne le réécrit pas et ne sert aucune icône tant qu\'il n\'est pas réparé.';
+    else if (r.charsOut == null) state.textContent = 'Rien à écrire (aucune icône, aucune mémoire).';
+    else if (!r.charsInput) state.textContent = 'Sans chars.json chargé : voici le fichier d\'un premier assemblage. Chargez pack-src/glyphs/chars.json pour une prédiction fidèle.';
+    else state.textContent = r.charsChanged ? 'Modifié par rapport au chars.json chargé : BeltariaContent le réécrirait — à commiter.' : 'Identique au chars.json chargé : BeltariaContent ne le réécrirait pas.';
+    $('charsOut').textContent = r.charsOut || '';
+    $('charsOut').hidden = !r.charsOut;
+
+    const box = $('pagesInfo');
+    box.innerHTML = '';
+    if (!r.atlas || !r.atlas.pages.length) { box.innerHTML = '<p class="muted">Aucune page.</p>'; return; }
+    for (const pg of r.atlas.pages) {
+      const fig = document.createElement('figure');
+      const c = document.createElement('canvas');
+      c.className = 'pixel';
+      c.width = pg.dim; c.height = pg.dim;
+      c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pg.data), pg.dim, pg.dim), 0, 0);
+      const cap = document.createElement('figcaption');
+      const chars = pg.cells.map(x => x.character);
+      cap.textContent = pg.path.replace(/^.*\//, '') + ' — cases de ' + pg.side + ' px — ' + (chars.length ? chars.length + ' case(s) ' + L.codePoint(chars[0]) + (chars.length > 1 ? '…' + L.codePoint(chars[chars.length - 1]) : '') : 'vide (page du recul U+FAFF)') + (pg.cells.some(x => x.scale > 1) ? ' ; images plus basses agrandies ×' + [...new Set(pg.cells.filter(x => x.scale > 1).map(x => x.scale))].join('/×') : '');
+      fig.append(c, cap);
+      box.appendChild(fig);
+    }
+  }
+
+  /* ---------- 1.8.9 FontRenderer port: renderStringAtPos / renderDefaultChar / renderUnicodeChar ---------- */
+  let FONT = null;
+  const quadCache = new Map();
+  let fontSerial = 0;
+  function makeFont(res) {
+    const sizes = new Uint8Array(L.SIZES_LENGTH);
+    const pages = new Map();
+    if (res && res.atlas && res.atlas.sizes) {
+      for (const pg of res.atlas.pages) {
+        pages.set(pg.page, pg);
+        const first = pg.page << 8;
+        for (let i = 0; i < 256; i++) sizes[first + i] = res.atlas.sizes[first + i];
+      }
+    }
+    return { sizes, pages, serial: ++fontSerial };
+  }
+  const isOurs = c => FONT.pages.has(c >> 8);
+
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  function webCharWidth(ch) {
+    measureCtx.font = '8px MinecraftPreview, monospace';
+    return Math.max(1, Math.round(measureCtx.measureText(ch).width));
+  }
+  function asciiWidth(j, c) { return S.ascii ? S.ascii.widths[j] : webCharWidth(String.fromCharCode(c)); }
+  /** getCharWidth for the preview: our pages exact, ascii.png exact when loaded, other text approximated. */
+  function uiCharWidth(c) {
+    if (c === 167) return -1;
+    if (c === 32) return 4;
+    const j = L.asciiIndex(c);
+    if (c > 0 && j !== -1) return asciiWidth(j, c);
+    if (isOurs(c)) return L.unicodeCharWidth(FONT.sizes[c]);
+    return webCharWidth(String.fromCharCode(c));
+  }
+  /** getStringWidth with the preview's widths. */
+  function uiStringWidth(text) {
+    let w = 0, bold = false;
+    for (let i = 0; i < text.length; i++) {
+      let k = uiCharWidth(text.charCodeAt(i));
+      if (k < 0 && i < text.length - 1) {
+        const c = text.charCodeAt(++i);
+        if (c !== 108 && c !== 76) { if (c === 114 || c === 82) bold = false; } else bold = true;
+        k = 0;
+      }
+      w += k;
+      if (bold && k > 0) w++;
+    }
+    return w;
+  }
+
+  /**
+   * One textured quad as GL draws it: a pixel is covered when its centre falls inside the
+   * (italic-sheared) quad, and samples the nearest texel at its interpolated UV. k = UV units
+   * per GUI pixel (2 for unicode pages, 1 for ascii.png); texPerUnit = texture pixels per UV unit.
+   * Positions are whole GUI pixels (no unicode flag), so the result is cached per (char, colour, scale).
+   */
+  function quad(key, tex, texDim, texPerUnit, u0, v0, k, quadW, italic, rgb, s) {
+    const ck = key + '|' + rgb + '|' + s + '|' + (italic ? 1 : 0);
+    if (quadCache.has(ck)) return quadCache.get(ck);
+    let res = null;
+    if (quadW > 0) {
+      const f5 = italic ? 1 : 0, h = 7.99;
+      const x0 = Math.floor(-f5 * s) - 1, x1 = Math.ceil((quadW + f5) * s) + 1, H = Math.ceil(h * s), W = x1 - x0;
+      const img = new ImageData(W, H), d = img.data, t = tex;
+      const r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+      let any = false;
+      for (let py = 0; py < H; py++) {
+        const gy = (py + 0.5) / s;
+        if (gy >= h) continue;
+        const xl = f5 - 2 * f5 * (gy / h);
+        const ty = Math.min(texDim - 1, Math.floor((v0 + gy * k) * texPerUnit));
+        for (let px = 0; px < W; px++) {
+          const gx = (x0 + px + 0.5) / s;
+          if (gx < xl || gx >= xl + quadW) continue;
+          const tx = Math.min(texDim - 1, Math.floor((u0 + (gx - xl) * k) * texPerUnit));
+          const si = (ty * texDim + tx) * 4, a = t[si + 3];
+          if (!a) continue;
+          const di = (py * W + px) * 4;
+          d[di] = t[si] * r / 255; d[di + 1] = t[si + 1] * g / 255; d[di + 2] = t[si + 2] * b / 255; d[di + 3] = a;
+          any = true;
+        }
+      }
+      if (any) {
+        const c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        c.getContext('2d').putImageData(img, 0, 0);
+        res = { canvas: c, ox: x0 };
+      }
+    }
+    quadCache.set(ck, res);
+    return res;
+  }
+
+  /** renderChar: returns the float advance; draws at st.x, st.y (GUI px). */
+  function renderChar(ctx, code, j, st, s) {
+    if (code === 32) return 4;
+    if (j !== -1) {
+      if (S.ascii) {                                            // renderDefaultChar
+        const a = S.ascii, l = a.widths[j], f1 = l - 0.01;
+        const q = quad('a' + j + ':' + a.size, a.data, a.size, a.size / 128, (j % 16) * 8, ((j / 16) | 0) * 8, 1, f1 - 1, st.italic, st.rgb, s);
+        if (q) ctx.drawImage(q.canvas, st.x * s + q.ox, st.y * s);
+        return l;
+      }
+      return webChar(ctx, code, st, s);
+    }
+    if (!isOurs(code)) return webChar(ctx, code, st, s);
+    const b = FONT.sizes[code];                                 // renderUnicodeChar
+    if (b === 0) return 0;
+    const start = L.javaStart(b), f1 = (b & 15) + 1, f4 = f1 - start - 0.02;
+    const pg = FONT.pages.get(code >> 8);
+    const u0 = (code % 16) * 16 + start, v0 = ((code & 255) >> 4) * 16;
+    const q = quad('u' + code + ':' + FONT.serial, pg.data, pg.dim, pg.side / 16, u0, v0, 2, f4 / 2, st.italic, st.rgb, s);
+    if (q) ctx.drawImage(q.canvas, st.x * s + q.ox, st.y * s);
+    return (f1 - start) / 2 + 1;
+  }
+  function webChar(ctx, code, st, s) {
+    const ch = String.fromCharCode(code);
+    ctx.save();
+    ctx.translate(st.x * s, st.y * s);
+    if (st.italic) ctx.transform(1, 0, -0.25, 1, s, 0);
+    ctx.fillStyle = '#' + st.rgb.toString(16).padStart(6, '0');
+    ctx.font = (8 * s) + 'px MinecraftPreview, monospace';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(ch, 0, 7 * s);
+    ctx.restore();
+    return webCharWidth(ch);
+  }
+
+  /** renderStringAtPos (FontRenderer 1.8.9). Returns the final x. */
+  function renderString(ctx, text, x, y, color, shadow, s) {
+    if (shadow) color = (color & 0xFCFCFC) >> 2;
+    const st = { x, y, rgb: color & 0xFFFFFF, bold: false, italic: false, under: false, strike: false };
+    const base = st.rgb;
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      if (code === 167 && i + 1 < text.length) {
+        let k = L.STYLE_CODES.indexOf(text[i + 1].toLowerCase());
+        if (k < 16) {
+          st.bold = st.italic = st.under = st.strike = false;
+          if (k < 0 || k > 15) k = 15;
+          if (shadow) k += 16;
+          st.rgb = COLORS[k];
+        } else if (k === 17) st.bold = true;
+        else if (k === 18) st.strike = true;
+        else if (k === 19) st.under = true;
+        else if (k === 20) st.italic = true;
+        else if (k === 21) { st.bold = st.italic = st.under = st.strike = false; st.rgb = base; }
+        i++;
+        continue;
+      }
+      const j = L.asciiIndex(code);
+      const flag = (code === 0 || j === -1) && shadow;
+      if (flag) { st.x -= 1; st.y -= 1; }
+      let f = renderChar(ctx, code, j, st, s);
+      if (flag) { st.x += 1; st.y += 1; }
+      if (st.bold) {
+        st.x += 1;
+        if (flag) { st.x -= 1; st.y -= 1; }
+        renderChar(ctx, code, j, st, s);
+        st.x -= 1;
+        if (flag) { st.x += 1; st.y += 1; }
+        f++;
+      }
+      const css = '#' + st.rgb.toString(16).padStart(6, '0');
+      if (st.strike) { ctx.fillStyle = css; ctx.fillRect(st.x * s, (st.y + 3) * s, f * s, s); }
+      if (st.under) { ctx.fillStyle = css; ctx.fillRect((st.x - 1) * s, (st.y + 8) * s, (f + 1) * s, s); }
+      st.x += Math.trunc(f);
+    }
+    return st.x;
+  }
+  function drawString(ctx, text, x, y, color, shadow, s) {
+    if (shadow) renderString(ctx, text, x + 1, y + 1, color, true, s);
+    return renderString(ctx, text, x, y, color, false, s);
+  }
+  function prepCanvas(cv, w, h, s) {
+    cv.width = Math.max(1, Math.ceil(w * s)); cv.height = Math.max(1, Math.ceil(h * s));
+    cv.style.width = cv.width + 'px';
+    cv.style.height = cv.height + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    return ctx;
+  }
+  function rect(ctx, s, x0, y0, x1, y1, argb) {
+    const a = ((argb >>> 24) & 255) / 255;
+    ctx.fillStyle = 'rgba(' + ((argb >> 16) & 255) + ',' + ((argb >> 8) & 255) + ',' + (argb & 255) + ',' + a + ')';
+    ctx.fillRect(Math.min(x0, x1) * s, Math.min(y0, y1) * s, Math.abs(x1 - x0) * s, Math.abs(y1 - y0) * s);
+  }
+
+  /* ---------- 3: preview ---------- */
+  function subjects() {
+    const r = S.result, list = [];
+    for (const id of Object.keys(r.glyphs).sort()) list.push({ key: 'g:' + id, label: id + ' (' + r.glyphs[id].label.replace(/^\S+ /, '') + ')' });
+    const ids = S.icons.map(e => e.id).concat([...S.folders.keys()]);
+    for (const st of L.levelStyles(ids)) {
+      const missing = L.PIECES.map(p => st.style + '_' + p).filter(id => !r.glyphs[id]);
+      list.push({ key: 'l:' + st.style, label: 'badge ' + st.style + (missing.length ? ' (incomplet : ' + missing.length + ' pièce(s))' : ''), missing });
+    }
+    return list;
+  }
+  function syncSubjects() {
+    const sel = $('pvSubject'), list = subjects();
+    sel.innerHTML = '';
+    for (const it of list) { const o = document.createElement('option'); o.value = it.key; o.textContent = it.label; sel.appendChild(o); }
+    if (!list.some(it => it.key === S.selected)) {
+      const firstLevel = list.find(it => it.key.startsWith('l:') && !(it.missing && it.missing.length));
+      S.selected = list.length ? list[0].key : '';
+      if (!list.some(it => it.key.startsWith('g:')) && firstLevel) S.selected = firstLevel.key;
+    }
+    sel.value = S.selected;
+    sel.disabled = !list.length;
+  }
+
+  /** The strings each place would show, as BC's placeholders resolve them. */
+  function subjectTexts() {
+    const r = S.result, key = S.selected;
+    if (!key) return null;
+    if (key.startsWith('g:')) {
+      const id = key.slice(2), g = r.glyphs[id];
+      if (!g) return null;
+      const tagPrefix = g.raw + ' ' + SECTION + 'c';
+      return {
+        kind: 'glyph', id, g,
+        chat: [g.text + ' ' + SECTION + '7Steve' + SECTION + 'f: Salut tout le monde !', L.commandLines({ [id]: g })[1]],
+        tab: g.text + ' ' + SECTION + 'cSteve',
+        tagPrefix, tagName: 'Steve',
+        board: [[g.text + ' ' + SECTION + 'fGrade', '3'], [SECTION + 'fPièces', '1250'], [SECTION + 'fEn ligne', '37']],
+        lore: [SECTION + 'bÉpée de Beltaria', SECTION + '5' + SECTION + 'o' + g.raw + ' brut : teinté, penché', SECTION + '5' + SECTION + 'o' + SECTION + 'f' + g.raw + SECTION + '7 précédé de &f']
+      };
+    }
+    const style = key.slice(2), level = $('pvLevel').value;
+    const params = L.LEVEL_PREFIX + style + '_' + level;
+    const badge = L.placeholder(r.glyphs, params);
+    return {
+      kind: 'level', style, level, badge, resolved: L.resolve(r.glyphs, params) != null,
+      chat: [badge + ' ' + SECTION + '7Steve' + SECTION + 'f: Salut tout le monde !', SECTION + '7Steve passe au niveau ' + badge],
+      tab: badge + ' ' + SECTION + 'fSteve',
+      tagPrefix: badge, tagName: SECTION + 'fSteve',
+      board: [[badge + ' ' + SECTION + 'fNiveau', '3'], [SECTION + 'fPièces', '1250'], [SECTION + 'fEn ligne', '37']],
+      lore: [SECTION + 'bÉpée de Beltaria', SECTION + '5' + SECTION + 'oNiveau requis : ' + badge]
+    };
+  }
+
+  function renderPreview() {
+    const s = +$('pvScale').value;
+    const t = subjectTexts();
+    const ids = ['pvChat', 'pvTab', 'pvTag', 'pvBoard', 'pvLore'];
+    if (!t) {
+      for (const id of ids) prepCanvas($(id), 1, 1, 1);
+      $('pvTagInfo').textContent = '';
+      $('pvNote').textContent = 'Ajoutez une icône valide (ou les pièces d\'un badge de niveau) pour la voir en jeu.';
+      return;
+    }
+    // Chat: GuiNewChat, background alpha 127, drawStringWithShadow.
+    const chatW = Math.max(200, ...t.chat.map(x => uiStringWidth(x) + 4));
+    let ctx = prepCanvas($('pvChat'), chatW, t.chat.length * 9, s);
+    t.chat.forEach((line, i) => {
+      rect(ctx, s, 0, i * 9, chatW, (i + 1) * 9, 0x7F000000);
+      drawString(ctx, line, 2, i * 9 + 1, 0xFFFFFF, true, s);
+    });
+
+    // Tab: GuiPlayerTabOverlay, background 0x80000000, entry 0x20FFFFFF, 8x8 head, name with shadow, ping.
+    const nameW = uiStringWidth(t.tab);
+    const entryW = 9 + nameW + 13 + 2;
+    const tw = entryW + 4;
+    ctx = prepCanvas($('pvTab'), tw, 12, s);
+    rect(ctx, s, 0, 0, tw, 12, 0x80000000);
+    rect(ctx, s, 2, 2, 2 + entryW, 10, 0x20FFFFFF);
+    drawHead(ctx, s, 2, 2);
+    drawString(ctx, t.tab, 11, 2, 0xFFFFFF, true, s);
+    drawPing(ctx, s, 2 + entryW - 11, 2);
+
+    // Nametag: RendererLivingEntity.renderLivingLabel, background 0x40000000, text centred, no shadow.
+    const max = L.NAMETAG_PREFIX_MAX;
+    const shown = t.tagPrefix.length > max ? t.tagPrefix.slice(0, max) : t.tagPrefix;
+    const tagText = shown + t.tagName;
+    const w = uiStringWidth(tagText), half = Math.trunc(w / 2);
+    const pad = 6, tgW = 2 * half + 2 + pad * 2;
+    ctx = prepCanvas($('pvTag'), tgW, 12, s);
+    const cx = pad + half + 1;
+    rect(ctx, s, cx - half - 1, 1, cx + half + 1, 10, 0x40000000);
+    drawString(ctx, tagText, cx + Math.trunc(-w / 2), 2, 0xFFFFFF, false, s);
+    const info = $('pvTagInfo');
+    info.textContent = 'Préfixe d\'équipe : ' + t.tagPrefix.length + '/' + max + ' caractères' + (t.tagPrefix.length > max ? ' — trop long, le 1.8 n\'en garde que ' + max + ' (aperçu tronqué)' : '') + (t.kind === 'glyph' ? ' (tagprefix « %beltaria_glyph_raw_' + t.id + '% &c »)' : '');
+    info.className = 'info' + (t.tagPrefix.length > max ? ' over' : '');
+    info.dataset.length = String(t.tagPrefix.length);
+
+    // Scoreboard: GuiIngame.renderScoreboard.
+    const title = SECTION + 'e' + SECTION + 'lBELTARIA';
+    let bw = uiStringWidth(title);
+    for (const [n, sc] of t.board) bw = Math.max(bw, uiStringWidth(n + ': ' + SECTION + 'c' + sc));
+    const BH = 9 * (t.board.length + 1) + 1, BW = bw + 4;
+    ctx = prepCanvas($('pvBoard'), BW, BH, s);
+    rect(ctx, s, 0, 0, BW, 9, 0x60000000);
+    rect(ctx, s, 0, 9, BW, 10, 0x50000000);
+    drawString(ctx, title, 2 + Math.trunc(bw / 2) - Math.trunc(uiStringWidth(title) / 2), 1, 0xFFFFFF, false, s);
+    t.board.forEach(([n, sc], i) => {
+      const y = 10 + i * 9;
+      rect(ctx, s, 0, y, BW, y + 9, 0x50000000);
+      drawString(ctx, n, 2, y, 0xFFFFFF, false, s);
+      const sv = SECTION + 'c' + sc;
+      drawString(ctx, sv, BW - uiStringWidth(sv), y, 0xFFFFFF, false, s);
+    });
+
+    // Lore: GuiScreen.drawHoveringText; ItemStack.getTooltip prefixes lore with §5§o.
+    let lw = 0;
+    for (const x of t.lore) lw = Math.max(lw, uiStringWidth(x));
+    const th = 8 + (t.lore.length - 1) * 10 + 2, ox = 4, oy = 4;
+    ctx = prepCanvas($('pvLore'), lw + 8, th + 8, s);
+    const bg = 0xF0100010, b1 = 0x505000FF, b2 = 0x5028007F;
+    rect(ctx, s, ox - 3, oy - 4, ox + lw + 3, oy - 3, bg);
+    rect(ctx, s, ox - 3, oy + th + 3, ox + lw + 3, oy + th + 4, bg);
+    rect(ctx, s, ox - 3, oy - 3, ox + lw + 3, oy + th + 3, bg);
+    rect(ctx, s, ox - 4, oy - 3, ox - 3, oy + th + 3, bg);
+    rect(ctx, s, ox + lw + 3, oy - 3, ox + lw + 4, oy + th + 3, bg);
+    rect(ctx, s, ox - 3, oy - 2, ox - 2, oy + th + 2, b1);
+    rect(ctx, s, ox + lw + 2, oy - 2, ox + lw + 3, oy + th + 2, b1);
+    rect(ctx, s, ox - 3, oy - 3, ox + lw + 3, oy - 2, b1);
+    rect(ctx, s, ox - 3, oy + th + 2, ox + lw + 3, oy + th + 3, b2);
+    let ly = oy;
+    t.lore.forEach((line, i) => { drawString(ctx, line, ox, ly, 0xFFFFFF, true, s); ly += i === 0 ? 12 : 10; });
+
+    const note = [];
+    if (t.kind === 'level' && !t.resolved) note.push('Ce niveau ne se résout pas (' + (L.levelDigits(L.javaTrim(t.level)) == null ? 'pas un nombre de 1 à 9 chiffres' : 'pièce manquante') + ') : PlaceholderAPI laisse le placeholder tel quel, comme ci-dessus.');
+    note.push(S.ascii ? 'Texte latin rendu avec ascii.png (exact).' : 'Texte latin approché (police web) : chargez le .jar 1.8.9 ou ascii.png pour l\'exact. Les icônes sont rendues comme en jeu : pages et largeurs prévues, recul d\'un pixel entre les cases.');
+    note.push('Canevas en pixels réels, à l\'échelle GUI choisie.');
+    $('pvNote').textContent = note.join(' ');
+  }
+  function drawHead(ctx, s, x, y) {
+    const skin = ['#6b4a2f', '#6b4a2f', '#6b4a2f', '#6b4a2f', '#6b4a2f', '#6b4a2f', '#6b4a2f', '#6b4a2f'];
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+      ctx.fillStyle = j < 2 ? skin[i] : (j === 4 && (i === 1 || i === 6)) ? (i === 1 ? '#fff' : '#3b3bb5') : (j === 4 && (i === 2 || i === 5)) ? (i === 2 ? '#3b3bb5' : '#fff') : (j === 6 && i > 1 && i < 6) ? '#7a4a33' : '#c8936e';
+      ctx.fillRect((x + i) * s, (y + j) * s, s, s);
+    }
+  }
+  function drawPing(ctx, s, x, y) {
+    for (let i = 0; i < 5; i++) {
+      const h = 2 + i;
+      ctx.fillStyle = '#1f9d1f';
+      ctx.fillRect((x + i * 2) * s, (y + 8 - h) * s, s, h * s);
+    }
+  }
+
+  /* ---------- 4: use ---------- */
+  function renderUse() {
+    const box = $('useBox');
+    box.innerHTML = '';
+    const r = S.result, key = S.selected;
+    if (!key) { box.innerHTML = '<p class="empty">Choisissez une icône valide.</p>'; return; }
+    const rows = [];
+    let yaml = '', plain = '';
+    const notes = [];
+    if (key.startsWith('g:')) {
+      const id = key.slice(2), g = r.glyphs[id];
+      if (!g) { box.innerHTML = '<p class="empty">Icône laissée de côté.</p>'; return; }
+      rows.push(['%beltaria_glyph_' + id + '%', '§f + icône : garde ses couleurs', g.text.length, '3 × ' + g.cells + ' cases', '%beltaria_glyph_' + id + '%']);
+      rows.push(['%beltaria_glyph_raw_' + id + '%', 'icône seule : prend la couleur qui précède', g.raw.length, '3 × ' + g.cells + ' − 2', '%beltaria_glyph_raw_' + id + '%']);
+      rows.push([L.escaped(g.raw), 'séquence YAML, sans PlaceholderAPI (entre guillemets doubles)', g.raw.length, '', L.escaped(g.raw)]);
+      const group = id.charAt(0).toUpperCase() + id.slice(1);
+      yaml = '# TAB, groups.yml (avec PlaceholderAPI)\n' + group + ':\n  tabprefix: "%beltaria_glyph_' + id + '% &c"\n  tagprefix: "%beltaria_glyph_raw_' + id + '% &c"';
+      plain = '# YAML sans PlaceholderAPI (items.yml, autres plugins) : guillemets DOUBLES\nprefix: "&f' + L.escaped(g.raw) + ' &c"\nlore:\n  - "&f' + L.escaped(g.raw) + ' &7Réservé au grade ' + group + '"';
+      const tag = g.raw.length + 3;
+      notes.push([tag > L.NAMETAG_PREFIX_MAX ? 'error' : 'ok', 'Nametag : le tagprefix ci-dessus fait ' + tag + ' caractères une fois résolu (' + L.NAMETAG_PREFIX_MAX + ' au plus en 1.8).' + (tag > L.NAMETAG_PREFIX_MAX ? ' Raccourcissez l\'image ou retirez « &c ».' : '')]);
+      notes.push(['', 'Ligne de /content glyphs : ' + L.commandLines({ [id]: g })[1].replace(/§./g, '').replace(/[-﷿]/g, '').trim() + ' (rendue dans le chat ci-dessus).']);
+    } else {
+      const style = key.slice(2), level = $('pvLevel').value;
+      const badge = L.levelRender(r.glyphs, style, level);
+      const digits = L.levelDigits(L.javaTrim(level));
+      const ph = '%beltaria_level_' + style + '_' + level + '%';
+      rows.push([ph, badge ? 'badge, précédé de §f' : 'ne se résout pas : reste tel quel en jeu', badge ? badge.length : '—', digits ? '3 × ' + digits.length + ' chiffres + 6' : '', ph]);
+      rows.push(['%beltaria_level_' + style + '_{player_level}%', 'le niveau pris à un autre placeholder', '', '3 × chiffres + 6', '%beltaria_level_' + style + '_{player_level}%']);
+      if (badge) rows.push(['&f' + L.escaped(badge.slice(2)), 'ce niveau en séquence YAML, sans PlaceholderAPI', badge.length, '', '&f' + L.escaped(badge.slice(2))]);
+      yaml = '# TAB, groups.yml (avec PlaceholderAPI)\nJoueur:\n  tabprefix: "%beltaria_level_' + style + '_{player_level}% &f"';
+      const missing = L.PIECES.map(p => style + '_' + p).filter(id => !r.glyphs[id]);
+      if (missing.length) notes.push(['error', 'Pièces manquantes ou laissées de côté : ' + missing.join(', ') + '. Un niveau qui en a besoin laisse le placeholder tel quel.']);
+      else notes.push(['ok', 'Style complet : les 12 pièces sont placées.']);
+      notes.push(['', 'Coût : 3 caractères par chiffre, plus 6 — 15 pour trois chiffres, ça tient dans un préfixe de nametag ; quatre chiffres n\'y tiennent plus (le tab n\'a pas cette limite).']);
+    }
+    notes.push(['warn', 'items.yml ne lit pas les placeholders : utilisez la séquence \\u… entre guillemets doubles (précédée de &f pour garder les couleurs).']);
+    notes.push(['', 'Les joueurs ne peuvent pas taper ces caractères : U+E000–U+FDFF est retiré du chat, des commandes, panneaux, livres et noms d\'enclume (GlyphInputFilter), sauf avec beltaria.content.glyphs.bypass.']);
+
+    const table = document.createElement('table');
+    table.className = 'forms';
+    table.innerHTML = '<thead><tr><th>Texte à écrire</th><th class="c">Coût</th><th class="a"></th></tr></thead>';
+    const tb = document.createElement('tbody');
+    rows.forEach(([form, desc, cost, formula, copy], i) => {
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td');
+      const code = document.createElement('code'); code.textContent = form; code.dataset.testid = 'form-' + i;
+      const d = document.createElement('div'); d.className = 'muted small'; d.textContent = desc;
+      td1.append(code, d);
+      const td2 = document.createElement('td'); td2.className = 'c';
+      td2.textContent = cost === '' ? '' : String(cost);
+      td2.dataset.testid = 'cost-' + i;
+      if (formula) { const f = document.createElement('div'); f.className = 'muted small'; f.textContent = formula; td2.appendChild(f); }
+      const td3 = document.createElement('td'); td3.className = 'a';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small'; b.textContent = 'Copier';
+      b.addEventListener('click', () => copyText(copy, 'Texte'));
+      td3.appendChild(b);
+      tr.append(td1, td2, td3);
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+    box.appendChild(table);
+    for (const text of [yaml, plain]) {
+      if (!text) continue;
+      const pre = document.createElement('pre'); pre.className = 'snippet'; pre.textContent = text;
+      box.appendChild(pre);
+    }
+    const ul = document.createElement('ul'); ul.className = 'notes';
+    for (const [k, t] of notes) ul.appendChild(noteItem(k, t));
+    box.appendChild(ul);
+  }
+
+  async function copyText(text, label) {
+    try {
+      await navigator.clipboard.writeText(text);
+      say(label + ' copié : ' + text, 'ok');
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand && document.execCommand('copy');
+      ta.remove();
+      if (ok) say(label + ' copié.', 'ok'); else say('Copie refusée par le navigateur : sélectionnez le texte et copiez à la main.', 'warn');
+    }
+  }
+
+  /* ---------- 6: export ---------- */
+  function exportable() {
+    const r = S.result;
+    return S.icons.filter(e => e.bytes && r.images[e.id]).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  }
+  function renderExport() {
+    const list = exportable(), r = S.result;
+    $('exportZip').disabled = !list.length;
+    const left = S.icons.length - list.length;
+    $('exportInfo').textContent = list.length
+      ? list.length + ' icône(s) : ' + list.map(e => 'glyphs/' + e.id + '/texture.png').join(', ') + (left ? ' — ' + left + ' laissée(s) de côté, non exportée(s).' : '') + (r.charsOut && $('withChars').checked ? ' + glyphs/chars.json.' : '')
+      : 'Rien à exporter : aucune icône valide.';
+  }
+  function buildExportZip() {
+    const r = S.result;
+    const entries = exportable().map(e => ({ name: 'glyphs/' + e.id + '/texture.png', data: e.bytes }));
+    if (!entries.length) throw new Error('Rien à exporter : aucune icône valide.');
+    if ($('withChars').checked && r.charsOut) entries.push({ name: 'glyphs/chars.json', data: new TextEncoder().encode(r.charsOut) });
+    return L.makeZip(entries);
+  }
+  function download(name, bytes, type) {
+    const url = URL.createObjectURL(new Blob([bytes], { type }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  /* ---------- demo: what the README describes (vip 16 px, a 48x16 rank, a level style) ---------- */
+  const FONT3x5 = {
+    A: ['010', '101', '111', '101', '101'], D: ['110', '101', '101', '101', '110'], M: ['101', '111', '111', '101', '101'],
+    I: ['111', '010', '010', '010', '111'], N: ['110', '101', '101', '101', '101'], V: ['101', '101', '101', '101', '010'],
+    P: ['110', '101', '110', '100', '100'],
+    0: ['111', '101', '101', '101', '111'], 1: ['010', '110', '010', '010', '111'], 2: ['111', '001', '111', '100', '111'],
+    3: ['111', '001', '111', '001', '111'], 4: ['101', '101', '111', '001', '001'], 5: ['111', '100', '111', '001', '111'],
+    6: ['111', '100', '111', '101', '111'], 7: ['111', '001', '010', '010', '010'], 8: ['111', '101', '111', '101', '111'],
+    9: ['111', '101', '111', '001', '111']
+  };
+  function letters(ctx, text, x, y, k, color) {
+    ctx.fillStyle = color;
+    for (const ch of text) {
+      const g = FONT3x5[ch];
+      g.forEach((row, j) => { for (let i = 0; i < 3; i++) if (row[i] === '1') ctx.fillRect(x + i * k, y + j * k, k, k); });
+      x += 4 * k;
+    }
+  }
+  function canvasPng(c) { return new Promise((res, rej) => c.toBlob(b => (b ? b.arrayBuffer().then(a => res(new Uint8Array(a)), rej) : rej(new Error('PNG impossible'))), 'image/png')); }
+  async function demoFiles() {
+    const out = [];
+    const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; };
+    let [c, g] = mk(16, 16);
+    g.fillStyle = '#1f8f3a'; g.fillRect(0, 2, 16, 12); g.fillStyle = '#2fbf55'; g.fillRect(1, 3, 14, 10);
+    letters(g, 'VIP', 2, 6, 1, '#ffffff');
+    out.push(['glyphs/vip/texture.png', await canvasPng(c)]);
+    [c, g] = mk(48, 16);
+    g.fillStyle = '#7f1010'; g.fillRect(1, 1, 46, 14); g.fillStyle = '#d42424'; g.fillRect(2, 2, 44, 12);
+    letters(g, 'ADMIN', 5, 3, 2, '#ffffff');
+    out.push(['glyphs/admin/texture.png', await canvasPng(c)]);
+    const piece = async (name, w, draw) => { const [pc, pg] = mk(w, 16); pg.fillStyle = '#8a5a00'; pg.fillRect(0, 2, w, 12); pg.fillStyle = '#e0a800'; pg.fillRect(0, 3, w, 10); if (draw) draw(pg); out.push(['glyphs/or_' + name + '/texture.png', await canvasPng(pc)]); };
+    await piece('left', 4, pg => { pg.clearRect(0, 2, 1, 1); pg.clearRect(0, 13, 1, 1); pg.fillStyle = '#8a5a00'; pg.fillRect(0, 3, 1, 10); });
+    for (let d = 0; d <= 9; d++) await piece(String(d), 8, pg => letters(pg, String(d), 1, 3, 2, '#3a2400'));
+    await piece('right', 4, pg => { pg.clearRect(3, 2, 1, 1); pg.clearRect(3, 13, 1, 1); pg.fillStyle = '#8a5a00'; pg.fillRect(3, 3, 1, 10); });
+    return out;
+  }
+
+  /* ---------- wiring ---------- */
+  function wire() {
+    $('filePngs').addEventListener('change', e => { handleFiles([...e.target.files]); e.target.value = ''; });
+    $('fileFolder').addEventListener('change', e => { handleFiles([], [...e.target.files].map(f => ({ path: f.webkitRelativePath || f.name, file: f }))); e.target.value = ''; });
+    $('fileZip').addEventListener('change', e => { handleFiles([...e.target.files]); e.target.value = ''; });
+    $('fileChars').addEventListener('change', e => { handleFiles([...e.target.files], [], 'chars'); e.target.value = ''; });
+    $('filePackJson').addEventListener('change', e => { handleFiles([...e.target.files], [], 'pack'); e.target.value = ''; });
+    $('fileFont').addEventListener('change', e => { handleFiles([...e.target.files], [], 'font'); e.target.value = ''; });
+    $('clearBtn').addEventListener('click', () => {
+      S.icons = []; S.folders.clear(); S.packJson = null; S.charsJson = null; S.assetPaths.clear(); S.ignored = 0; S.selected = '';
+      recompute();
+      say('Tout est retiré (le client .jar / ascii.png reste chargé).', 'ok');
+    });
+    $('demoBtn').addEventListener('click', async () => {
+      try {
+        const files = await demoFiles();
+        const r = await ingestBatch(files.map(([path, bytes]) => ({ path, read: async () => bytes })), 'exemple', false);
+        recompute();
+        say('Exemple chargé : ' + describe(r) + ' — vip (16 px), admin (48×16, marges transparentes), badge « or » (12 pièces).', 'ok');
+      } catch (e) { fail(e); }
+    });
+    $('pvSubject').addEventListener('change', e => { S.selected = e.target.value; renderIcons(); renderPreview(); renderUse(); });
+    $('pvScale').addEventListener('change', renderPreview);
+    $('pvLevel').addEventListener('input', () => { renderPreview(); renderUse(); });
+    $('withChars').addEventListener('change', renderExport);
+    $('exportZip').addEventListener('click', () => {
+      try {
+        const zip = buildExportZip();
+        download('glyphs.zip', zip, 'application/zip');
+        say('glyphs.zip téléchargé (' + (zip.length / 1024).toFixed(1) + ' Ko) : à décompresser dans pack-src/, puis /content pack.', 'ok');
+      } catch (e) { fail(e); }
+    });
+
+    let dragDepth = 0;
+    window.addEventListener('dragenter', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { dragDepth++; document.body.classList.add('dragging'); } });
+    window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) document.body.classList.remove('dragging'); });
+    window.addEventListener('dragover', e => e.preventDefault());
+    window.addEventListener('drop', async e => {
+      e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      const files = [], dirs = [];
+      const entries = [...(dt.items || [])].map(it => (it.kind === 'file' && it.webkitGetAsEntry ? it.webkitGetAsEntry() : null));
+      if (entries.some(en => en && en.isDirectory)) {
+        try {
+          for (let i = 0; i < entries.length; i++) {
+            const en = entries[i];
+            if (en && en.isDirectory) await readDirEntry(en, dirs);
+            else if (dt.files[i]) files.push(dt.files[i]);
+            else if (en) await readDirEntry(en, dirs);
+          }
+        } catch (err) { return fail(err); }
+      } else {
+        files.push(...dt.files);
+      }
+      // A dropped file named chars.json / pack.json is recognised by name in ingestBatch.
+      handleFiles(files, dirs);
+    });
+    if (document.fonts && document.fonts.load) document.fonts.load('16px MinecraftPreview').then(() => { quadCache.clear(); renderPreview(); }, () => {});
+  }
+
+  window.GlyphChecker = {
+    state: S, handleFiles, recompute, buildExportZip,
+    /** Draws text with the preview renderer (no shadow) and returns per-column opacity, for tests. */
+    rasterize(text, scale) {
+      const s = scale || 1, w = Math.max(1, uiStringWidth(text) + 16);
+      const c = document.createElement('canvas');
+      const ctx = prepCanvas(c, w, 9, s);
+      const end = renderString(ctx, text, 0, 0, 0xFFFFFF, false, s);
+      const img = ctx.getImageData(0, 0, c.width, c.height).data;
+      const cols = [];
+      for (let x = 0; x < c.width; x++) {
+        let a = 0;
+        for (let y = 0; y < c.height; y++) a = Math.max(a, img[(y * c.width + x) * 4 + 3]);
+        cols.push(a);
+      }
+      return { end, cols, width: uiStringWidth(text) };
+    }
+  };
+
+  wire();
+  recompute();
+})();
+</script>
+</body>
+</html>
