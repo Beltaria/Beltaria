@@ -57,6 +57,21 @@
         .toggle:has(input:focus-visible) { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
         .toggle small { margin-left: auto; font-size: 11px; color: var(--st-faint); }
 
+        /* Set BeltariaContent : dépôt, rapport, icônes */
+        .set-drop { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; border: 1px dashed var(--st-border-strong); background: var(--st-inset); }
+        .set-drop.is-dragover { border-color: var(--st-accent-hover); background: var(--st-accent-soft); }
+        .set-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .set-buttons .st-btn { min-height: 36px; }
+        .set-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+        .set-list li { overflow-wrap: anywhere; line-height: 1.45; }
+        .set-list li[data-level="error"], .set-list li[data-state="missing"] { color: var(--st-error); }
+        .set-list li[data-level="warn"] { color: var(--st-warn); }
+        .set-list li[data-level="ok"], .set-list li[data-state="present"] { color: var(--st-ok); }
+        .set-list li[data-level="info"] { color: var(--st-muted); }
+        .set-icons li[data-state="missing"] { color: var(--st-muted); }
+        .set-list code { font-family: var(--st-mono); font-size: 11px; }
+        #setSummary[data-state="warn"] { color: var(--st-warn); }
+
         /* Indications posées sur la vue 3D */
         .viewer-chip {
             position: absolute; left: 50%; transform: translateX(-50%); z-index: 2; pointer-events: none;
@@ -130,8 +145,33 @@
                 <input type="file" id="layer2" accept="image/png">
                 <span class="status" id="status2">Aucun fichier</span>
             </div>
+            <div class="upload-group" id="groupBoth">
+                <div class="up-title"><strong>Couche unique</strong><small>layer.png, sert aux deux</small></div>
+                <label class="st-btn st-btn-soft" for="layerBoth">Importer layer.png</label>
+                <input type="file" id="layerBoth" accept="image/png">
+                <span class="status" id="statusBoth">Aucun fichier</span>
+            </div>
         </div>
-        <p class="hint" style="margin-top:10px">Format 1.8 : <code>64x32</code> ou un multiple HD (<code>128x64</code>, <code>512x256</code>…), comme <code>armor/&lt;set&gt;/</code> dans BeltariaContent.</p>
+        <p class="hint" style="margin-top:10px">Format 1.8 : <code>64x32</code> ou un multiple HD (<code>128x64</code>, <code>512x256</code>…), comme <code>armor/&lt;set&gt;/</code> dans BeltariaContent. Une <code>layer.png</code> seule habille les deux couches ; une couche numérotée manquante est prise dans <code>layer.png</code>.</p>
+    </section>
+
+    <section class="st-panel" id="setPanel">
+        <div class="st-panel-head"><h2 class="st-panel-title"><span class="st-step">3</span> Set BeltariaContent</h2></div>
+        <div id="setDrop" class="set-drop">
+            <div class="set-buttons">
+                <label class="st-btn" for="setFolder">Dossier du set</label>
+                <input type="file" id="setFolder" webkitdirectory multiple>
+                <label class="st-btn" for="setZip">Zip</label>
+                <input type="file" id="setZip" accept=".zip,application/zip">
+            </div>
+            <p class="hint">Ou glissez ici <code>armor/&lt;set&gt;/</code>, <code>pack-src/</code> ou un zip. Les icônes <code>items/&lt;set&gt;_&lt;pièce&gt;/texture.png</code> d'un <code>pack-src/</code> sont reconnues.</p>
+        </div>
+        <label class="st-label" for="setId" style="margin-top:10px">Nom du set (<code>armor/&lt;set&gt;/</code>)</label>
+        <input type="text" id="setId" class="st-input st-mono" style="width:100%" autocomplete="off" spellcheck="false" placeholder="adamant">
+        <p class="status" id="setSummary" role="status" aria-live="polite" style="margin-top:8px">Importez des couches ou un set.</p>
+        <ul class="set-list" id="setReport"></ul>
+        <ul class="set-list set-icons" id="setIcons" aria-label="Icônes des pièces"></ul>
+        <button type="button" id="exportSet" class="st-btn st-btn-primary" style="width:100%;margin-top:8px" disabled>⬇ Zip armor/&lt;set&gt;/</button>
     </section>
 
     <section class="st-panel">
@@ -328,43 +368,459 @@
         }
     });
 
-    // Upload des textures par le joueur
-    function setupUpload(inputId, statusId, isLayer1) {
-        document.getElementById(inputId).addEventListener("change", function(e) {
+    /* =====================================================================
+     * Set BeltariaContent (BC) : armor/<set>/ tel que PackBuild le lit.
+     *  - couches : layer_1.png + layer_2.png, ou layer.png seule pour les deux ; une couche
+     *    numérotée manquante sans layer.png est refusée (PackBuild.java:766-786) ;
+     *  - noms : layer[_<n>].png[.mcmeta], tout autre « layer… .png » refuse le build (PackBuild.java:819-845) ;
+     *  - icônes : helmet|chestplate|leggings|boots.png dans le dossier du set (PackBuild.java:263-265, 724-735),
+     *    ou une entrée items/<set>_<pièce>/texture.png (PackBuild.java:390, 686-689).
+     * ===================================================================== */
+    const ArmorSet = (() => {
+        const ID_RE = /^[a-z0-9_.-]+$/;          // PackBuild.java:1493 (Entry.ID)
+        const PIECES = ["helmet", "chestplate", "leggings", "boots"]; // PackBuild.java:263-265
+        const LAYER_NAME = /^layer(_\d+)?\.png(\.mcmeta)?$/;           // PackBuild.java:834-835
+        const PB = "PackBuild.java";
+
+        /**
+         * input: { setId, files: [noms dans armor/<set>/], itemIcons: [pièces ayant items/<set>_<pièce>/texture.png],
+         *          sizes: { nom: [w, h] } }
+         * -> { messages:[{level,text,ref}], ok, layers: [nom couche 1, nom couche 2] | null, icons: {pièce: 'armor'|'items'|null} }
+         */
+        function validate(input) {
+            const setId = String((input && input.setId) || "");
+            const files = (input && input.files) || [];
+            const itemIcons = new Set((input && input.itemIcons) || []);
+            const sizes = (input && input.sizes) || {};
+            const out = [];
+            const add = (level, text, ref) => out.push({ level, text, ref: ref || "" });
+            const what = `pack.json : armor.${setId || "<set>"}`;
+            const folder = `armor/${setId || "<set>"}`;
+
+            if (!setId) add("error", "Nom du set requis : c'est le dossier armor/<set>/ et le préfixe des pièces (<set>_helmet…).", PB + ":1515");
+            else if (!ID_RE.test(setId)) add("error", `${what} : identifiant invalide, attendu en minuscules sur [a-z0-9_.-] - c'est un nom de dossier et une valeur de marqueur`, PB + ":1515-1518");
+
+            // texturesOf(folder, "layer") : seuls les .png / .png.mcmeta commençant par « layer » comptent
+            const layers = new Map();
+            for (const name of files) {
+                if (!name.startsWith("layer") || !(name.endsWith(".png") || name.endsWith(".png.mcmeta"))) continue;
+                if (!LAYER_NAME.test(name)) {
+                    add("error", `${what} : ${name} attendu sous la forme layer[_<n>].png[.mcmeta]`, PB + ":834-838");
+                    continue;
+                }
+                layers.set(name.slice("layer".length), name);
+            }
+            // layerSuffixes : aucune couche, ou une couche numérotée sans layer.png pour la suppléer
+            let resolved = null;
+            if (layers.size === 0) {
+                add("error", `${what} : aucune couche layer.png dans ${folder}`, PB + ":767-769");
+            } else {
+                resolved = [];
+                for (let layer = 1; layer <= 2; layer++) {
+                    const numbered = `_${layer}.png`;
+                    if (layers.has(numbered)) resolved.push(layers.get(numbered));
+                    else if (layers.has(".png")) resolved.push(layers.get(".png"));
+                    else {
+                        add("error", `${what} : layer${numbered} absente dans ${folder} ; fournir layer_1.png et layer_2.png, ou layer.png seule pour les deux`, PB + ":778-782");
+                        resolved = null;
+                        break;
+                    }
+                }
+                if (resolved) {
+                    if (resolved[0] === resolved[1]) add("ok", `${resolved[0]} sert aux deux couches.`, PB + ":776-777");
+                    else add("ok", `Couche 1 : ${resolved[0]} · couche 2 : ${resolved[1]}.`, PB + ":772-777");
+                    for (const [suffix, name] of layers) {
+                        if (!resolved.includes(name) && !suffix.endsWith(".mcmeta")) add("info", `${name} : copiée dans le pack mais citée par aucune couche.`, PB + ":711-714");
+                    }
+                }
+            }
+            // Taille des couches : 64x32 ou un multiple HD (format 1.8, contrôle Studio)
+            for (const name of new Set(resolved || [])) {
+                const s = sizes[name];
+                if (s && (s[0] % 64 !== 0 || s[0] !== s[1] * 2)) add("warn", `${name} : ${s[0]}x${s[1]}, attendu 64x32 ou un multiple (128x64, 256x128…).`);
+            }
+            // Fichiers que BC ne lit pas dans armor/<set>/
+            for (const name of files) {
+                const isLayer = name.startsWith("layer") && (name.endsWith(".png") || name.endsWith(".png.mcmeta"));
+                if (!isLayer && !PIECES.some(p => name === p + ".png")) add("info", `${name} : ignoré par BC dans armor/<set>/.`);
+            }
+            // Icônes des pièces
+            const icons = {};
+            for (const piece of PIECES) {
+                if (files.includes(piece + ".png")) icons[piece] = "armor";
+                else if (itemIcons.has(piece)) icons[piece] = "items";
+                else icons[piece] = null;
+            }
+            const errors = out.filter(m => m.level === "error");
+            return { messages: out, ok: errors.length === 0, errors: errors.map(m => m.text), layers: resolved, icons };
+        }
+
+        /**
+         * Repère le set dans une liste de chemins (dossier déposé, zip, pack-src/…).
+         * -> { setId, prefix, files: Map(nom -> chemin), itemIcons: Map(pièce -> chemin), otherSets: [] }
+         */
+        function locate(paths, fallbackId) {
+            const clean = paths.map(p => p.replace(/\\/g, "/").split("/").filter(Boolean));
+            const sets = new Map();
+            const itemsDirs = new Map();
+            for (const parts of clean) {
+                const ai = parts.lastIndexOf("armor");
+                if (ai >= 0 && parts.length === ai + 3) {
+                    const id = parts[ai + 1];
+                    if (!sets.has(id)) sets.set(id, new Map());
+                    sets.get(id).set(parts[ai + 2], parts.join("/"));
+                }
+                const ii = parts.lastIndexOf("items");
+                if (ii >= 0 && parts.length === ii + 3 && parts[ii + 2] === "texture.png") itemsDirs.set(parts[ii + 1], parts.join("/"));
+            }
+            if (sets.size === 0) {
+                // Le dossier du set lui-même (<set>/layer_1.png), ou des fichiers en vrac
+                for (const parts of clean) {
+                    if (parts.length === 2) {
+                        if (!sets.has(parts[0])) sets.set(parts[0], new Map());
+                        sets.get(parts[0]).set(parts[1], parts.join("/"));
+                    } else if (parts.length === 1) {
+                        const id = fallbackId || "";
+                        if (!sets.has(id)) sets.set(id, new Map());
+                        sets.get(id).set(parts[0], parts[0]);
+                    }
+                }
+            }
+            const ids = [...sets.keys()].sort();
+            const setId = ids[0] === undefined ? (fallbackId || "") : ids[0];
+            const itemIcons = new Map();
+            for (const piece of PIECES) {
+                const p = itemsDirs.get(`${setId}_${piece}`);
+                if (p) itemIcons.set(piece, p);
+            }
+            return { setId, files: sets.get(setId) || new Map(), itemIcons, otherSets: ids.slice(1) };
+        }
+        return { ID_RE, PIECES, validate, locate };
+    })();
+    window.ArmorSet = ArmorSet;
+
+    /* ---------- ZIP minimal (lecture STORE/DEFLATE, écriture STORE), repris de glyph-checker.html ---------- */
+    const Zip = (() => {
+        const CRC_TABLE = (() => {
+            const t = new Uint32Array(256);
+            for (let n = 0; n < 256; n++) {
+                let c = n;
+                for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+                t[n] = c >>> 0;
+            }
+            return t;
+        })();
+        function toBytes(input) {
+            if (input instanceof Uint8Array) return input;
+            if (input instanceof ArrayBuffer) return new Uint8Array(input);
+            if (typeof input === "string") return new TextEncoder().encode(input);
+            throw new TypeError("Données binaires attendues.");
+        }
+        function crc32(input) {
+            const bytes = toBytes(input);
+            let c = 0xFFFFFFFF;
+            for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8);
+            return (c ^ 0xFFFFFFFF) >>> 0;
+        }
+        function make(entries) {
+            if (!Array.isArray(entries) || entries.length === 0) throw new Error("Rien à mettre dans le zip.");
+            const enc = new TextEncoder();
+            const d = new Date();
+            const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+            const date = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+            const seen = new Set();
+            const prepared = entries.map(e => {
+                const name = String(e.name || "");
+                if (!name || name.startsWith("/") || name.includes("\\") || name.split("/").includes("..")) throw new Error("Chemin de fichier invalide dans le zip : « " + name + " ».");
+                if (seen.has(name)) throw new Error("Fichier en double dans le zip : " + name);
+                seen.add(name);
+                const data = toBytes(e.data);
+                return { nameBytes: enc.encode(name), data, crc: crc32(data) };
+            });
+            let total = 22;
+            for (const p of prepared) total += 30 + p.nameBytes.length + p.data.length + 46 + p.nameBytes.length;
+            const out = new Uint8Array(total), dv = new DataView(out.buffer);
+            let o = 0;
+            const offsets = [];
+            for (const p of prepared) {
+                offsets.push(o);
+                dv.setUint32(o, 0x04034b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 0x0800, true); dv.setUint16(o + 8, 0, true);
+                dv.setUint16(o + 10, time, true); dv.setUint16(o + 12, date, true); dv.setUint32(o + 14, p.crc, true);
+                dv.setUint32(o + 18, p.data.length, true); dv.setUint32(o + 22, p.data.length, true);
+                dv.setUint16(o + 26, p.nameBytes.length, true); dv.setUint16(o + 28, 0, true);
+                out.set(p.nameBytes, o + 30); o += 30 + p.nameBytes.length;
+                out.set(p.data, o); o += p.data.length;
+            }
+            const cdStart = o;
+            prepared.forEach((p, i) => {
+                dv.setUint32(o, 0x02014b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 20, true); dv.setUint16(o + 8, 0x0800, true);
+                dv.setUint16(o + 10, 0, true); dv.setUint16(o + 12, time, true); dv.setUint16(o + 14, date, true); dv.setUint32(o + 16, p.crc, true);
+                dv.setUint32(o + 20, p.data.length, true); dv.setUint32(o + 24, p.data.length, true); dv.setUint16(o + 28, p.nameBytes.length, true);
+                dv.setUint16(o + 30, 0, true); dv.setUint16(o + 32, 0, true); dv.setUint16(o + 34, 0, true); dv.setUint16(o + 36, 0, true);
+                dv.setUint32(o + 38, 0, true); dv.setUint32(o + 42, offsets[i], true);
+                out.set(p.nameBytes, o + 46); o += 46 + p.nameBytes.length;
+            });
+            dv.setUint32(o, 0x06054b50, true); dv.setUint16(o + 4, 0, true); dv.setUint16(o + 6, 0, true);
+            dv.setUint16(o + 8, prepared.length, true); dv.setUint16(o + 10, prepared.length, true);
+            dv.setUint32(o + 12, o - cdStart, true); dv.setUint32(o + 16, cdStart, true); dv.setUint16(o + 20, 0, true);
+            return out;
+        }
+        /** Répertoire central -> [{name, method, flags, crc, compSize, size, offset}] */
+        function index(input) {
+            const u8 = toBytes(input);
+            if (u8.length < 22) throw new Error("Archive .zip invalide (fichier trop court).");
+            const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+            let eocd = -1;
+            for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) {
+                if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+            }
+            if (eocd < 0) throw new Error("Archive .zip invalide (répertoire central introuvable).");
+            const count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true);
+            if (count === 0xFFFF || cdOff === 0xFFFFFFFF) throw new Error("Archive ZIP64 non prise en charge.");
+            if (cdOff >= u8.length) throw new Error("Archive .zip corrompue (répertoire central hors du fichier).");
+            const dec = new TextDecoder();
+            const entries = [];
+            let p = cdOff;
+            for (let i = 0; i < count; i++) {
+                if (p + 46 > u8.length || dv.getUint32(p, true) !== 0x02014b50) throw new Error("Archive .zip corrompue (entrée " + (i + 1) + ").");
+                const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+                entries.push({
+                    name: dec.decode(u8.subarray(p + 46, p + 46 + nlen)), flags: dv.getUint16(p + 8, true), method: dv.getUint16(p + 10, true),
+                    crc: dv.getUint32(p + 16, true), compSize: dv.getUint32(p + 20, true), size: dv.getUint32(p + 24, true), offset: dv.getUint32(p + 42, true)
+                });
+                p += 46 + nlen + elen + clen;
+            }
+            return entries;
+        }
+        async function extract(input, e) {
+            const u8 = toBytes(input);
+            const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+            if (e.flags & 1) throw new Error("Fichier chiffré dans l'archive : " + e.name);
+            if (e.offset + 30 > u8.length || dv.getUint32(e.offset, true) !== 0x04034b50) throw new Error("En-tête local invalide pour " + e.name);
+            const start = e.offset + 30 + dv.getUint16(e.offset + 26, true) + dv.getUint16(e.offset + 28, true);
+            const comp = u8.subarray(start, start + e.compSize);
+            let data;
+            if (e.method === 0) data = new Uint8Array(comp);
+            else if (e.method === 8) {
+                if (typeof DecompressionStream === "undefined") throw new Error("Ce navigateur ne sait pas décompresser les zip : chargez le dossier.");
+                const stream = new Blob([comp]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+                data = new Uint8Array(await new Response(stream).arrayBuffer());
+            } else throw new Error("Méthode de compression " + e.method + " non prise en charge pour " + e.name);
+            if (data.length !== e.size || crc32(data) !== e.crc) throw new Error("Fichier corrompu dans l'archive (CRC) : " + e.name);
+            return data;
+        }
+        return { make, index, extract };
+    })();
+    window.ArmorZip = Zip;
+
+    /* ---------- État du set : fichiers d'armor/<set>/ et icônes items/ (octets d'origine) ---------- */
+    // files : nom dans armor/<set>/ -> { bytes, img (couches décodées), label (nom affiché) }
+    const current = { files: new Map(), itemIcons: new Map() };
+    const setIdInput = document.getElementById("setId");
+    const SLOT_NAMES = { "1": "layer_1.png", "2": "layer_2.png", both: "layer.png" };
+
+    async function decodePng(bytes) {
+        return createImageBitmap(new Blob([bytes], { type: "image/png" }));
+    }
+    const validLayerSize = img => img.width % 64 === 0 && img.width === img.height * 2;
+
+    function currentValidation() {
+        const sizes = {};
+        for (const [name, f] of current.files) if (f.img) sizes[name] = [f.img.width, f.img.height];
+        return ArmorSet.validate({ setId: setIdInput.value.trim(), files: [...current.files.keys()], itemIcons: [...current.itemIcons.keys()], sizes });
+    }
+
+    function setStatus(id, text, state) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        if (state) el.dataset.state = state; else delete el.dataset.state;
+        el.closest(".upload-group").classList.toggle("loaded", state === "ok");
+    }
+
+    /** Recalcule couches affichées, statuts, rapport BC et icônes depuis l'état du set. */
+    function refresh() {
+        const f1 = current.files.get("layer_1.png"), f2 = current.files.get("layer_2.png"), fb = current.files.get("layer.png");
+        // Même résolution que BC : la couche numérotée, sinon layer.png
+        const use1 = f1 || fb, use2 = f2 || fb;
+        imgLayer1 = use1 && use1.img && validLayerSize(use1.img) ? use1.img : null;
+        imgLayer2 = use2 && use2.img && validLayerSize(use2.img) ? use2.img : null;
+        setStatus("status1", f1 ? "✅ " + f1.label : fb ? "✅ " + fb.label + " (layer.png, sert aux deux couches)" : "Aucun fichier", use1 ? "ok" : null);
+        setStatus("status2", f2 ? "✅ " + f2.label : fb ? "✅ " + fb.label + " (layer.png, sert aux deux couches)" : "Aucun fichier", use2 ? "ok" : null);
+        setStatus("statusBoth", fb ? "✅ " + fb.label : "Aucun fichier", fb ? "ok" : null);
+        document.getElementById("viewerHint").hidden = !!(imgLayer1 || imgLayer2);
+        resizeCanvases();
+        updateTexture(false);
+        renderReport();
+    }
+
+    function renderReport() {
+        const summary = document.getElementById("setSummary");
+        const list = document.getElementById("setReport");
+        const iconsList = document.getElementById("setIcons");
+        const exportBtn = document.getElementById("exportSet");
+        const setId = setIdInput.value.trim();
+        list.innerHTML = "";
+        iconsList.innerHTML = "";
+        exportBtn.textContent = `⬇ Zip armor/${setId || "<set>"}/`;
+        if (!current.files.size && !current.itemIcons.size) {
+            summary.textContent = "Importez des couches ou un set.";
+            delete summary.dataset.state;
+            exportBtn.disabled = true;
+            return;
+        }
+        const result = currentValidation();
+        const ICON = { error: "❌", warn: "⚠️", info: "ℹ️", ok: "✅" };
+        for (const m of result.messages) {
+            const li = document.createElement("li");
+            li.dataset.level = m.level;
+            li.textContent = ICON[m.level] + " " + m.text;
+            if (m.ref) { const c = document.createElement("code"); c.textContent = " " + m.ref; li.appendChild(c); }
+            list.appendChild(li);
+        }
+        const LABEL = { helmet: "casque", chestplate: "plastron", leggings: "jambières", boots: "bottes" };
+        for (const piece of ArmorSet.PIECES) {
+            const li = document.createElement("li");
+            li.dataset.piece = piece;
+            const src = result.icons[piece];
+            li.dataset.state = src ? "present" : "missing";
+            li.textContent = src === "armor" ? `✅ ${piece}.png (${LABEL[piece]}) → règle ${setId || "<set>"}_${piece}`
+                : src === "items" ? `✅ items/${setId}_${piece}/texture.png (${LABEL[piece]})`
+                : `○ ${piece}.png absente : le ${LABEL[piece]} garde son icône vanilla`;
+            iconsList.appendChild(li);
+        }
+        const nErr = result.messages.filter(m => m.level === "error").length;
+        const nWarn = result.messages.filter(m => m.level === "warn").length;
+        summary.textContent = nErr ? `❌ ${nErr} erreur(s) : BeltariaContent refuserait ce set.` : nWarn ? `⚠️ Accepté par BC, ${nWarn} avertissement(s).` : `✅ armor/${setId}/ prêt pour BeltariaContent.`;
+        summary.dataset.state = nErr ? "error" : nWarn ? "warn" : "ok";
+        exportBtn.disabled = nErr > 0;
+    }
+
+    /** Contenu du zip armor/<set>/ : les fichiers que BC lit, octets d'origine. */
+    function exportEntries() {
+        const result = currentValidation();
+        if (!result.ok) throw new Error(result.errors[0]);
+        const setId = setIdInput.value.trim();
+        const entries = [];
+        const names = [...current.files.keys()].filter(n => /^layer(_\d+)?\.png(\.mcmeta)?$/.test(n) || ArmorSet.PIECES.some(p => n === p + ".png")).sort();
+        for (const n of names) entries.push({ name: `armor/${setId}/${n}`, data: current.files.get(n).bytes });
+        for (const [piece, f] of current.itemIcons) entries.push({ name: `items/${setId}_${piece}/texture.png`, data: f.bytes });
+        return entries;
+    }
+
+    document.getElementById("exportSet").addEventListener("click", () => {
+        let entries;
+        try { entries = exportEntries(); }
+        catch (e) { document.getElementById("setSummary").textContent = "❌ " + e.message; document.getElementById("setSummary").dataset.state = "error"; return; }
+        const url = URL.createObjectURL(new Blob([Zip.make(entries)], { type: "application/zip" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = `${setIdInput.value.trim()}.zip`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    setIdInput.addEventListener("input", renderReport);
+
+    // Upload d'une couche par le joueur (layer_1, layer_2 ou layer.png pour les deux)
+    function setupUpload(inputId, statusId, slot) {
+        document.getElementById(inputId).addEventListener("change", async function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                const statusText = document.getElementById(statusId);
-                img.onerror = function() {
-                    statusText.textContent = "❌ " + file.name + " : image illisible";
-                    statusText.dataset.state = "error";
-                };
-                img.onload = function() {
-                    // Format 1.8 : 64x32, ou un multiple HD (128x64, 512x256...) comme dans BeltariaContent
-                    if (img.width % 64 !== 0 || img.width !== img.height * 2) {
-                        statusText.textContent = "❌ " + file.name + " : " + img.width + "x" + img.height + " (attendu 64x32 ou un multiple : 128x64, 256x128...)";
-                        statusText.dataset.state = "error";
-                        return;
-                    }
-                    if (isLayer1) imgLayer1 = img; else imgLayer2 = img;
-                    resizeCanvases();
-                    statusText.textContent = "✅ " + file.name;
-                    statusText.dataset.state = "ok";
-                    statusText.closest(".upload-group").classList.add("loaded");
-                    document.getElementById("viewerHint").hidden = true;
-                    updateTexture(false); // Faux car ce n'est pas l'animation, c'est un nouveau fichier
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+            e.target.value = "";
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            let img;
+            try { img = await decodePng(bytes); }
+            catch (err) { setStatus(statusId, "❌ " + file.name + " : image illisible", "error"); return; }
+            // Format 1.8 : 64x32, ou un multiple HD (128x64, 512x256...) comme dans BeltariaContent
+            if (!validLayerSize(img)) {
+                const el = document.getElementById(statusId);
+                el.textContent = "❌ " + file.name + " : " + img.width + "x" + img.height + " (attendu 64x32 ou un multiple : 128x64, 256x128...)";
+                el.dataset.state = "error";
+                return;
+            }
+            current.files.set(SLOT_NAMES[slot], { bytes, img, label: file.name });
+            refresh();
         });
     }
 
-    setupUpload("layer1", "status1", true);
-    setupUpload("layer2", "status2", false);
-    
+    setupUpload("layer1", "status1", "1");
+    setupUpload("layer2", "status2", "2");
+    setupUpload("layerBoth", "statusBoth", "both");
+
+    /** Charge un set depuis des entrées { path, read(): Promise<Uint8Array> }. */
+    async function loadSetEntries(entries, fallbackId) {
+        const byPath = new Map(entries.map(e => [e.path.replace(/\\/g, "/").split("/").filter(Boolean).join("/"), e]));
+        const found = ArmorSet.locate([...byPath.keys()], fallbackId);
+        current.files = new Map();
+        current.itemIcons = new Map();
+        for (const [name, path] of found.files) {
+            const bytes = await byPath.get(path).read();
+            let img = null;
+            if (/\.png$/i.test(name)) { try { img = await decodePng(bytes); } catch (e) { img = null; } }
+            current.files.set(name, { bytes, img, label: `armor/${found.setId}/${name}` });
+        }
+        for (const [piece, path] of found.itemIcons) current.itemIcons.set(piece, { bytes: await byPath.get(path).read() });
+        if (found.setId) setIdInput.value = found.setId;
+        refresh();
+        if (found.otherSets.length) {
+            const li = document.createElement("li");
+            li.dataset.level = "info";
+            li.textContent = `ℹ️ Un set à la fois : ${found.otherSets.join(", ")} non chargé(s).`;
+            document.getElementById("setReport").appendChild(li);
+        }
+        return found;
+    }
+    const fileEntry = (file, path) => ({ path: path || file.webkitRelativePath || file.name, read: async () => new Uint8Array(await file.arrayBuffer()) });
+    async function zipEntries(file) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        return Zip.index(bytes).filter(e => !e.name.endsWith("/")).map(e => ({ path: e.name, read: () => Zip.extract(bytes, e) }));
+    }
+    async function loadFromFiles(files) {
+        const list = [...files];
+        let entries = [];
+        try {
+            for (const f of list) {
+                if (/\.zip$/i.test(f.name)) entries = entries.concat(await zipEntries(f));
+                else entries.push(fileEntry(f, f._path));
+            }
+            const zip = list.find(f => /\.zip$/i.test(f.name));
+            return await loadSetEntries(entries, zip ? zip.name.replace(/\.zip$/i, "").toLowerCase() : setIdInput.value.trim());
+        } catch (e) {
+            const s = document.getElementById("setSummary");
+            s.textContent = "❌ " + e.message;
+            s.dataset.state = "error";
+            return null;
+        }
+    }
+    document.getElementById("setFolder").addEventListener("change", async e => { await loadFromFiles(e.target.files); e.target.value = ""; });
+    document.getElementById("setZip").addEventListener("change", async e => { await loadFromFiles(e.target.files); e.target.value = ""; });
+
+    // Glisser-déposer d'un dossier (parcours récursif), de fichiers ou d'un zip
+    const setDrop = document.getElementById("setDrop");
+    ["dragenter", "dragover"].forEach(ev => setDrop.addEventListener(ev, e => { e.preventDefault(); setDrop.classList.add("is-dragover"); }));
+    ["dragleave", "drop"].forEach(ev => setDrop.addEventListener(ev, e => { e.preventDefault(); setDrop.classList.remove("is-dragover"); }));
+    function walk(entry, prefix, out) {
+        return new Promise(resolve => {
+            if (entry.isFile) entry.file(f => { f._path = prefix + f.name; out.push(f); resolve(); }, () => resolve());
+            else if (entry.isDirectory) {
+                const reader = entry.createReader();
+                const all = [];
+                const next = () => reader.readEntries(async batch => {
+                    if (!batch.length) { for (const c of all) await walk(c, prefix + entry.name + "/", out); resolve(); }
+                    else { all.push(...batch); next(); }
+                }, () => resolve());
+                next();
+            } else resolve();
+        });
+    }
+    setDrop.addEventListener("drop", async e => {
+        const items = e.dataTransfer && e.dataTransfer.items ? [...e.dataTransfer.items] : [];
+        const entries = items.map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+        if (entries.length) {
+            const files = [];
+            for (const en of entries) await walk(en, "", files);
+            await loadFromFiles(files);
+        } else if (e.dataTransfer && e.dataTransfer.files.length) await loadFromFiles(e.dataTransfer.files);
+    });
+
     // Initialisation
     updateTexture(false);
 </script>

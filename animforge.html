@@ -498,6 +498,37 @@
                     </div>
                 </div>
 
+                <!-- Noms et dossier BeltariaContent, zip prêt à décompresser dans pack-src/ -->
+                <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 text-xs">
+                    <span class="text-slate-200 font-semibold">Fichiers pour BeltariaContent</span>
+                    <label class="flex flex-col gap-1 min-w-0">
+                        <span class="text-slate-400">Nom des fichiers</span>
+                        <select id="selBcName" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 w-full min-w-0">
+                            <option value="texture">texture.png + texture.png.mcmeta</option>
+                            <option value="numbered">texture_&lt;n&gt;.png + .mcmeta</option>
+                            <option value="item">Nom de l'image (&lt;nom&gt;.png)</option>
+                        </select>
+                    </label>
+                    <label id="wrapBcN" class="flex flex-col gap-1 min-w-0" hidden>
+                        <span class="text-slate-400">Numéro &lt;n&gt;</span>
+                        <input id="numBcN" type="number" min="1" step="1" value="1" inputmode="numeric" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 w-full min-w-0">
+                    </label>
+                    <label class="flex flex-col gap-1 min-w-0">
+                        <span class="text-slate-400">Catégorie BC</span>
+                        <select id="selBcCategory" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 w-full min-w-0"></select>
+                    </label>
+                    <label class="flex flex-col gap-1 min-w-0">
+                        <span id="lblBcId" class="text-slate-400">Identifiant</span>
+                        <input id="txtBcId" type="text" list="listBcOreHosts" autocomplete="off" spellcheck="false" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 st-mono w-full min-w-0">
+                        <datalist id="listBcOreHosts"></datalist>
+                    </label>
+                    <p id="bcIdError" class="st-note st-note-error text-[11px]" role="alert" hidden></p>
+                    <p id="bcSquareWarn" class="st-note st-note-warn text-[11px]" hidden></p>
+                    <p id="bcFolderHint" class="text-[11px] text-slate-400 st-mono break-all"></p>
+                    <button id="btnBcZip" type="button" class="w-full py-2 px-2.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 font-semibold text-xs transition">⬇ Zip BC</button>
+                    <a href="gif_to_spritesheet.html#verify" class="text-[11px] text-purple-300 hover:underline">Vérifier une texture animée (PNG + .mcmeta) →</a>
+                </div>
+
                 <!-- Aperçu déroulant de toute la bande verticale (W × (H*N)) -->
                 <div class="flex flex-col gap-1.5">
                     <div class="flex items-center justify-between text-[11px]">
@@ -516,7 +547,7 @@
                 <!-- Aperçu du code .png.mcmeta généré -->
                 <div class="flex flex-col gap-1">
                     <div class="flex items-center justify-between text-[11px]">
-                        <span class="text-slate-400 font-medium">Contenu <code class="st-mono text-purple-300">item.png.mcmeta</code> :</span>
+                        <span class="text-slate-400 font-medium">Contenu <code id="lblMcmetaName" class="st-mono text-purple-300">texture.png.mcmeta</code> :</span>
                         <label class="flex items-center gap-1 text-slate-400 cursor-pointer">
                             <input type="checkbox" id="chkMcmetaInterpolate" class="rounded bg-slate-900 border-slate-600 text-purple-500 focus:ring-0">
                             <span>interpolate</span>
@@ -601,6 +632,120 @@
             if (h >= 165 && h < 255) return { id: 'blue', name: 'Bleu / Cryolithe', badge: '#38bdf8', order: 5 };
             return { id: 'purple', name: 'Violet / Améthyste', badge: '#d946ef', order: 1 };
         }
+
+        // --- 1 bis. Règles BeltariaContent (BC) : noms de fichiers, identifiants, zip ---
+        // Mêmes règles que gif_to_spritesheet.html (qui porte aussi le vérificateur de .mcmeta).
+        const BcTex = (() => {
+            // PackBuild.java:1493 (Entry.ID) : nom de dossier, valeur de marqueur, nom de fichier.
+            const ID_RE = /^[a-z0-9_.-]+$/;
+            // OreHost.java:67-81 : ores/<hôte>/ porte le nom du bloc hôte, pas celui du minerai.
+            const ORE_HOSTS = ['smooth_stone', 'smooth_sandstone', 'smooth_quartz', 'smooth_red_sandstone',
+                'oak_wood', 'spruce_wood', 'birch_wood', 'jungle_wood', 'acacia_wood', 'dark_oak_wood'];
+            // Textures texture[_<n>].png[.mcmeta] (PackBuild.java:363-390, 642, 834-837) ;
+            // ores/ ne lit que texture.png (PackBuild.java:921-922, 945).
+            const CATEGORIES = [
+                { id: 'items', label: 'items/ — item', numbered: true },
+                { id: 'wings', label: 'wings/ — ailes', numbered: true },
+                { id: 'auras', label: 'auras/ — aura', numbered: true },
+                { id: 'motes', label: 'motes/ — objet volant d\'aura', numbered: true },
+                { id: 'blocks', label: 'blocks/ — bloc décoratif', numbered: true },
+                { id: 'ores', label: 'ores/ — minerai (bloc hôte)', numbered: false }
+            ];
+            const category = id => CATEGORIES.find(c => c.id === id) || null;
+            function sanitizeId(raw) {
+                return String(raw || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+                    .replace(/[^a-z0-9_.-]+/g, '_').replace(/^_+|_+$/g, '');
+            }
+            function idError(cat, id) {
+                if (!category(cat)) return 'Catégorie inconnue : ' + cat;
+                if (!id) return cat === 'ores' ? 'Choisissez le bloc hôte : c\'est le nom du dossier ores/<hôte>/.' : 'Identifiant requis : c\'est le nom du dossier de l\'entrée.';
+                if (!ID_RE.test(id)) return `« ${id} » : identifiant invalide, attendu en minuscules sur [a-z0-9_.-] - c'est un nom de dossier et une valeur de marqueur (PackBuild.java:1515).`;
+                if (cat === 'ores' && !ORE_HOSTS.includes(id)) return `ores/${id} : aucun bloc hôte de ce nom, BC saute le dossier (PackBuild.java:906). Hôtes : ${ORE_HOSTS.join(', ')}.`;
+                return null;
+            }
+            function textureName(n) {
+                if (n === undefined || n === null || n === '') return 'texture.png';
+                const k = Number(n);
+                if (!Number.isInteger(k) || k < 1) throw new Error('Numéro de texture : entier ≥ 1 attendu, reçu « ' + n + ' ».');
+                return `texture_${k}.png`;
+            }
+            function folderHint(cat, id, png) {
+                const dir = `${cat}/${id || '<id>'}/`;
+                let tail;
+                if (cat === 'ores') tail = ' — habille le bloc hôte ; seul texture.png (+ .mcmeta) est lu.';
+                else if (/_\d+\.png$/.test(png) && cat === 'items') tail = ' — sans model.json, BC ne cite que texture.png ; texture_<n> sert quand le modèle désigne ./texture_<n>.';
+                else if (cat === 'items') tail = ' — texture seule : retexture l\'item ; avec model.json, celui-ci désigne ./texture.';
+                else tail = ' — model.json désigne ./texture, ./texture_2…';
+                return `Dossier BC : pack-src/${dir}${png} + ${png}.mcmeta${tail}`;
+            }
+            const CRC_TABLE = (() => {
+                const t = new Uint32Array(256);
+                for (let n = 0; n < 256; n++) {
+                    let c = n;
+                    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+                    t[n] = c >>> 0;
+                }
+                return t;
+            })();
+            function toBytes(input) {
+                if (input instanceof Uint8Array) return input;
+                if (input instanceof ArrayBuffer) return new Uint8Array(input);
+                if (typeof input === 'string') return new TextEncoder().encode(input);
+                throw new TypeError('Données binaires attendues.');
+            }
+            function crc32(input) {
+                const bytes = toBytes(input);
+                let c = 0xFFFFFFFF;
+                for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8);
+                return (c ^ 0xFFFFFFFF) >>> 0;
+            }
+            /** entries: [{name, data}] -> Uint8Array (.zip, STORE), comme glyph-checker.html. */
+            function makeZip(entries) {
+                if (!Array.isArray(entries) || entries.length === 0) throw new Error('Rien à mettre dans le zip.');
+                const enc = new TextEncoder();
+                const d = new Date();
+                const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+                const date = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+                const seen = new Set();
+                const prepared = entries.map(e => {
+                    const name = String(e.name || '');
+                    if (!name || name.startsWith('/') || name.includes('\\') || name.split('/').includes('..')) throw new Error('Chemin de fichier invalide dans le zip : « ' + name + ' ».');
+                    if (seen.has(name)) throw new Error('Fichier en double dans le zip : ' + name);
+                    seen.add(name);
+                    const data = toBytes(e.data);
+                    return { nameBytes: enc.encode(name), data, crc: crc32(data) };
+                });
+                let total = 22;
+                for (const p of prepared) total += 30 + p.nameBytes.length + p.data.length + 46 + p.nameBytes.length;
+                const out = new Uint8Array(total), dv = new DataView(out.buffer);
+                let o = 0;
+                const offsets = [];
+                for (const p of prepared) {
+                    offsets.push(o);
+                    dv.setUint32(o, 0x04034b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 0x0800, true); dv.setUint16(o + 8, 0, true);
+                    dv.setUint16(o + 10, time, true); dv.setUint16(o + 12, date, true); dv.setUint32(o + 14, p.crc, true);
+                    dv.setUint32(o + 18, p.data.length, true); dv.setUint32(o + 22, p.data.length, true);
+                    dv.setUint16(o + 26, p.nameBytes.length, true); dv.setUint16(o + 28, 0, true);
+                    out.set(p.nameBytes, o + 30); o += 30 + p.nameBytes.length;
+                    out.set(p.data, o); o += p.data.length;
+                }
+                const cdStart = o;
+                prepared.forEach((p, i) => {
+                    dv.setUint32(o, 0x02014b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 20, true); dv.setUint16(o + 8, 0x0800, true);
+                    dv.setUint16(o + 10, 0, true); dv.setUint16(o + 12, time, true); dv.setUint16(o + 14, date, true); dv.setUint32(o + 16, p.crc, true);
+                    dv.setUint32(o + 20, p.data.length, true); dv.setUint32(o + 24, p.data.length, true); dv.setUint16(o + 28, p.nameBytes.length, true);
+                    dv.setUint16(o + 30, 0, true); dv.setUint16(o + 32, 0, true); dv.setUint16(o + 34, 0, true); dv.setUint16(o + 36, 0, true);
+                    dv.setUint32(o + 38, 0, true); dv.setUint32(o + 42, offsets[i], true);
+                    out.set(p.nameBytes, o + 46); o += 46 + p.nameBytes.length;
+                });
+                dv.setUint32(o, 0x06054b50, true); dv.setUint16(o + 4, 0, true); dv.setUint16(o + 6, 0, true);
+                dv.setUint16(o + 8, prepared.length, true); dv.setUint16(o + 10, prepared.length, true);
+                dv.setUint32(o + 12, o - cdStart, true); dv.setUint32(o + 16, cdStart, true); dv.setUint16(o + 20, 0, true);
+                return out;
+            }
+            return { ID_RE, ORE_HOSTS, CATEGORIES, category, sanitizeId, idError, textureName, folderHint, makeZip };
+        })();
+        window.BcTex = BcTex;
 
         // --- 2. État Global de l'Application ---
         const state = {
@@ -1109,6 +1254,54 @@
                 }
             };
             document.getElementById('preMcmetaCode').textContent = JSON.stringify(mcmetaObj, null, 2);
+            updateBcUI();
+        }
+
+        // --- 6 bis. Noms BC, dossier de destination et zip ---
+        let bcIdTouched = false;
+
+        /** Noms des fichiers téléchargés ; le zip suit toujours la convention BC (bc). */
+        function bcNames() {
+            const cat = document.getElementById('selBcCategory').value;
+            const mode = document.getElementById('selBcName').value;
+            const numbered = mode === 'numbered' && BcTex.category(cat).numbered;
+            let bc;
+            try { bc = BcTex.textureName(numbered ? document.getElementById('numBcN').value : null); }
+            catch (e) { bc = null; }
+            const png = mode === 'item' ? `${state.itemName}.png` : bc;
+            return { png, mcmeta: png ? png + '.mcmeta' : null, bc };
+        }
+
+        function updateBcUI() {
+            const sel = document.getElementById('selBcCategory');
+            if (!sel.options.length) return; // pas encore initialisé
+            const cat = sel.value;
+            const nameSel = document.getElementById('selBcName');
+            const numberedOk = BcTex.category(cat).numbered;
+            nameSel.querySelector('option[value="numbered"]').disabled = !numberedOk;
+            if (!numberedOk && nameSel.value === 'numbered') nameSel.value = 'texture';
+            document.getElementById('wrapBcN').hidden = nameSel.value !== 'numbered';
+            document.getElementById('lblBcId').textContent = cat === 'ores' ? 'Bloc hôte' : 'Identifiant';
+            const idInput = document.getElementById('txtBcId');
+            if (!bcIdTouched && cat !== 'ores') idInput.value = BcTex.sanitizeId(state.itemName);
+            const id = idInput.value.trim();
+            const names = bcNames();
+            const err = BcTex.idError(cat, id) || (names.bc ? null : 'Numéro <n> : entier ≥ 1 attendu.');
+            const errEl = document.getElementById('bcIdError');
+            errEl.textContent = err || '';
+            errEl.hidden = !err;
+            document.getElementById('bcFolderHint').textContent = BcTex.folderHint(cat, id, names.bc || 'texture.png');
+            document.getElementById('lblMcmetaName').textContent = names.mcmeta || '—';
+            const zipBtn = document.getElementById('btnBcZip');
+            zipBtn.disabled = !!err || !state.exportStripCanvas;
+            zipBtn.classList.toggle('opacity-40', zipBtn.disabled);
+            zipBtn.textContent = `⬇ Zip BC (${cat}/${id || '<id>'}/)`;
+            // Minecraft 1.8 découpe une texture animée en frames carrées largeur × largeur
+            const warn = document.getElementById('bcSquareWarn');
+            const img = state.baseImageData;
+            const nonSquare = !!img && img.width !== img.height;
+            warn.hidden = !nonSquare;
+            if (nonSquare) warn.textContent = `Image ${img.width}×${img.height} non carrée : Minecraft 1.8 lit des frames ${img.width}×${img.width}, l'animation serait coupée de travers. Utilisez une image carrée.`;
         }
 
         function renderCurrentLiveFrame() {
@@ -1908,24 +2101,70 @@
                     showToast(`Spritesheet trop grand pour le navigateur (${w}×${h} px) : réduisez le nombre de frames ou la taille de l'image.`, 'warn');
                     return;
                 }
-                link.download = `${state.itemName}.png`;
+                const names = bcNames();
+                if (!names.png) { showToast('Numéro <n> invalide : entier ≥ 1 attendu.', 'warn'); return; }
+                link.download = names.png;
                 link.href = dataUrl;
                 link.click();
-                showToast(`Spritesheet exporté : ${state.itemName}.png (${w}×${h} px) !`, 'success');
+                showToast(`Spritesheet exporté : ${names.png} (${w}×${h} px) !`, 'success');
             });
 
             // Export fichier .png.mcmeta
             document.getElementById('btnDownloadMcmeta').addEventListener('click', () => {
+                const names = bcNames();
+                if (!names.mcmeta) { showToast('Numéro <n> invalide : entier ≥ 1 attendu.', 'warn'); return; }
                 const content = document.getElementById('preMcmetaCode').textContent;
                 const blob = new Blob([content], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `${state.itemName}.png.mcmeta`;
+                link.download = names.mcmeta;
                 link.href = url;
                 link.click();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
-                showToast(`Fichier ${state.itemName}.png.mcmeta téléchargé !`, 'success');
+                showToast(`Fichier ${names.mcmeta} téléchargé !`, 'success');
             });
+
+            // Noms et dossier BeltariaContent
+            document.getElementById('selBcCategory').innerHTML = BcTex.CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+            document.getElementById('listBcOreHosts').innerHTML = BcTex.ORE_HOSTS.map(h => `<option value="${h}"></option>`).join('');
+            ['selBcName', 'numBcN', 'selBcCategory'].forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', updateBcUI);
+                el.addEventListener('change', updateBcUI);
+            });
+            document.getElementById('selBcCategory').addEventListener('change', (e) => {
+                // Un hôte de minerai n'a rien à voir avec le nom de l'image : on le fait choisir
+                if (e.target.value === 'ores' && !BcTex.ORE_HOSTS.includes(document.getElementById('txtBcId').value)) {
+                    document.getElementById('txtBcId').value = '';
+                    bcIdTouched = true;
+                    updateBcUI();
+                }
+            });
+            document.getElementById('txtBcId').addEventListener('input', () => { bcIdTouched = true; updateBcUI(); });
+
+            // Zip <catégorie>/<id>/texture.png + .mcmeta, à décompresser dans pack-src/
+            document.getElementById('btnBcZip').addEventListener('click', () => {
+                const cat = document.getElementById('selBcCategory').value;
+                const id = document.getElementById('txtBcId').value.trim();
+                const names = bcNames();
+                const err = BcTex.idError(cat, id);
+                if (err || !names.bc || !state.exportStripCanvas) { showToast(err || 'Rien à exporter.', 'warn'); return; }
+                state.exportStripCanvas.toBlob(async (blob) => {
+                    if (!blob) { showToast('Spritesheet trop grand pour le navigateur.', 'warn'); return; }
+                    const zip = BcTex.makeZip([
+                        { name: `${cat}/${id}/${names.bc}`, data: new Uint8Array(await blob.arrayBuffer()) },
+                        { name: `${cat}/${id}/${names.bc}.mcmeta`, data: document.getElementById('preMcmetaCode').textContent }
+                    ]);
+                    const url = URL.createObjectURL(new Blob([zip], { type: 'application/zip' }));
+                    const link = document.createElement('a');
+                    link.download = `${id}.zip`;
+                    link.href = url;
+                    link.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    showToast(`Zip ${id}.zip : ${cat}/${id}/${names.bc} + .mcmeta, à décompresser dans pack-src/`, 'success');
+                }, 'image/png');
+            });
+            updateBcUI();
 
             // Copie du JSON .mcmeta dans le presse-papiers
             document.getElementById('btnCopyMcmeta').addEventListener('click', () => {

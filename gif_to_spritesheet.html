@@ -15,6 +15,8 @@
         #drop-zone.is-loaded { border-color: var(--st-accent-line); }
         #drop-zone.is-dragover { border-color: var(--st-accent-hover); background-color: var(--st-accent-soft); }
         #drop-zone:focus-within { border-color: var(--st-accent-hover); }
+        #verify-drop.is-dragover { border-color: var(--st-accent-hover); background-color: var(--st-accent-soft); }
+        #verify-drop:focus-within { border-color: var(--st-accent-hover); }
         /* États vides : visibles tant que la section correspondante est masquée */
         #settings-panel:not(.hidden) ~ #settings-empty,
         #result-section:not(.hidden) ~ #result-empty { display: none; }
@@ -118,6 +120,21 @@
                         <span class="text-xs font-medium text-slate-300">Hauteur (px)</span>
                         <input type="number" id="height-input" min="1" inputmode="numeric" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition">
                     </label>
+                    <label class="col-span-2 flex flex-col gap-1.5 min-w-0">
+                        <span class="text-xs font-medium text-slate-300">Frames Minecraft 1.8</span>
+                        <select id="frame-mode" class="st-select w-full min-w-0">
+                            <option value="free">Taille ci-dessus telle quelle</option>
+                            <option value="pad">Carrées : marges transparentes (sans déformation)</option>
+                            <option value="stretch">Carrées : étirées à la largeur</option>
+                        </select>
+                    </label>
+                    <div id="square-warning" class="col-span-2 st-note st-note-warn text-xs flex flex-col gap-2" hidden>
+                        <p>Frames non carrées : Minecraft 1.8 découpe une texture animée en frames <b>largeur × largeur</b> (hauteur de l'image = n × largeur), l'animation serait coupée de travers en jeu.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="square-pad" type="button" class="st-btn st-btn-soft text-xs">Carré par marges</button>
+                            <button id="square-stretch" type="button" class="st-btn text-xs">Carré étiré</button>
+                        </div>
+                    </div>
                     <button id="convert-btn" type="button" class="col-span-2 w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow-lg shadow-purple-600/25 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400">
                         Générer le SpriteSheet
                     </button>
@@ -139,8 +156,50 @@
             <div id="result-section" class="hidden flex-col gap-3.5">
                 <a id="download-btn" class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Télécharger l'image (.png)
+                    <span>Télécharger <span id="png-name" class="st-mono">texture.png</span></span>
                 </a>
+
+                <!-- Export prêt pour BeltariaContent : noms fixes, .mcmeta tiré des délais du GIF, zip -->
+                <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="flex flex-col gap-1.5 min-w-0">
+                            <span class="text-xs font-medium text-slate-300">Nom des fichiers</span>
+                            <select id="bc-name" class="st-select w-full min-w-0">
+                                <option value="texture">texture.png + texture.png.mcmeta</option>
+                                <option value="numbered">texture_&lt;n&gt;.png + .mcmeta</option>
+                                <option value="gif">Nom du GIF (&lt;gif&gt;_spritesheet.png)</option>
+                            </select>
+                        </label>
+                        <label id="bc-n-wrap" class="flex flex-col gap-1.5 min-w-0" hidden>
+                            <span class="text-xs font-medium text-slate-300">Numéro &lt;n&gt;</span>
+                            <input id="bc-n" type="number" min="1" step="1" value="1" inputmode="numeric" class="st-input w-full min-w-0">
+                        </label>
+                        <label class="flex flex-col gap-1.5 min-w-0">
+                            <span class="text-xs font-medium text-slate-300">Catégorie BC</span>
+                            <select id="bc-category" class="st-select w-full min-w-0"></select>
+                        </label>
+                        <label class="flex flex-col gap-1.5 min-w-0">
+                            <span id="bc-id-label" class="text-xs font-medium text-slate-300">Identifiant</span>
+                            <input id="bc-id" type="text" list="bc-ore-hosts" autocomplete="off" spellcheck="false" class="st-input w-full min-w-0 st-mono">
+                            <datalist id="bc-ore-hosts"></datalist>
+                        </label>
+                    </div>
+                    <p id="bc-id-error" class="st-note st-note-error text-xs" role="alert" hidden></p>
+                    <p id="bc-folder" class="text-[11px] text-slate-400 st-mono break-all"></p>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center justify-between gap-2 text-[11px]">
+                            <span class="text-slate-400">Contenu <code id="mcmeta-name" class="st-mono text-purple-300">texture.png.mcmeta</code> :</span>
+                            <label class="flex items-center gap-1 text-slate-400 cursor-pointer"><input type="checkbox" id="mcmeta-interpolate"> interpolate</label>
+                        </div>
+                        <pre id="mcmeta-code" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[11px] st-mono text-emerald-300 whitespace-pre-wrap break-all"></pre>
+                        <p id="delay-info" class="text-[11px] text-slate-400"></p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button id="download-mcmeta" type="button" class="st-btn st-btn-soft text-xs">⬇ .png.mcmeta</button>
+                        <button id="download-zip" type="button" class="st-btn st-btn-primary text-xs">⬇ Zip BC</button>
+                        <button id="verify-current" type="button" class="st-btn text-xs">Vérifier ce résultat (4)</button>
+                    </div>
+                </div>
 
                 <div class="max-h-[600px] overflow-auto st-checker rounded-xl border-2 border-slate-800 flex items-start p-4">
                     <img id="preview-img" class="max-w-none mx-auto shadow-2xl st-pixelated" alt="Aperçu du sprite">
@@ -154,7 +213,547 @@
                 </div>
             </div>
         </section>
+
+        <!-- Vérificateur : PNG + .mcmeta selon Minecraft 1.8.9 (MCP) et les noms de BeltariaContent -->
+        <section id="verify" class="lg:col-span-12 min-w-0 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                <span class="st-step">4</span>
+                <div class="min-w-0">
+                    <h2 class="font-bold text-sm text-white">Vérifier une texture animée</h2>
+                    <p class="text-[11px] text-slate-400">Une image PNG et son .mcmeta, lus comme Minecraft 1.8.9 et nommés comme BeltariaContent les attend</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                <div class="lg:col-span-5 flex flex-col gap-3 min-w-0">
+                    <div id="verify-drop" class="border-2 border-dashed border-slate-700 hover:border-purple-500/60 rounded-xl px-4 py-6 text-center transition-colors cursor-pointer relative">
+                        <input type="file" id="verify-input" multiple accept=".png,.mcmeta,image/png" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Choisir une texture PNG et son .mcmeta" />
+                        <p class="text-slate-200 font-semibold text-sm pointer-events-none">Déposez <code class="st-mono">texture.png</code> + <code class="st-mono">texture.png.mcmeta</code></p>
+                        <p class="text-slate-400 text-xs mt-1 pointer-events-none">ou touchez pour choisir les deux fichiers</p>
+                    </div>
+                    <label class="flex flex-col gap-1.5 min-w-0">
+                        <span class="text-xs font-medium text-slate-300">Dossier BC visé (règles de nom)</span>
+                        <select id="verify-category" class="st-select w-full min-w-0"></select>
+                    </label>
+                    <p id="verify-files" class="text-[11px] text-slate-400 st-mono break-all">Aucun fichier.</p>
+                    <p id="verify-summary" class="st-note text-xs" role="status" aria-live="polite">En attente d'une texture.</p>
+                    <ul id="verify-report" class="flex flex-col gap-1.5 text-xs"></ul>
+                </div>
+                <div class="lg:col-span-7 flex flex-col gap-2 min-w-0">
+                    <div class="st-checker rounded-xl border-2 border-slate-800 min-h-[220px] flex items-center justify-center p-4">
+                        <canvas id="verify-canvas" width="16" height="16" class="st-pixelated" style="width:192px;height:192px" aria-label="Aperçu de l'animation"></canvas>
+                    </div>
+                    <p id="verify-frame" class="text-[11px] text-slate-300 st-mono text-center"></p>
+                    <p id="verify-sequence" class="text-[11px] text-slate-400 st-mono break-all"></p>
+                    <p class="text-[11px] text-slate-500">Aperçu au rythme du jeu : un tick = 50 ms, chaque frame dure son <code class="st-mono">time</code> (sinon <code class="st-mono">frametime</code>) ; avec <code class="st-mono">interpolate</code>, le mélange se fait comme le client 1.8.9 (couleurs mêlées, transparence de la frame courante).</p>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <script>
+        /* =====================================================================
+         * Règles BeltariaContent (BC) pour les textures : noms, identifiants, zip.
+         * Script classique (pas un module) : le vérificateur (4) marche même si le
+         * décodeur GIF, chargé depuis un CDN, est indisponible.
+         * ===================================================================== */
+        const BcTex = (() => {
+            // PackBuild.java:1493 (Entry.ID) : un identifiant est un nom de dossier, une valeur de
+            // marqueur CIT et un nom de fichier dans l'archive.
+            const ID_RE = /^[a-z0-9_.-]+$/;
+            // OreHost.java:67-81 : le dossier ores/<hôte>/ porte le nom du bloc hôte, pas du minerai.
+            const ORE_HOSTS = ['smooth_stone', 'smooth_sandstone', 'smooth_quartz', 'smooth_red_sandstone',
+                'oak_wood', 'spruce_wood', 'birch_wood', 'jungle_wood', 'acacia_wood', 'dark_oak_wood'];
+            // Dossiers d'entrée dont les textures s'appellent texture[_<n>].png[.mcmeta]
+            // (PackBuild.java:363-390 et 642) ; ores/ ne lit que texture.png (PackBuild.java:921-922, 945).
+            const CATEGORIES = [
+                { id: 'items', label: 'items/ — item', numbered: true },
+                { id: 'wings', label: 'wings/ — ailes', numbered: true },
+                { id: 'auras', label: 'auras/ — aura', numbered: true },
+                { id: 'motes', label: 'motes/ — objet volant d\'aura', numbered: true },
+                { id: 'blocks', label: 'blocks/ — bloc décoratif', numbered: true },
+                { id: 'ores', label: 'ores/ — minerai (bloc hôte)', numbered: false }
+            ];
+            const category = id => CATEGORIES.find(c => c.id === id) || null;
+
+            /** Nom libre -> identifiant BC plausible (minuscules, sans accents, [a-z0-9_.-]). */
+            function sanitizeId(raw) {
+                return String(raw || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+                    .replace(/[^a-z0-9_.-]+/g, '_').replace(/^_+|_+$/g, '');
+            }
+            /** Message d'erreur (français) si l'identifiant serait refusé ou ignoré par BC, sinon null. */
+            function idError(cat, id) {
+                if (!category(cat)) return 'Catégorie inconnue : ' + cat;
+                if (!id) return cat === 'ores' ? 'Choisissez le bloc hôte : c\'est le nom du dossier ores/<hôte>/.' : 'Identifiant requis : c\'est le nom du dossier de l\'entrée.';
+                if (!ID_RE.test(id)) return `« ${id} » : identifiant invalide, attendu en minuscules sur [a-z0-9_.-] - c'est un nom de dossier et une valeur de marqueur (PackBuild.java:1515).`;
+                if (cat === 'ores' && !ORE_HOSTS.includes(id)) return `ores/${id} : aucun bloc hôte de ce nom, BC saute le dossier (PackBuild.java:906). Hôtes : ${ORE_HOSTS.join(', ')}.`;
+                return null;
+            }
+            /** PackBuild.java:834-837 : texture.png, ou texture_<n>.png ; le .mcmeta reprend le nom de l'image. */
+            function textureName(n) {
+                if (n === undefined || n === null || n === '') return 'texture.png';
+                const k = Number(n);
+                if (!Number.isInteger(k) || k < 1) throw new Error('Numéro de texture : entier ≥ 1 attendu, reçu « ' + n + ' ».');
+                return `texture_${k}.png`;
+            }
+            /** Où le fichier va dans pack-src/, avec ce que BC en fait. */
+            function folderHint(cat, id, png) {
+                const dir = `${cat}/${id || '<id>'}/`;
+                let tail = '';
+                if (cat === 'ores') tail = ' — habille le bloc hôte ; seul texture.png (+ .mcmeta) est lu.';
+                else if (/_\d+\.png$/.test(png) && cat === 'items') tail = ' — sans model.json, BC ne cite que texture.png ; texture_<n> sert quand le modèle désigne ./texture_<n>.';
+                else if (cat === 'items') tail = ' — texture seule : retexture l\'item ; avec model.json, celui-ci désigne ./texture.';
+                else tail = ' — model.json désigne ./texture, ./texture_2…';
+                return `Dossier BC : pack-src/${dir}${png} + ${png}.mcmeta${tail}`;
+            }
+
+            /* ---------- CRC32 + ZIP minimal (écriture STORE), repris de glyph-checker.html ---------- */
+            function toBytes(input) {
+                if (input instanceof Uint8Array) return input;
+                if (input instanceof ArrayBuffer) return new Uint8Array(input);
+                if (ArrayBuffer.isView(input)) return new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
+                if (typeof input === 'string') return new TextEncoder().encode(input);
+                throw new TypeError('Données binaires attendues.');
+            }
+            const CRC_TABLE = (() => {
+                const t = new Uint32Array(256);
+                for (let n = 0; n < 256; n++) {
+                    let c = n;
+                    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+                    t[n] = c >>> 0;
+                }
+                return t;
+            })();
+            function crc32(input) {
+                const bytes = toBytes(input);
+                let c = 0xFFFFFFFF;
+                for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8);
+                return (c ^ 0xFFFFFFFF) >>> 0;
+            }
+            /** entries: [{name, data}] -> Uint8Array (.zip, STORE). */
+            function makeZip(entries, when) {
+                if (!Array.isArray(entries) || entries.length === 0) throw new Error('Rien à mettre dans le zip.');
+                const enc = new TextEncoder();
+                const d = when || new Date();
+                const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+                const date = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+                const seen = new Set();
+                const prepared = entries.map(e => {
+                    const name = String(e.name || '');
+                    if (!name || name.startsWith('/') || name.includes('\\') || name.split('/').includes('..')) throw new Error('Chemin de fichier invalide dans le zip : « ' + name + ' ».');
+                    if (seen.has(name)) throw new Error('Fichier en double dans le zip : ' + name);
+                    seen.add(name);
+                    const data = toBytes(e.data);
+                    return { nameBytes: enc.encode(name), data, crc: crc32(data) };
+                });
+                let total = 22;
+                for (const p of prepared) total += 30 + p.nameBytes.length + p.data.length + 46 + p.nameBytes.length;
+                const out = new Uint8Array(total), dv = new DataView(out.buffer);
+                let o = 0;
+                const offsets = [];
+                for (const p of prepared) {
+                    offsets.push(o);
+                    dv.setUint32(o, 0x04034b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 0x0800, true); dv.setUint16(o + 8, 0, true);
+                    dv.setUint16(o + 10, time, true); dv.setUint16(o + 12, date, true); dv.setUint32(o + 14, p.crc, true);
+                    dv.setUint32(o + 18, p.data.length, true); dv.setUint32(o + 22, p.data.length, true);
+                    dv.setUint16(o + 26, p.nameBytes.length, true); dv.setUint16(o + 28, 0, true);
+                    out.set(p.nameBytes, o + 30); o += 30 + p.nameBytes.length;
+                    out.set(p.data, o); o += p.data.length;
+                }
+                const cdStart = o;
+                prepared.forEach((p, i) => {
+                    dv.setUint32(o, 0x02014b50, true); dv.setUint16(o + 4, 20, true); dv.setUint16(o + 6, 20, true); dv.setUint16(o + 8, 0x0800, true);
+                    dv.setUint16(o + 10, 0, true); dv.setUint16(o + 12, time, true); dv.setUint16(o + 14, date, true); dv.setUint32(o + 16, p.crc, true);
+                    dv.setUint32(o + 20, p.data.length, true); dv.setUint32(o + 24, p.data.length, true); dv.setUint16(o + 28, p.nameBytes.length, true);
+                    dv.setUint16(o + 30, 0, true); dv.setUint16(o + 32, 0, true); dv.setUint16(o + 34, 0, true); dv.setUint16(o + 36, 0, true);
+                    dv.setUint32(o + 38, 0, true); dv.setUint32(o + 42, offsets[i], true);
+                    out.set(p.nameBytes, o + 46); o += 46 + p.nameBytes.length;
+                });
+                dv.setUint32(o, 0x06054b50, true); dv.setUint16(o + 4, 0, true); dv.setUint16(o + 6, 0, true);
+                dv.setUint16(o + 8, prepared.length, true); dv.setUint16(o + 10, prepared.length, true);
+                dv.setUint32(o + 12, o - cdStart, true); dv.setUint32(o + 16, cdStart, true); dv.setUint16(o + 20, 0, true);
+                return out;
+            }
+            /** Téléchargement d'octets ou d'un Blob sous un nom donné. */
+            function save(name, data, type) {
+                const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = name;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+            return { ID_RE, ORE_HOSTS, CATEGORIES, category, sanitizeId, idError, textureName, folderHint, crc32, makeZip, save };
+        })();
+
+        /* =====================================================================
+         * .mcmeta : génération depuis les délais d'un GIF, et vérification telle que
+         * Minecraft 1.8.9 la lit (MCP 1.8.9 : AnimationMetadataSectionSerializer,
+         * TextureAtlasSprite.loadSprite / updateAnimation, JsonUtils). BC copie le
+         * .mcmeta octet pour octet sans le valider : c'est ici qu'on le vérifie.
+         * ===================================================================== */
+        const Mcmeta = (() => {
+            /** Délai GIF (ms, tel que gifuct-js le donne : centièmes × 10) -> ticks de 50 ms, au moins 1. */
+            function ticksFromDelayMs(ms) {
+                const cs = Math.round((Number(ms) || 0) / 10);
+                return Math.max(1, Math.round(cs / 5));
+            }
+            /** Délais constants -> frametime ; délais variables -> frames:[{index,time}]. */
+            function fromDelays(delaysMs, interpolate) {
+                if (!Array.isArray(delaysMs) || delaysMs.length === 0) throw new Error('Aucune frame : impossible d\'écrire le .mcmeta.');
+                const ticks = delaysMs.map(ticksFromDelayMs);
+                const animation = {};
+                if (ticks.every(t => t === ticks[0])) animation.frametime = ticks[0];
+                else animation.frames = ticks.map((time, index) => ({ index, time }));
+                if (interpolate) animation.interpolate = true;
+                return { animation };
+            }
+            /** Écriture compacte, comme les .mcmeta de pack-src/. */
+            const stringify = obj => JSON.stringify(obj);
+
+            const SER = 'AnimationMetadataSectionSerializer.java';
+            const SPRITE = 'TextureAtlasSprite.java';
+            const JSONU = 'JsonUtils.java';
+            const PB = 'PackBuild.java';
+            const isPlainObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+            const isNum = v => typeof v === 'number' && Number.isFinite(v);
+            const show = v => JSON.stringify(v);
+
+            /**
+             * input: { pngName?, mcmetaName?, mcmetaText? (null = pas de .mcmeta), width?, height?, category? }
+             * -> { messages:[{level:'error'|'warn'|'info'|'ok', text, ref}], ok, frameCount, sequence, interpolate, animated }
+             */
+            function validate(input) {
+                const { pngName, mcmetaName, mcmetaText, width, height } = input || {};
+                const cat = input && input.category ? input.category : '';
+                const out = [];
+                const add = (level, text, ref) => out.push({ level, text, ref: ref || '' });
+
+                /* --- 1. Noms (BC) --- */
+                const checkName = (name, ext) => {
+                    if (!name.startsWith('texture')) {
+                        add('warn', `${name} : BC ne lit que texture[_<n>]${ext} dans un dossier d'entrée, ce fichier y serait ignoré.`, PB + ':829-832');
+                        return;
+                    }
+                    const re = ext === '.png' ? /^texture(_\d+)?\.png$/ : /^texture(_\d+)?\.png\.mcmeta$/;
+                    if (!re.test(name)) add('error', `${name} attendu sous la forme texture[_<n>].png[.mcmeta] : BC refuse l'assemblage.`, PB + ':834-838');
+                    else if (cat === 'ores' && name !== 'texture' + ext) add('error', `${name} : ores/<hôte>/ ne lit que texture${ext}.`, PB + ':921-922, 945');
+                    else add('ok', `${name} : nom reconnu par BC.`, PB + ':834');
+                };
+                if (pngName) checkName(pngName, '.png');
+                if (mcmetaName) {
+                    checkName(mcmetaName, '.png.mcmeta');
+                    if (pngName && mcmetaName !== pngName + '.mcmeta') add('error', `${mcmetaName} ne correspond pas à ${pngName} : le client cherche ${pngName}.mcmeta, l'animation ne serait pas lue.`, PB + ':834');
+                }
+                if (cat === 'items' && pngName && /^texture_\d+\.png$/.test(pngName)) add('info', 'items/ : sans model.json, BC ne cite que texture.png ; texture_<n> sert quand le modèle désigne ./texture_<n>.', PB + ':686-689');
+
+                /* --- 2. .mcmeta (MCP 1.8.9) --- */
+                let animated = false, metaBroken = false;
+                let frametime = 1, interpolate = false;
+                const frames = [];
+                if (mcmetaText !== undefined && mcmetaText !== null) {
+                    let root;
+                    try {
+                        root = JSON.parse(String(mcmetaText).replace(/^﻿/, ''));
+                    } catch (e) {
+                        metaBroken = true;
+                        add('error', `JSON illisible : ${e.message}`, 'Gson');
+                    }
+                    if (!metaBroken && !isPlainObject(root)) {
+                        metaBroken = true;
+                        add('error', 'La racine du .mcmeta doit être un objet JSON { … }.', 'Gson');
+                    }
+                    if (!metaBroken) {
+                        for (const k of Object.keys(root)) if (k !== 'animation') add('info', `Section « ${k} » : non vérifiée ici, sans effet sur l'animation.`);
+                        if (!('animation' in root)) {
+                            add('warn', 'Aucune section « animation » : l\'image est lue comme une texture fixe.');
+                        } else if (!isPlainObject(root.animation)) {
+                            metaBroken = true;
+                            add('error', `« animation » doit être un objet (« Expected metadata section to be a JsonObject », reçu ${show(root.animation)}).`, SER + ':22');
+                        } else {
+                            animated = true;
+                            const a = root.animation;
+                            const known = ['frametime', 'frames', 'width', 'height', 'interpolate'];
+                            for (const k of Object.keys(a)) if (!known.includes(k)) add('info', `animation.${k} : clé inconnue de 1.8.9, ignorée.`);
+                            // frametime : JsonUtils.getInt (nombre, partie entière), défaut 1, sinon >= 1
+                            if ('frametime' in a) {
+                                const v = a.frametime;
+                                if (!isNum(v)) {
+                                    metaBroken = true;
+                                    add('error', `frametime : nombre entier attendu (« Expected frametime to be a Int, was ${show(v)} »).`, SER + ':23 · ' + JSONU + ':181-190');
+                                } else {
+                                    const t = Math.trunc(v);
+                                    if (!Number.isInteger(v)) add('warn', `frametime ${v} : lu ${t} (partie entière).`, JSONU + ':185');
+                                    if (t !== 1 && (t < 1 || t > 2147483647)) {
+                                        metaBroken = true;
+                                        add('error', `frametime ${t} : « Invalid default frame time », au moins 1 tick.`, SER + ':25-28');
+                                    } else {
+                                        frametime = t;
+                                        add('ok', `frametime ${t} tick(s) = ${t * 50} ms par frame.`, SER + ':23');
+                                    }
+                                }
+                            }
+                            // frames : nombres (index) ou objets {index, time}
+                            if ('frames' in a) {
+                                if (!Array.isArray(a.frames)) {
+                                    metaBroken = true;
+                                    add('error', `frames : liste attendue (« Invalid animation->frames: expected array », reçu ${show(a.frames)}).`, SER + ':34, 49');
+                                } else {
+                                    a.frames.forEach((el, j) => {
+                                        if (isNum(el)) {
+                                            const idx = Math.trunc(el);
+                                            if (!Number.isInteger(el)) add('warn', `frames[${j}] = ${el} : lu ${idx} (partie entière).`, JSONU + ':185');
+                                            if (idx < 0) { metaBroken = true; add('error', `frames[${j}] : index ${idx} négatif, la texture ne se charge pas.`, SER + ':74 · ' + SPRITE + ':304-310'); return; }
+                                            frames.push({ index: idx, time: null });
+                                        } else if (isPlainObject(el)) {
+                                            let time = null;
+                                            if ('time' in el) {
+                                                if (!isNum(el.time)) { metaBroken = true; add('error', `frames[${j}].time : nombre entier attendu (« Expected time to be a Int »).`, SER + ':79 · ' + JSONU + ':189'); return; }
+                                                time = Math.trunc(el.time);
+                                                if (time < 1) { metaBroken = true; add('error', `frames[${j}].time ${time} : « Invalid frame time », au moins 1 tick.`, SER + ':81-84'); return; }
+                                            }
+                                            if (!('index' in el)) { metaBroken = true; add('error', `frames[${j}] : « Missing index, expected to find a Int ».`, SER + ':86 · ' + JSONU + ':203'); return; }
+                                            if (!isNum(el.index)) { metaBroken = true; add('error', `frames[${j}].index : nombre entier attendu (« Expected index to be a Int »).`, SER + ':86 · ' + JSONU + ':189'); return; }
+                                            const idx = Math.trunc(el.index);
+                                            if (idx < 0) { metaBroken = true; add('error', `frames[${j}].index ${idx} : « Invalid frame index ».`, SER + ':87'); return; }
+                                            frames.push({ index: idx, time });
+                                        } else if (el === null || Array.isArray(el)) {
+                                            add('warn', `frames[${j}] : ni nombre ni objet, ignoré par le client.`, SER + ':90-93');
+                                        } else {
+                                            metaBroken = true;
+                                            add('error', `frames[${j}] : nombre ou objet {index, time} attendu (« Expected frames[${j}] to be a Int, was ${show(el)} »).`, SER + ':74 · ' + JSONU + ':189');
+                                        }
+                                    });
+                                    if (a.frames.length === 0) add('info', 'frames vide : toutes les frames, dans l\'ordre, au rythme de frametime.', SPRITE + ':315-323');
+                                }
+                            }
+                            for (const key of ['width', 'height']) {
+                                if (!(key in a)) continue;
+                                const v = a[key];
+                                if (!isNum(v)) { metaBroken = true; add('error', `${key} : nombre entier attendu (« Expected ${key} to be a Int »).`, SER + ':53-54 · ' + JSONU + ':189'); continue; }
+                                if (Math.trunc(v) < 1) { metaBroken = true; add('error', `${key} ${Math.trunc(v)} : « Invalid ${key} », au moins 1.`, SER + ':56-64'); continue; }
+                                add('warn', `${key} : lu mais sans effet en 1.8.9 — les frames restent des carrés de la largeur de l'image.`, SPRITE + ':291-294');
+                            }
+                            if ('interpolate' in a) {
+                                const v = a.interpolate;
+                                if (typeof v === 'boolean') interpolate = v;
+                                else if (typeof v === 'string' || typeof v === 'number') {
+                                    // JsonPrimitive.getAsBoolean : Boolean.parseBoolean(texte)
+                                    interpolate = String(v).toLowerCase() === 'true';
+                                    add('warn', `interpolate ${show(v)} : booléen attendu, lu ${interpolate}.`, JSONU + ':101-105');
+                                } else {
+                                    metaBroken = true;
+                                    add('error', `interpolate : booléen attendu (« Expected interpolate to be a Boolean, was ${show(v)} »).`, JSONU + ':101-110');
+                                }
+                            }
+                        }
+                    }
+                }
+
+                /* --- 3. Image (TextureAtlasSprite.loadSprite) --- */
+                let frameCount = null;
+                const w = Number(width) || 0, h = Number(height) || 0;
+                if (w > 0 && h > 0) {
+                    if (animated && !metaBroken) {
+                        frameCount = Math.floor(h / w);
+                        if (frameCount < 1) add('error', `Image ${w}×${h} : plus large que haute, aucune frame ${w}×${w}.`, SPRITE + ':291');
+                        else {
+                            add('ok', `${frameCount} frame(s) de ${w}×${w} px (hauteur = n × largeur).`, SPRITE + ':291-294');
+                            if (h % w) add('warn', `Hauteur ${h} pas multiple de la largeur ${w} : les ${h % w} dernières lignes sont ignorées.`, SPRITE + ':291');
+                        }
+                        const bad = [...new Set(frames.map(f => f.index))].filter(i => frameCount !== null && i >= frameCount).sort((x, y) => x - y);
+                        for (const i of bad) add('error', `Index ${i} hors de l'image (${frameCount} frame(s), index 0 à ${frameCount - 1}) : « invalid frameindex ${i} ».`, SPRITE + ':304-306');
+                        if (frames.length && frameCount > 0) {
+                            const used = new Set(frames.map(f => f.index));
+                            const unused = [];
+                            for (let i = 0; i < frameCount; i++) if (!used.has(i)) unused.push(i);
+                            if (unused.length) add('info', `Frame(s) jamais affichée(s) : ${unused.join(', ')}.`);
+                        }
+                    } else if (!metaBroken) {
+                        if (w !== h) {
+                            add('error', `Image ${w}×${h} sans animation : « broken aspect ratio and not an animation », une texture fixe doit être carrée.`, SPRITE + ':282-285');
+                            if (h > w && h % w === 0 && (mcmetaText === undefined || mcmetaText === null)) add('info', `Bande de ${h / w} frames ${w}×${w} : il manque sans doute ${(pngName || 'texture.png')}.mcmeta.`);
+                        } else add('ok', `Image ${w}×${h} : texture fixe carrée.`);
+                    }
+                } else if (animated && !metaBroken && frames.length) {
+                    add('info', 'Sans l\'image, les index ne peuvent pas être comparés au nombre de frames.');
+                }
+
+                /* --- 4. Séquence jouée (AnimationMetadataSection / TextureAtlasSprite) --- */
+                const errors = out.filter(m => m.level === 'error');
+                let sequence = null;
+                if (!errors.length && animated) {
+                    if (frames.length) sequence = frames.map(f => ({ index: f.index, time: f.time === null ? frametime : f.time }));
+                    else if (frameCount) sequence = Array.from({ length: frameCount }, (_, i) => ({ index: i, time: frametime }));
+                    if (sequence) {
+                        const total = sequence.reduce((s, f) => s + f.time, 0);
+                        add('ok', `Cycle de ${sequence.length} étape(s), ${total} ticks = ${(total * 0.05).toFixed(2)} s${interpolate ? ', interpolé' : ''}.`);
+                    }
+                }
+                return { messages: out, ok: errors.length === 0, errors: errors.map(m => m.text), frameCount, sequence, interpolate, animated };
+            }
+
+            /**
+             * Simulation tick par tick de TextureAtlasSprite.updateAnimation (TextureAtlasSprite.java:170-191) :
+             * renvoie, après chaque tick, la frame affichée et, si interpolate, la suivante et son poids d0.
+             */
+            function createPlayer(sequence, interpolate) {
+                if (!Array.isArray(sequence) || !sequence.length) throw new Error('Séquence vide.');
+                let frameCounter = 0, tickCounter = 0;
+                return {
+                    current() {
+                        const len = sequence.length;
+                        const step = sequence[frameCounter];
+                        const next = sequence[(frameCounter + 1) % len];
+                        const d0 = interpolate && tickCounter > 0 && next.index !== step.index ? 1 - tickCounter / step.time : 1;
+                        return { step: frameCounter, index: step.index, next: next.index, d0, tick: tickCounter };
+                    },
+                    tick() {
+                        tickCounter++;
+                        if (tickCounter >= sequence[frameCounter].time) {
+                            frameCounter = (frameCounter + 1) % sequence.length;
+                            tickCounter = 0;
+                        }
+                        return this.current();
+                    }
+                };
+            }
+            /** Mélange 1.8.9 (TextureAtlasSprite.java:216-226) : RVB pondérés, alpha de la frame courante. */
+            function blend(cur, nxt, d0, out) {
+                for (let i = 0; i < cur.length; i += 4) {
+                    out[i] = Math.trunc(cur[i] * d0 + nxt[i] * (1 - d0));
+                    out[i + 1] = Math.trunc(cur[i + 1] * d0 + nxt[i + 1] * (1 - d0));
+                    out[i + 2] = Math.trunc(cur[i + 2] * d0 + nxt[i + 2] * (1 - d0));
+                    out[i + 3] = cur[i + 3];
+                }
+                return out;
+            }
+            return { ticksFromDelayMs, fromDelays, stringify, validate, createPlayer, blend };
+        })();
+
+        /* ---------- (4) Vérifier une texture animée : interface ---------- */
+        const VerifyUI = (() => {
+            const $ = id => document.getElementById(id);
+            const input = $('verify-input'), drop = $('verify-drop'), catSel = $('verify-category');
+            const report = $('verify-report'), summary = $('verify-summary'), filesLbl = $('verify-files');
+            const canvas = $('verify-canvas'), frameLbl = $('verify-frame'), seqLbl = $('verify-sequence');
+            const vctx = canvas.getContext('2d');
+            let last = null, timer = null, lastResult = null;
+
+            catSel.innerHTML = '<option value="">Non précisé (texture[_&lt;n&gt;].png)</option>' +
+                BcTex.CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+
+            const ICON = { error: '❌', warn: '⚠️', info: 'ℹ️', ok: '✅' };
+            const CLS = { error: 'text-rose-300', warn: 'text-amber-300', info: 'text-slate-300', ok: 'text-emerald-300' };
+
+            function stop() { if (timer) clearInterval(timer); timer = null; }
+
+            function render(result) {
+                report.innerHTML = '';
+                for (const m of result.messages) {
+                    const li = document.createElement('li');
+                    li.dataset.level = m.level;
+                    li.className = 'flex gap-1.5 items-start ' + CLS[m.level];
+                    const icon = document.createElement('span'); icon.textContent = ICON[m.level]; icon.setAttribute('aria-hidden', 'true');
+                    const txt = document.createElement('span'); txt.className = 'min-w-0 break-words'; txt.textContent = m.text;
+                    li.append(icon, txt);
+                    if (m.ref) { const ref = document.createElement('code'); ref.className = 'st-mono text-[10px] text-slate-500 ml-1 whitespace-nowrap'; ref.textContent = m.ref; txt.append(' ', ref); }
+                    report.appendChild(li);
+                }
+                const nErr = result.messages.filter(m => m.level === 'error').length;
+                const nWarn = result.messages.filter(m => m.level === 'warn').length;
+                summary.classList.remove('st-note-ok', 'st-note-warn', 'st-note-error');
+                summary.classList.add(nErr ? 'st-note-error' : nWarn ? 'st-note-warn' : 'st-note-ok');
+                summary.textContent = nErr ? `❌ ${nErr} erreur(s) : refusé par Minecraft 1.8.9 ou par BC.` : nWarn ? `⚠️ Valide, ${nWarn} avertissement(s).` : '✅ Valide pour Minecraft 1.8.9 et BeltariaContent.';
+            }
+
+            function play(img, result) {
+                stop();
+                seqLbl.textContent = '';
+                frameLbl.textContent = '';
+                if (!img) return;
+                const w = img.width, h = img.height;
+                const side = w;
+                const off = document.createElement('canvas');
+                off.width = w; off.height = h;
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(img, 0, 0);
+                const seq = result.sequence;
+                canvas.width = side; canvas.height = seq ? side : h;
+                const scale = Math.max(1, Math.floor(192 / Math.max(canvas.width, canvas.height, 1)));
+                canvas.style.width = (canvas.width * scale) + 'px';
+                canvas.style.height = (canvas.height * scale) + 'px';
+                if (!seq) {
+                    // Pas d'animation jouable : on montre l'image telle quelle
+                    vctx.clearRect(0, 0, canvas.width, canvas.height);
+                    vctx.drawImage(off, 0, 0);
+                    return;
+                }
+                const frameData = i => octx.getImageData(0, i * side, side, side).data;
+                const cache = new Map();
+                const data = i => { if (!cache.has(i)) cache.set(i, frameData(i)); return cache.get(i); };
+                const out = vctx.createImageData(side, side);
+                const player = Mcmeta.createPlayer(seq, result.interpolate);
+                seqLbl.textContent = 'Séquence : ' + seq.map(f => `${f.index}(${f.time}t)`).join(' → ');
+                const draw = st => {
+                    if (st.d0 < 1) Mcmeta.blend(data(st.index), data(st.next), st.d0, out.data);
+                    else out.data.set(data(st.index));
+                    vctx.putImageData(out, 0, 0);
+                    frameLbl.textContent = `étape ${st.step + 1}/${seq.length} · frame ${st.index} · tick ${st.tick}` + (st.d0 < 1 ? ` · mélange ${Math.round((1 - st.d0) * 100)} % vers ${st.next}` : '');
+                };
+                draw(player.current());
+                timer = setInterval(() => draw(player.tick()), 50); // 1 tick Minecraft = 50 ms
+            }
+
+            /** files: { pngName?, pngBlob?, mcmetaName?, mcmetaText? } */
+            async function load(files) {
+                last = files;
+                filesLbl.textContent = [files.pngName, files.mcmetaName].filter(Boolean).join(' + ') || 'Aucun fichier.';
+                let img = null;
+                if (files.pngBlob) {
+                    try { img = await createImageBitmap(files.pngBlob); }
+                    catch (e) { img = null; }
+                }
+                const result = Mcmeta.validate({
+                    pngName: files.pngName, mcmetaName: files.mcmetaName,
+                    mcmetaText: files.mcmetaText === undefined ? null : files.mcmetaText,
+                    width: img ? img.width : 0, height: img ? img.height : 0, category: catSel.value
+                });
+                if (files.pngBlob && !img) result.messages.unshift({ level: 'error', text: `${files.pngName} : image illisible.`, ref: '' }), result.ok = false, result.sequence = null;
+                if (!files.pngBlob) result.messages.push({ level: 'info', text: 'Ajoutez le PNG pour vérifier les dimensions et voir l\'animation.', ref: '' });
+                lastResult = result;
+                render(result);
+                play(img, result);
+                return result;
+            }
+
+            async function fromFileList(list) {
+                const arr = [...list];
+                const png = arr.find(f => /\.png$/i.test(f.name));
+                const meta = arr.find(f => /\.mcmeta$/i.test(f.name));
+                if (!png && !meta) {
+                    summary.classList.remove('st-note-ok', 'st-note-warn');
+                    summary.classList.add('st-note-error');
+                    summary.textContent = '❌ Déposez un .png et/ou un .png.mcmeta.';
+                    return null;
+                }
+                return load({
+                    pngName: png ? png.name : undefined, pngBlob: png || undefined,
+                    mcmetaName: meta ? meta.name : undefined, mcmetaText: meta ? await meta.text() : null
+                });
+            }
+
+            input.addEventListener('change', async () => { await fromFileList(input.files); input.value = ''; });
+            ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-dragover'); }));
+            ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-dragover'); }));
+            drop.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) fromFileList(e.dataTransfer.files); });
+            catSel.addEventListener('change', () => { if (last) load(last); });
+            return { load, get result() { return lastResult; } };
+        })();
+
+        window.BcTex = BcTex;
+        window.Mcmeta = Mcmeta;
+        window.VerifyUI = VerifyUI;
+    </script>
 
     <script type="module">
         // Import de la librairie gifuct-js via ESM pour décoder le GIF nativement dans le navigateur
@@ -180,15 +779,126 @@
         const errorMessage = document.getElementById('error-message');
         const dropZone = document.getElementById('drop-zone');
         const gifInfo = document.getElementById('gif-info');
+        const frameMode = document.getElementById('frame-mode');
+        const squareWarning = document.getElementById('square-warning');
+        const bcName = document.getElementById('bc-name');
+        const bcN = document.getElementById('bc-n');
+        const bcNWrap = document.getElementById('bc-n-wrap');
+        const bcCategory = document.getElementById('bc-category');
+        const bcId = document.getElementById('bc-id');
+        const bcIdLabel = document.getElementById('bc-id-label');
+        const bcIdError = document.getElementById('bc-id-error');
+        const bcFolder = document.getElementById('bc-folder');
+        const pngNameLbl = document.getElementById('png-name');
+        const mcmetaNameLbl = document.getElementById('mcmeta-name');
+        const mcmetaCode = document.getElementById('mcmeta-code');
+        const mcmetaInterpolate = document.getElementById('mcmeta-interpolate');
+        const delayInfo = document.getElementById('delay-info');
+        const downloadMcmeta = document.getElementById('download-mcmeta');
+        const downloadZip = document.getElementById('download-zip');
+        const verifyCurrent = document.getElementById('verify-current');
+
+        // Dernier résultat généré (pour le .mcmeta, le zip et le vérificateur)
+        let lastBlob = null;
+
+        /** Géométrie de sortie : taille demandée, et frame carrée si le mode 1.8 le veut. */
+        function frameGeometry() {
+            const w = parseInt(widthInput.value) > 0 ? parseInt(widthInput.value) : originalWidth;
+            const h = parseInt(heightInput.value) > 0 ? parseInt(heightInput.value) : originalHeight;
+            const mode = frameMode.value;
+            if (mode === 'pad') {
+                const s = Math.max(w, h);
+                return { frameW: s, frameH: s, dx: Math.floor((s - w) / 2), dy: Math.floor((s - h) / 2), dw: w, dh: h };
+            }
+            if (mode === 'stretch') return { frameW: w, frameH: w, dx: 0, dy: 0, dw: w, dh: w };
+            return { frameW: w, frameH: h, dx: 0, dy: 0, dw: w, dh: h };
+        }
 
         // Résumé : nombre de frames et taille de la bande générée
         function updateGifInfo() {
-            const w = parseInt(widthInput.value) > 0 ? parseInt(widthInput.value) : originalWidth;
-            const h = parseInt(heightInput.value) > 0 ? parseInt(heightInput.value) : originalHeight;
-            gifInfo.textContent = `${parsedFrames.length} frame(s) · ${originalWidth}×${originalHeight} px → sortie ${w}×${h * parsedFrames.length} px`;
+            const g = frameGeometry();
+            gifInfo.textContent = `${parsedFrames.length} frame(s) · ${originalWidth}×${originalHeight} px → sortie ${g.frameW}×${g.frameH * parsedFrames.length} px`;
+            squareWarning.hidden = !parsedFrames.length || g.frameW === g.frameH;
         }
         widthInput.addEventListener('input', updateGifInfo);
         heightInput.addEventListener('input', updateGifInfo);
+        frameMode.addEventListener('change', updateGifInfo);
+        document.getElementById('square-pad').addEventListener('click', () => { frameMode.value = 'pad'; updateGifInfo(); });
+        document.getElementById('square-stretch').addEventListener('click', () => { frameMode.value = 'stretch'; updateGifInfo(); });
+
+        /* ---------- Export BC : noms, dossier, .mcmeta, zip ---------- */
+        bcCategory.innerHTML = BcTex.CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+        document.getElementById('bc-ore-hosts').innerHTML = BcTex.ORE_HOSTS.map(h => `<option value="${h}"></option>`).join('');
+
+        /** Noms des fichiers téléchargés (le zip suit toujours la convention BC). */
+        function exportNames() {
+            const cat = bcCategory.value;
+            const numbered = bcName.value === 'numbered' && BcTex.category(cat).numbered;
+            let bc;
+            try { bc = BcTex.textureName(numbered ? bcN.value : null); }
+            catch (e) { bc = null; }
+            const png = bcName.value === 'gif' ? `${gifFileName}_spritesheet.png` : bc;
+            return { png, mcmeta: png ? png + '.mcmeta' : null, bc };
+        }
+        function currentMcmeta() {
+            if (!parsedFrames.length) return null;
+            return Mcmeta.stringify(Mcmeta.fromDelays(parsedFrames.map(f => f.delay), mcmetaInterpolate.checked));
+        }
+        function updateExportUI() {
+            const cat = bcCategory.value;
+            const numberedOk = BcTex.category(cat).numbered;
+            bcName.querySelector('option[value="numbered"]').disabled = !numberedOk;
+            if (!numberedOk && bcName.value === 'numbered') bcName.value = 'texture';
+            bcNWrap.hidden = bcName.value !== 'numbered';
+            bcIdLabel.textContent = cat === 'ores' ? 'Bloc hôte' : 'Identifiant';
+            const names = exportNames();
+            const id = bcId.value.trim();
+            const err = BcTex.idError(cat, id) || (names.bc ? null : 'Numéro <n> : entier ≥ 1 attendu.');
+            bcIdError.textContent = err || '';
+            bcIdError.hidden = !err;
+            bcFolder.textContent = BcTex.folderHint(cat, id, names.bc || 'texture.png');
+            pngNameLbl.textContent = names.png || '—';
+            mcmetaNameLbl.textContent = names.mcmeta || '—';
+            downloadBtn.download = names.png || 'texture.png';
+            downloadZip.disabled = !!err || !lastBlob;
+            downloadZip.textContent = `⬇ Zip BC (${cat}/${id || '<id>'}/)`;
+            const meta = currentMcmeta();
+            mcmetaCode.textContent = meta || '';
+            downloadMcmeta.disabled = !meta || !names.mcmeta;
+            if (parsedFrames.length) {
+                const cs = parsedFrames.map(f => Math.round(f.delay / 10));
+                const ticks = parsedFrames.map(f => Mcmeta.ticksFromDelayMs(f.delay));
+                const same = ticks.every(t => t === ticks[0]);
+                delayInfo.textContent = same
+                    ? `Délais du GIF : ${cs[0]} cs par frame → frametime ${ticks[0]} (${ticks[0] * 50} ms, arrondi au tick de 50 ms).`
+                    : `Délais variables (${cs.join(', ')} cs) → frames [{index, time}] en ticks : ${ticks.join(', ')}.`;
+            } else delayInfo.textContent = '';
+        }
+        [bcName, bcN, bcCategory, bcId, mcmetaInterpolate].forEach(el => {
+            el.addEventListener('input', updateExportUI);
+            el.addEventListener('change', updateExportUI);
+        });
+        downloadMcmeta.addEventListener('click', () => {
+            const names = exportNames(), meta = currentMcmeta();
+            if (!meta || !names.mcmeta) return;
+            BcTex.save(names.mcmeta, meta, 'application/json');
+        });
+        downloadZip.addEventListener('click', async () => {
+            const names = exportNames(), cat = bcCategory.value, id = bcId.value.trim();
+            if (!lastBlob || BcTex.idError(cat, id) || !names.bc) return;
+            const zip = BcTex.makeZip([
+                { name: `${cat}/${id}/${names.bc}`, data: new Uint8Array(await lastBlob.arrayBuffer()) },
+                { name: `${cat}/${id}/${names.bc}.mcmeta`, data: currentMcmeta() }
+            ]);
+            BcTex.save(`${id}.zip`, zip, 'application/zip');
+        });
+        verifyCurrent.addEventListener('click', async () => {
+            const names = exportNames();
+            if (!lastBlob) return;
+            await VerifyUI.load({ pngName: names.bc || names.png, pngBlob: lastBlob, mcmetaName: (names.bc || names.png) + '.mcmeta', mcmetaText: currentMcmeta() });
+            document.getElementById('verify').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        updateExportUI();
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -223,8 +933,11 @@
                 // Pré-remplissage des champs
                 widthInput.value = originalWidth;
                 heightInput.value = originalHeight;
+                lastBlob = null;
+                if (bcCategory.value !== 'ores') bcId.value = BcTex.sanitizeId(gifFileName);
 
                 updateGifInfo();
+                updateExportUI();
                 settingsPanel.classList.remove('hidden');
             } catch (err) {
                 console.error("Erreur lors de la lecture du GIF", err);
@@ -239,8 +952,10 @@
         convertBtn.addEventListener('click', () => {
             if (parsedFrames.length === 0) return;
 
-            const targetW = parseInt(widthInput.value) > 0 ? parseInt(widthInput.value) : originalWidth;
-            const targetH = parseInt(heightInput.value) > 0 ? parseInt(heightInput.value) : originalHeight;
+            // Taille d'une frame (carrée en mode 1.8) et place de l'image dans la frame
+            const geo = frameGeometry();
+            const targetW = geo.frameW;
+            const targetH = geo.frameH;
 
             // Création du canvas de rendu final (Toutes les frames verticalement)
             const spriteCanvas = document.createElement('canvas');
@@ -296,7 +1011,7 @@
                 tempCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
 
                 // Enfin, copie et redimensionnement (proche voisin) de l'image complète vers le spritesheet final
-                outCtx.drawImage(tempCanvas, 0, 0, originalWidth, originalHeight, 0, i * targetH, targetW, targetH);
+                outCtx.drawImage(tempCanvas, 0, 0, originalWidth, originalHeight, geo.dx, i * targetH + geo.dy, geo.dw, geo.dh);
             }
 
             // Utilisation de toBlob au lieu de toDataURL pour éviter le crash mémoire sur les gros GIFs
@@ -313,10 +1028,11 @@
                 const url = URL.createObjectURL(blob);
                 
                 previewImg.src = url;
-                
+
                 downloadBtn.href = url;
-                downloadBtn.download = `${gifFileName}_spritesheet.png`;
-                
+                lastBlob = blob;
+                updateExportUI(); // nom BC du PNG (texture.png…), .mcmeta et zip
+
                 resultSection.classList.remove('hidden');
                 
                 // Scroll fluide vers le résultat
