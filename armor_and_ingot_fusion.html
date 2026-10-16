@@ -26,7 +26,7 @@
 
     <style>
         body {
-            background-color: theme('colors.dark.bg');
+            background-color: #0f1117;
             color: #E5E7EB;
             font-family: 'Inter', system-ui, sans-serif;
         }
@@ -59,7 +59,7 @@
             height: 16px;
             width: 16px;
             border-radius: 50%;
-            background: theme('colors.dark.accent');
+            background: #6366f1;
             cursor: pointer;
             margin-top: -6px;
             box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
@@ -68,7 +68,7 @@
             width: 100%;
             height: 4px;
             cursor: pointer;
-            background: theme('colors.dark.border');
+            background: #2d3342;
             border-radius: 2px;
         }
         input[type=range]:focus { outline: none; }
@@ -250,6 +250,9 @@
                         placeholderElement.classList.add('hidden');
                         callback();
                     };
+                    imgElement.onerror = () => {
+                        els.statusBadge.textContent = "Image invalide";
+                    };
                     imgElement.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -324,7 +327,8 @@
 
 <!-- -->
         function processImages() {
-            if (!imgArmor.src || !imgIngot.src) return;
+            // naturalWidth vaut 0 tant qu'une image est absente ou illisible (drawImage échouerait)
+            if (!imgArmor.naturalWidth || !imgIngot.naturalWidth) return;
             
             els.statusBadge.textContent = "Génération...";
             els.statusBadge.classList.replace('bg-gray-800', 'bg-indigo-600');
