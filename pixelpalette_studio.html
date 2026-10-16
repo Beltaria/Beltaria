@@ -5,89 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PixelPalette Studio — Recoloriage Intelligent Pixel Art</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="studio.css">
+    <script src="studio-nav.js" defer></script>
     <style>
-        :root {
-            color-scheme: dark;
+        /* En-tête commun : titre sur une ligne (coupé proprement si l'écran est trop étroit) */
+        .st-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Téléphone et tablette étroite : en-tête non collant pour ne pas masquer les contrôles,
+           cibles tactiles >= 36 px (ajouts proposés pour studio.css) */
+        @media (max-width: 767px) {
+            .st-header { position: static; }
         }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0e17;
-            color: #e2e8f0;
+        @media (max-width: 640px) {
+            main button, main select, .st-actions button, .st-actions label { min-height: 36px; }
+            main button.w-5, main button.w-6, main button.w-7, main button.w-8 { width: 36px; height: 36px; }
         }
-        .mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        /* Rendu Pixel Art net sans lissage */
-        .pixelated {
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-        /* Damier de transparence */
-        .checkerboard {
-            background-color: #161a24;
-            background-image:
-                linear-gradient(45deg, #212736 25%, transparent 25%),
-                linear-gradient(-45deg, #212736 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #212736 75%),
-                linear-gradient(-45deg, transparent 75%, #212736 75%);
-            background-size: 16px 16px;
-            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-        }
-        /* Barres de défilement */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f1420;
-            border-radius: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 6px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6366f1;
-        }
-        input[type="range"] {
-            accent-color: #a855f7;
+        @media (max-width: 480px) {
+            .st-logo { display: none; }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+<body class="min-h-screen flex flex-col">
 
     <!-- En-tête -->
-    <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30">
-        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap">←<span class="hidden sm:inline"> Beltaria Studio</span></a>
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-amber-500 p-0.5 shadow-lg shadow-purple-500/20">
-                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                        <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                        </svg>
-                    </div>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-fuchsia-400 bg-clip-text text-transparent">
-                            PixelPalette Studio
-                        </h1>
-                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+    <header class="st-header">
+        <div class="st-header-inner">
+            <div class="st-brand">
+                <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+                <div class="st-logo"><span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                    </svg>
+                </span></div>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <h1 class="st-title min-w-0">PixelPalette Studio</h1>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
                             Dimensions Natives 1:1
                         </span>
                     </div>
-                    <p class="text-xs text-slate-400">Sélectionnez les couleurs à remplacer sur l'Image 1 et appliquez les teintes de l'Image 2 avec variations automatiques</p>
+                    <p class="st-subtitle">Recolorie les couleurs choisies de l'Image 1 avec les teintes de l'Image 2</p>
                 </div>
             </div>
 
             <!-- Actions globales -->
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="st-actions">
                 <button id="btnLoadDemo" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
                     Charger démo par défaut
                 </button>
@@ -109,7 +70,7 @@
         <!-- COLONNE 1 : IMAGE 1 (MODÈLE À RECOPIER / MODIFIER)                -->
         <!-- ================================================================= -->
         <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center justify-center">1</span>
                     <div>
@@ -117,7 +78,7 @@
                         <p class="text-[11px] text-slate-400">Cliquez sur l'image ou sur les pastilles</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
                     <button id="btnUndo" type="button" disabled class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-35 disabled:pointer-events-none text-xs text-slate-200 border border-slate-700 transition" title="Annuler la dernière étape">
                         ↩ Annuler
                     </button>
@@ -132,13 +93,13 @@
             </div>
 
             <!-- Zone d'affichage / Glisser-Déposer Image 1 -->
-            <div id="dropZone1" class="relative rounded-xl border-2 border-slate-800 hover:border-purple-500/50 transition checkerboard h-[300px] select-none overflow-hidden">
+            <div id="dropZone1" class="relative rounded-xl border-2 border-slate-800 hover:border-purple-500/50 transition st-checker h-[300px] select-none overflow-hidden">
                 <div id="scrollWrap1" class="w-full h-full overflow-auto flex items-center justify-center p-4">
-                    <canvas id="canvasImg1" class="pixelated cursor-crosshair shadow-2xl m-auto block"></canvas>
+                    <canvas id="canvasImg1" class="st-pixelated cursor-crosshair shadow-2xl m-auto block"></canvas>
                 </div>
 
                 <!-- Badge Dimensions Natives & Couleur survolée -->
-                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] mono text-slate-200 flex items-center gap-2 pointer-events-none z-10">
+                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] st-mono text-slate-200 flex items-center gap-2 pointer-events-none z-10">
                     <span id="infoDim1" class="font-semibold text-purple-300">32×32 px</span>
                     <span id="hoverBadge1" class="hidden items-center gap-1">
                         <span id="hoverBox1" class="w-3 h-3 rounded-sm inline-block border border-white/30"></span>
@@ -149,7 +110,7 @@
                 <!-- Contrôles de Zoom Image 1 -->
                 <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs z-10">
                     <button id="zoomOut1" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">-</button>
-                    <span id="zoomLabel1" class="px-1.5 mono text-[11px] text-slate-300">Auto</span>
+                    <span id="zoomLabel1" class="px-1.5 st-mono text-[11px] text-slate-300">Auto</span>
                     <button id="zoomIn1" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">+</button>
                     <button id="zoom1x1" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-slate-300" title="Taille réelle 1:1">1:1</button>
                     <button id="zoomFit1" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-purple-300">Auto</button>
@@ -160,7 +121,7 @@
             <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold text-slate-300">Familles de teintes (Image 1) :</span>
-                    <span id="totalColorsImg1" class="text-[11px] text-slate-400 mono">0 couleur</span>
+                    <span id="totalColorsImg1" class="text-[11px] text-slate-400 st-mono">0 couleur</span>
                 </div>
                 <div id="familyChipsImg1" class="flex flex-wrap gap-1.5"></div>
 
@@ -169,7 +130,7 @@
                     <label class="text-[11px] text-slate-400 flex items-center gap-1.5">
                         <span>Tolérance clic :</span>
                         <input type="range" id="rngTolerance1" min="0" max="45" value="0" class="w-20 h-1.5">
-                        <span id="lblTolerance1" class="mono text-purple-300 font-semibold">Exact (0)</span>
+                        <span id="lblTolerance1" class="st-mono text-purple-300 font-semibold">Exact (0)</span>
                     </label>
                     <div class="flex items-center gap-1">
                         <button id="btnSelectAll1" type="button" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 transition">
@@ -190,7 +151,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-purple-300">Couleurs sélectionnées (Img 1)</h3>
-                        <span id="badgeCount1" class="px-2 py-0.5 text-xs font-bold rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mono">0</span>
+                        <span id="badgeCount1" class="px-2 py-0.5 text-xs font-bold rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 st-mono">0</span>
                     </div>
                     <span class="text-[11px] text-slate-500">Triées par luminosité ↑</span>
                 </div>
@@ -204,7 +165,7 @@
         <!-- COLONNE 2 : IMAGE 2 (PIPETTE À COULEURS / SOURCE)                 -->
         <!-- ================================================================= -->
         <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs font-bold flex items-center justify-center">2</span>
                     <div>
@@ -221,13 +182,13 @@
             </div>
 
             <!-- Zone d'affichage / Glisser-Déposer Image 2 -->
-            <div id="dropZone2" class="relative rounded-xl border-2 border-slate-800 hover:border-fuchsia-500/50 transition checkerboard h-[300px] select-none overflow-hidden">
+            <div id="dropZone2" class="relative rounded-xl border-2 border-slate-800 hover:border-fuchsia-500/50 transition st-checker h-[300px] select-none overflow-hidden">
                 <div id="scrollWrap2" class="w-full h-full overflow-auto flex items-center justify-center p-4">
-                    <canvas id="canvasImg2" class="pixelated cursor-crosshair shadow-2xl m-auto block"></canvas>
+                    <canvas id="canvasImg2" class="st-pixelated cursor-crosshair shadow-2xl m-auto block"></canvas>
                 </div>
 
                 <!-- Badge Dimensions Natives & Couleur survolée -->
-                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] mono text-slate-200 flex items-center gap-2 pointer-events-none z-10">
+                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] st-mono text-slate-200 flex items-center gap-2 pointer-events-none z-10">
                     <span id="infoDim2" class="font-semibold text-fuchsia-300">32×32 px</span>
                     <span id="hoverBadge2" class="hidden items-center gap-1">
                         <span id="hoverBox2" class="w-3 h-3 rounded-sm inline-block border border-white/30"></span>
@@ -238,7 +199,7 @@
                 <!-- Contrôles de Zoom Image 2 -->
                 <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs z-10">
                     <button id="zoomOut2" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">-</button>
-                    <span id="zoomLabel2" class="px-1.5 mono text-[11px] text-slate-300">Auto</span>
+                    <span id="zoomLabel2" class="px-1.5 st-mono text-[11px] text-slate-300">Auto</span>
                     <button id="zoomIn2" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">+</button>
                     <button id="zoom1x2" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-slate-300" title="Taille réelle 1:1">1:1</button>
                     <button id="zoomFit2" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-fuchsia-300">Auto</button>
@@ -270,7 +231,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Couleurs sources (Img 2)</h3>
-                        <span id="badgeCount2" class="px-2 py-0.5 text-xs font-bold rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 mono">0</span>
+                        <span id="badgeCount2" class="px-2 py-0.5 text-xs font-bold rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 st-mono">0</span>
                     </div>
                     <span id="lblVariationInfo" class="text-[11px] text-slate-400">Variations auto</span>
                 </div>
@@ -294,7 +255,7 @@
         <!-- COLONNE 3 : RÉSULTAT EN TEMPS RÉEL, VARIATIONS & EXPORT           -->
         <!-- ================================================================= -->
         <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center">3</span>
                     <div>
@@ -308,13 +269,13 @@
             </div>
 
             <!-- Zone d'affichage du Résultat -->
-            <div class="relative rounded-xl border-2 border-emerald-500/30 checkerboard h-[300px] select-none overflow-hidden">
+            <div class="relative rounded-xl border-2 border-emerald-500/30 st-checker h-[300px] select-none overflow-hidden">
                 <div id="scrollWrapRes" class="w-full h-full overflow-auto flex items-center justify-center p-4">
-                    <canvas id="canvasResult" class="pixelated shadow-2xl m-auto block"></canvas>
+                    <canvas id="canvasResult" class="st-pixelated shadow-2xl m-auto block"></canvas>
                 </div>
 
                 <!-- Badge Dimensions de sortie -->
-                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-emerald-500/40 text-[11px] mono text-emerald-300 flex items-center gap-1.5 pointer-events-none z-10">
+                <div class="absolute top-2 left-2 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-emerald-500/40 text-[11px] st-mono text-emerald-300 flex items-center gap-1.5 pointer-events-none z-10">
                     <span>Sortie :</span>
                     <strong id="infoDimRes">32×32 px</strong>
                 </div>
@@ -322,7 +283,7 @@
                 <!-- Contrôles de Zoom Résultat -->
                 <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs z-10">
                     <button id="zoomOutRes" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">-</button>
-                    <span id="zoomLabelRes" class="px-1.5 mono text-[11px] text-slate-300">Auto</span>
+                    <span id="zoomLabelRes" class="px-1.5 st-mono text-[11px] text-slate-300">Auto</span>
                     <button id="zoomInRes" type="button" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-200 font-bold">+</button>
                     <button id="zoom1xRes" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-slate-300" title="Taille réelle 1:1">1:1</button>
                     <button id="zoomFitRes" type="button" class="px-1.5 h-6 rounded hover:bg-slate-800 text-[10px] text-emerald-300">Auto</button>
@@ -366,7 +327,7 @@
                     <label class="flex flex-col gap-0.5">
                         <div class="flex justify-between text-slate-400">
                             <span>Luminosité</span>
-                            <span id="valLightness" class="mono text-slate-200">0</span>
+                            <span id="valLightness" class="st-mono text-slate-200">0</span>
                         </div>
                         <input type="range" id="rngLightness" min="-40" max="40" value="0" class="w-full h-1.5">
                     </label>
@@ -374,7 +335,7 @@
                     <label class="flex flex-col gap-0.5">
                         <div class="flex justify-between text-slate-400">
                             <span>Saturation</span>
-                            <span id="valSaturation" class="mono text-slate-200">0</span>
+                            <span id="valSaturation" class="st-mono text-slate-200">0</span>
                         </div>
                         <input type="range" id="rngSaturation" min="-50" max="50" value="0" class="w-full h-1.5">
                     </label>
@@ -382,7 +343,7 @@
                     <label class="flex flex-col gap-0.5">
                         <div class="flex justify-between text-slate-400">
                             <span>Contraste / Relief</span>
-                            <span id="valContrast" class="mono text-slate-200">100%</span>
+                            <span id="valContrast" class="st-mono text-slate-200">100%</span>
                         </div>
                         <input type="range" id="rngContrast" min="40" max="180" value="100" class="w-full h-1.5">
                     </label>
@@ -390,7 +351,7 @@
                     <label class="flex flex-col gap-0.5" title="Décale légèrement les ombres vers le violet/froid et les reflets vers le chaud">
                         <div class="flex justify-between text-slate-400">
                             <span>Hue-Shift Pixel Art</span>
-                            <span id="valHueShift" class="mono text-slate-200">6°</span>
+                            <span id="valHueShift" class="st-mono text-slate-200">6°</span>
                         </div>
                         <input type="range" id="rngHueShift" min="0" max="30" value="6" class="w-full h-1.5">
                     </label>
@@ -401,7 +362,7 @@
             <div class="flex flex-col gap-1.5 flex-1">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-emerald-300">Correspondance (Img 1 ➔ Résultat)</span>
-                    <span id="lblMappingSummary" class="text-[11px] text-slate-400 mono">0 ➔ 0</span>
+                    <span id="lblMappingSummary" class="text-[11px] text-slate-400 st-mono">0 ➔ 0</span>
                 </div>
                 <div id="mappingListContainer" class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 min-h-[110px] max-h-[165px] overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5"></div>
             </div>
@@ -410,7 +371,7 @@
     </main>
 
     <!-- Conteneur de notifications Toast -->
-    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed bottom-4 left-4 right-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
         /***********************************************************************
@@ -1049,7 +1010,7 @@
                             <input type="color" value="${targetHex}" class="opacity-0 absolute inset-0 cursor-pointer w-full h-full">
                         </label>
                     </div>
-                    <span class="mono text-[10px] text-slate-300">${targetHex}</span>
+                    <span class="st-mono text-[10px] text-slate-300">${targetHex}</span>
                 `;
                 const input = card.querySelector('input[type="color"]');
                 input.addEventListener('input', (e) => {
