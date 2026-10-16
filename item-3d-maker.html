@@ -68,6 +68,70 @@
             #sidebar { width: auto; max-height: 45vh; padding: 15px; gap: 12px; border-right: none; border-bottom: 2px solid #e67e22; }
             #viewer { min-height: 0; }
         }
+        /* --- Réglage d'entrée BeltariaContent (pack.json + model.json) --- */
+        #bcView { position: absolute; inset: 0; display: none; z-index: 6; cursor: grab; overflow: hidden; }
+        #bcView.on { display: block; }
+        #bcView canvas.bc-main, #bcView > canvas:first-child { display: block; width: 100%; height: 100%; }
+        .bc-label { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; pointer-events: none; max-width: calc(100% - 130px); }
+        .bc-label code { color: #f0a35e; }
+        .bc-note { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 12px; line-height: 1.4; background: rgba(0,0,0,0.6); padding: 6px 8px; border-radius: 6px; color: #ddd; pointer-events: none; }
+        .bc-fitinfo { position: absolute; left: 8px; top: 40px; font-size: 12px; background: rgba(0,0,0,0.6); color: #ddd; padding: 3px 8px; border-radius: 6px; pointer-events: none; max-width: calc(100% - 130px); }
+        .bc-slot16 { position: absolute; top: 8px; right: 8px; width: 96px; height: 96px; image-rendering: pixelated; border: 2px solid #373737; background: #8b8b8b; pointer-events: none; }
+        .bc-slot16-label { position: absolute; top: 108px; right: 8px; font-size: 11px; color: #222; background: rgba(255,255,255,0.7); padding: 1px 5px; border-radius: 4px; pointer-events: none; }
+        #bcCrosshair { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; transform: translate(-50%, -50%); pointer-events: none; display: none;
+            background: linear-gradient(white, white) center/2px 16px no-repeat, linear-gradient(white, white) center/16px 2px no-repeat; mix-blend-mode: difference; }
+        #bcPanel[hidden] { display: none; }
+        #bcPanel { min-width: 0; }
+        #bcPanel select, #bcPanel .bc-text, #bcPanel textarea { width: 100%; box-sizing: border-box; background: #15151a; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 4px; font-size: 12px; }
+        .bc-load { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+        .bc-btn { background: #3a3a48; color: #fff; border: 1px solid #555; border-radius: 5px; padding: 6px 8px; font-size: 0.78em; cursor: pointer; flex: 1 1 auto; text-align: center; margin: 0; display: inline-block; }
+        .bc-btn:hover { border-color: #e67e22; }
+        .bc-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .bc-field { display: block; font-size: 0.8em; margin: 6px 0; color: #ccc; }
+        .bc-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+        .bc-tabs button { flex: 1 1 30%; min-width: 0; background: #2a2a35; color: #ddd; border: 1px solid #444; border-radius: 5px; padding: 6px 2px; font-size: 0.78em; cursor: pointer; }
+        .bc-tabs button[aria-selected="true"] { background: #d35400; color: #fff; border-color: #e67e22; }
+        .bc-ctxhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.8em; margin-bottom: 6px; }
+        .bc-ctxhead code { color: #f0a35e; }
+        .ime-badge { display: inline-block; font-size: 0.85em; padding: 2px 6px; border-radius: 999px; background: #333; color: #ccc; }
+        .ime-badge.own { background: rgba(230,126,34,0.25); color: #ffc58f; }
+        .bc-row { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr); gap: 4px 6px; align-items: center; margin-bottom: 4px; padding: 3px 4px; border-radius: 4px; }
+        .bc-row.on { background: rgba(230,126,34,0.12); }
+        .bc-row.blocked { opacity: 0.6; }
+        .bc-comp { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 0.78em; min-width: 0; }
+        .bc-comp span { overflow-wrap: anywhere; }
+        .bc-ctl { display: flex; gap: 4px; min-width: 0; }
+        .bc-num { width: 100%; min-width: 0; box-sizing: border-box; background: #15151a; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 3px 4px; font-size: 12px; }
+        .bc-num:disabled, .bc-text:disabled { color: #888; }
+        .bc-why { grid-column: 1 / -1; font-size: 0.72em; color: #f5b77a; }
+        .bc-mini { display: flex; font-size: 0.75em; margin: 2px 0 6px; gap: 6px; }
+        .ime-group-title { font-size: 0.8em; color: #e67e22; margin: 8px 0 3px; font-weight: bold; }
+        .ime-msg { font-size: 0.8em; line-height: 1.4; margin: 6px 0; overflow-wrap: anywhere; }
+        .ime-msg div { margin-bottom: 4px; padding-left: 6px; border-left: 2px solid; }
+        .ime-msg .err { color: #ff8a8a; border-color: #ff5c5c; }
+        .ime-msg .warn { color: #ffd166; border-color: #ffd166; }
+        .ime-msg .note { color: #f5b77a; border-color: #e67e22; }
+        .ime-msg .ok { color: #8fe3a1; border-color: #4caf50; }
+        .bc-ref { color: #888; font-size: 0.9em; }
+        #bcPanel details { margin: 6px 0; }
+        #bcPanel summary { cursor: pointer; font-size: 0.85em; color: #ccc; margin-bottom: 6px; }
+        .bc-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }
+        .bc-table th { text-align: left; color: #aaa; font-weight: normal; border-bottom: 1px solid #444; padding: 2px; }
+        .bc-table th:first-child, .bc-table td:first-child { width: 6.8em; }
+        .bc-table td { vertical-align: top; padding: 3px 2px; border-bottom: 1px solid #2c2c33; overflow-wrap: anywhere; }
+        .bc-table tr.cur td { background: rgba(230,126,34,0.12); }
+        .bc-table tr.bad td { color: #ff8a8a; }
+        .bc-vals { font-family: Consolas, monospace; }
+        .bc-src { color: #999; font-size: 0.95em; }
+        .bc-over { margin: 4px 0; padding-left: 16px; font-size: 0.78em; overflow-wrap: anywhere; }
+        .bc-over code { color: #f0a35e; }
+        textarea.bc-out { min-height: 110px; font-family: Consolas, monospace; font-size: 11px; resize: vertical; }
+        @media (max-width: 700px) {
+            .bc-slot16 { width: 64px; height: 64px; }
+            .bc-slot16-label { top: 76px; }
+            .bc-label, .bc-fitinfo { max-width: calc(100% - 96px); }
+            .bc-note { font-size: 10px; max-height: 28%; overflow: hidden; }
+        }
     </style>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -119,10 +183,70 @@
             <input type="range" id="thicknessSlider" min="0.2" max="3" step="0.2" value="1">
         </label>
     </div>
+    <div class="box" id="bcBox">
+        <h3>🧩 Réglage d'entrée BeltariaContent</h3>
+        <label class="highlight-check">
+            <input type="checkbox" id="bcToggle"> Régler une entrée de pack.json
+        </label>
+        <div id="bcPanel" hidden aria-busy="false">
+            <div class="info-text">Miroir exact de l'assemblage BeltariaContent : <code>pack.json</code> remplace le <code>display</code> de <code>model.json</code>, client 1.8.9 + OptiFine CIT. Tout reste dans le navigateur.</div>
+            <div class="bc-load">
+                <label class="bc-btn" for="bcDir">📁 Dossier (entrée ou pack-src)</label>
+                <input type="file" id="bcDir" webkitdirectory multiple>
+                <label class="bc-btn" for="bcFiles">📄 Fichiers / .zip</label>
+                <input type="file" id="bcFiles" multiple accept=".json,.png,.mcmeta,.zip,application/json,application/zip,image/png">
+            </div>
+            <div class="info-text">Dossier <code>&lt;catégorie&gt;/&lt;id&gt;/</code> (model.json + texture*.png [+ .mcmeta]), fichiers isolés, ou tout <code>pack-src</code> (dossier ou .zip) avec <code>pack.json</code>.</div>
+            <label class="bc-field">Entrée
+                <select id="bcEntry" aria-label="Entrée"></select>
+            </label>
+            <div id="bcLoose" hidden>
+                <label class="bc-field">Fichiers isolés : catégorie
+                    <select id="bcCat" aria-label="Catégorie"></select>
+                </label>
+                <label class="bc-field">Identifiant (clé dans pack.json)
+                    <input type="text" id="bcId" class="bc-text" list="bcIds" aria-label="Identifiant">
+                    <datalist id="bcIds"></datalist>
+                </label>
+            </div>
+            <div class="bc-tabs" id="bcTabs" role="tablist"></div>
+            <div id="bcCtxEditor"></div>
+            <div class="ime-group-title">Géométrie de l'entrée</div>
+            <div id="bcShift"></div>
+            <label class="bc-mini"><input type="checkbox" id="bcAnimate" checked> Animer l'item au sol</label>
+            <button type="button" class="bc-btn" id="bcReset">↺ Revenir au pack.json chargé</button>
+            <div id="bcMsg" class="ime-msg" aria-live="polite"></div>
+            <details open>
+                <summary>Valeurs finales écrites par BC</summary>
+                <div id="bcTable"></div>
+            </details>
+            <details open>
+                <summary>model.json remplacé par pack.json</summary>
+                <div id="bcOver"></div>
+            </details>
+            <details open>
+                <summary>Export pack.json</summary>
+                <textarea id="bcOut" class="bc-out" readonly aria-label="Extrait pack.json"></textarea>
+                <div class="bc-load">
+                    <button type="button" class="bc-btn" id="bcCopy">📋 Copier l'extrait</button>
+                    <button type="button" class="bc-btn" id="bcDlPack" disabled>💾 pack.json complet</button>
+                </div>
+                <div class="info-text" id="bcExportInfo"></div>
+            </details>
+        </div>
+    </div>
 </div>
 
 <div id="viewer">
     <div id="crosshair"></div>
+    <div id="bcView">
+        <div class="bc-label" id="bcViewLabel"></div>
+        <div class="bc-fitinfo" id="bcFitInfo"></div>
+        <canvas class="bc-slot16" id="bcSlot16" width="16" height="16" aria-label="Case d'inventaire à 16 pixels"></canvas>
+        <div class="bc-slot16-label">case à 16 px</div>
+        <div id="bcCrosshair"></div>
+        <div class="bc-note" id="bcViewNote"></div>
+    </div>
 </div>
 
 <script>
@@ -388,6 +512,7 @@
     // --- 5. BOUCLE DE RENDU ---
     function animate(time) {
         requestAnimationFrame(animate);
+        if (window.ItemModelUI && ItemModelUI.active) return; // Le réglage d'entrée BC a son propre rendu par-dessus
         controls.update();
 
         // Rotation auto
@@ -414,6 +539,2097 @@
     }
     animate(0);
 
+</script>
+
+<script>
+// =====================================================================
+// --- 6. RÉGLAGE D'ENTRÉE BELTARIACONTENT : LOGIQUE PURE (window.ItemModel) ---
+// Aucune dépendance au DOM : testable via page.evaluate(() => ItemModel...).
+// Miroir du code de BeltariaContent (BC, src/main/java/fr/beltaria/content/pack/) : chaque
+// règle cite son fichier:ligne. Le Java fait foi ; les calculs « float » de Java sont imités
+// avec Math.fround pour que les valeurs finales soient celles que BC écrit.
+// Chaîne de rendu client : sources MCP 1.8.9 (github.com/Marcelektro/MCP-919), lignes citées.
+// =====================================================================
+const ItemModel = (() => {
+    'use strict';
+    const f = Math.fround;
+
+    // DisplaySlot.java:17-22 : les six contextes 1.8, dans l'ordre de l'EnumMap (ordre d'écriture)
+    const CONTEXTS = Object.freeze(['thirdperson', 'firstperson', 'head', 'gui', 'ground', 'fixed']);
+    // PackBuild.java:136-171 : catégories à modèle posé sur un support (+ items, :160)
+    const CATEGORIES = Object.freeze(['wings', 'auras', 'motes', 'blocks', 'items']);
+    const COMPONENTS = Object.freeze(['rotation', 'translation', 'scale']);
+    const BC = Object.freeze({
+        MAX_TRANSLATION: 24,          // ModelFit.java:31
+        MAX_SCALE: 4,                 // ModelFit.java:34
+        SLOT_SIZE: 16,                // ModelFit.java:37
+        MAX_FIT: 32,                  // ModelFit.java:46 (2 cases)
+        MODEL_UNITS: 16,              // ModelFit.java:49
+        GUI_PIXELS_PER_BLOCK: 10,     // ModelFit.java:59
+        GUI_FRONT_ROTATION: Object.freeze([-30, 135, 0]), // ModelFit.java:73
+        PIVOT: 8,                     // ModelFit.java:82
+        MIN_COORDINATE: -16,          // ModelElement.java:19
+        MAX_COORDINATE: 32,           // ModelElement.java:22
+        ALLOWED_ANGLES: Object.freeze([-45, -22.5, 0, 22.5, 45]), // ElementRotation.java:129
+        FACE_ROTATIONS: Object.freeze([0, 90, 180, 270])          // ModelFace.java:144
+    });
+    const ID_PATTERN = /^[a-z0-9_.-]+$/; // PackBuild.java:1493
+
+    // ---------- Erreurs : message français + référence BC ----------
+    class BcError extends Error {
+        constructor(message, ref) { super(message); this.name = 'BcError'; this.ref = ref || ''; }
+    }
+    function fail(message, ref) { throw new BcError(message, ref); }
+    function isObj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+    function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+    function fr(v) { // nombre lisible à la française, sans bruit d'arrondi
+        if (typeof v !== 'number') return JSON.stringify(v);
+        const r = Math.round(v * 1e6) / 1e6;
+        return String(Object.is(r, -0) ? 0 : r).replace('.', ',');
+    }
+    function frVec(a) { return '[' + a.map(fr).join(' ; ') + ']'; }
+    function clone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+
+    function jsonErrorFr(e, text) {
+        const m = /position (\d+)/.exec(e.message);
+        if (m) {
+            const pos = Number(m[1]);
+            const before = text.slice(0, pos);
+            const line = before.split('\n').length;
+            const col = pos - before.lastIndexOf('\n');
+            return `syntaxe incorrecte ligne ${line}, colonne ${col}`;
+        }
+        if (/end of (JSON|data)|Unexpected end/i.test(e.message)) return 'fin de texte inattendue (accolade ou crochet non fermé ?)';
+        return `syntaxe incorrecte (${e.message})`;
+    }
+    function parseJson(text, what, ref) {
+        try { return JSON.parse(text); } catch (e) { return fail(`${what} : JSON invalide, ${jsonErrorFr(e, text)}`, ref); }
+    }
+
+    // ---------- ModelReader (ModelReader.java) ----------
+    function rdObject(raw, what) { if (!isObj(raw)) fail(`${what} : objet attendu`, 'ModelReader.java:417-422'); return raw; }
+    function rdArray(raw, what) { if (!Array.isArray(raw)) fail(`${what} : tableau attendu`, 'ModelReader.java:424-429'); return raw; }
+    function rdString(raw, what) { if (typeof raw !== 'string') fail(`${what} : chaîne attendue`, 'ModelReader.java:431-436'); return raw; }
+    function rdNumber(raw, what) { if (typeof raw !== 'number') fail(`${what} : nombre attendu`, 'ModelReader.java:438-443'); return f(raw); }
+    function rdBool(raw, what) { if (typeof raw !== 'boolean') fail(`${what} : true ou false attendu`, 'ModelReader.java:458-463'); return raw; }
+    function rdFloats(raw, count, what) {
+        const a = rdArray(raw, what);
+        if (a.length !== count) fail(`${what} : ${count} nombres attendus, reçu ${a.length}`, 'ModelReader.java:465-476');
+        return a.map((v, i) => rdNumber(v, `${what}[${i}]`));
+    }
+    function finite(arr, what, ref) {
+        arr.forEach((v, i) => { if (!Number.isFinite(v)) fail(`${what} non finie à l'indice ${i}`, ref); });
+        return arr;
+    }
+
+    // ElementRotation.java:151-172 (angle parmi cinq, Float.compare : -0 n'est pas 0)
+    function angleAllowed(a) { return BC.ALLOWED_ANGLES.some(x => Object.is(f(x), a)); }
+
+    function readElement(raw, index) {
+        const what = `elements[${index}]`;
+        const from = rdFloats(raw.from, 3, what + '.from');
+        const to = rdFloats(raw.to, 3, what + '.to');
+        let rotation = null;
+        if (has(raw, 'rotation')) { // ModelReader.java:334-347
+            const spin = rdObject(raw.rotation, what + '.rotation');
+            const rescale = has(spin, 'rescale') && rdBool(spin.rescale, what + '.rotation.rescale');
+            const origin = rdFloats(spin.origin, 3, what + '.rotation.origin');
+            const axis = rdString(spin.axis, what + '.rotation.axis');
+            if (!['x', 'y', 'z'].includes(axis)) fail(`${what}.rotation : axe de rotation inconnu « ${axis} » (x, y ou z en 1.8)`, 'ModelReader.java:408-415 ; RotationAxis.java:224-226');
+            const angle = rdNumber(spin.angle, what + '.rotation.angle');
+            finite(origin, `${what}.rotation : origine de rotation`, 'ElementRotation.java:157-160');
+            if (!angleAllowed(angle)) fail(`${what}.rotation : angle ${fr(angle)} refusé, seuls -45 / -22,5 / 0 / 22,5 / 45 sont permis en 1.8`, 'ElementRotation.java:167-170');
+            rotation = { origin, axis, angle, rescale };
+        }
+        const faces = {};
+        const facesRaw = rdObject(raw.faces, what + '.faces');
+        for (const key of Object.keys(facesRaw)) { // ModelReader.java:351-365
+            const facePath = `${what}.faces.${key}`;
+            const face = rdObject(facesRaw[key], facePath);
+            let spin = 0;
+            if (has(face, 'rotation')) { // quarterTurn, ModelReader.java:449-456
+                const v = rdNumber(face.rotation, facePath + '.rotation');
+                if (v !== Math.trunc(v)) fail(`${facePath}.rotation : rotation entière attendue (0, 90, 180 ou 270), reçu ${fr(v)}`, 'ModelReader.java:449-456');
+                spin = Math.trunc(v);
+            }
+            if (!['north', 'south', 'east', 'west', 'up', 'down'].includes(key)) fail(`${facePath} : face « ${key} » : direction inconnue`, 'ModelReader.java:399-406 ; FaceDirection.java:248-253');
+            const texture = rdString(face.texture, facePath + '.texture');
+            const uv = rdFloats(face.uv, 4, facePath + '.uv');
+            if (!texture) fail(`${facePath} : référence de texture vide`, 'ModelFace.java:164-166');
+            finite(uv, `${facePath} : valeur UV`, 'ModelFace.java:172-176');
+            if (!BC.FACE_ROTATIONS.includes(spin)) fail(`${facePath} : rotation de face ${spin} refusée, seuls 0/90/180/270 sont permis`, 'ModelFace.java:178-188');
+            faces[key] = { texture, uv, rotation: spin };
+        }
+        // ModelElement.of : coins finis dans [-16 ; 32], au moins une face (ModelElement.java:45-86)
+        checkCorner(from, `${what} : coin 'from'`);
+        checkCorner(to, `${what} : coin 'to'`);
+        if (!Object.keys(faces).length) fail(`${what} : élément sans face, le client en exige entre une et six`, 'ModelElement.java:50-53');
+        return { from, to, rotation, faces };
+    }
+    function checkCorner(c, what) {
+        c.forEach((v, i) => {
+            if (!Number.isFinite(v)) fail(`${what} non fini à l'indice ${i}`, 'ModelElement.java:74-77');
+            if (v < BC.MIN_COORDINATE || v > BC.MAX_COORDINATE) {
+                fail(`${what} hors bornes à l'indice ${i} : ${fr(v)}, attendu entre -16 et 32 (ModelElement.MIN/MAX_COORDINATE)`, 'ModelElement.java:78-82');
+            }
+        });
+    }
+
+    // ModelReader.transform + DisplayTransform.of (ModelReader.java:374-387 ; DisplayTransform.java:65-94)
+    function readTransform(raw, what) {
+        const rotation = has(raw, 'rotation') ? rdFloats(raw.rotation, 3, what + '.rotation') : [0, 0, 0];
+        const translation = has(raw, 'translation') ? rdFloats(raw.translation, 3, what + '.translation') : [0, 0, 0];
+        const scale = has(raw, 'scale') ? rdFloats(raw.scale, 3, what + '.scale') : [1, 1, 1];
+        return displayTransform(rotation, translation, scale, what);
+    }
+    function displayTransform(rotation, translation, scale, what) {
+        finite(rotation, `${what} : rotation`, 'DisplayTransform.java:83-85');
+        finite(translation, `${what} : translation`, 'DisplayTransform.java:83-85');
+        scale.forEach((v, i) => {
+            if (!Number.isFinite(v)) fail(`${what} : échelle non finie à l'indice ${i}`, 'DisplayTransform.java:83-85');
+            if (v <= 0) fail(`${what} : échelle ${fr(v)} à l'indice ${i}, strictement positive attendue (BC refuse 0 et les échelles négatives)`, 'DisplayTransform.java:86-90');
+        });
+        return { rotation: rotation.slice(), translation: translation.slice(), scale: scale.slice() };
+    }
+
+    /**
+     * Lit un model.json comme ModelReader.read (ModelReader.java:275-326) puis ItemModel.of
+     * (ItemModel.java:43-103). Lève une BcError au premier défaut, comme BC.
+     */
+    function readModel(text) {
+        if (text == null || text === '') fail('model.json vide', 'ModelReader.java:276-278');
+        const root = typeof text === 'string' ? parseJson(text, 'model.json', 'ModelReader.java:280-287') : text;
+        if (!isObj(root)) fail('model.json : objet JSON attendu à la racine', 'ModelReader.java:288-290');
+        if (has(root, 'parent')) {
+            fail('model.json : modèle avec « parent » refusé, BC ne résout pas les parents : fournir un modèle complet (elements)', 'ModelReader.java:292-295');
+        }
+        const textures = {};
+        if (has(root, 'textures')) {
+            const t = rdObject(root.textures, 'textures');
+            Object.keys(t).forEach(k => { textures[k] = rdString(t[k], 'textures.' + k); });
+        }
+        const elements = [];
+        if (has(root, 'elements')) {
+            rdArray(root.elements, 'elements').forEach((e, i) => elements.push(readElement(rdObject(e, `elements[${i}]`), i)));
+        }
+        const display = {};
+        if (has(root, 'display')) {
+            const d = rdObject(root.display, 'display');
+            for (const key of Object.keys(d)) {
+                if (!CONTEXTS.includes(key)) {
+                    fail(`display.${key} : contexte d'affichage inconnu en 1.8 (seuls ${CONTEXTS.join(', ')})`, 'ModelReader.java:389-397');
+                }
+                display[key] = readTransform(rdObject(d[key], 'display.' + key), 'display.' + key);
+            }
+        }
+        // ItemModel.of
+        if (!elements.length) fail('model.json : modèle sans aucun élément', 'ItemModel.java:45-47');
+        for (const k of Object.keys(textures)) {
+            if (!k) fail('model.json : nom de texture vide', 'ItemModel.java:53-55');
+            if (!textures[k]) fail(`model.json : chemin vide pour la texture ${k}`, 'ItemModel.java:56-58');
+        }
+        elements.forEach((el, i) => {
+            for (const dir of Object.keys(el.faces)) {
+                const ref = el.faces[dir].texture;
+                if (ref.charAt(0) !== '#') continue;
+                if (!has(textures, ref.slice(1))) {
+                    fail(`élément ${i}, face ${dir} : texture ${ref} absente de la table « textures », le modèle s'afficherait en damier`, 'ItemModel.java:89-103');
+                }
+            }
+        });
+        return { textures, elements, display };
+    }
+
+    // ---------- pack.json : Entry.read + Fits.read (PackBuild.java:1512-1670) ----------
+    function fNumber(raw, what) {
+        if (typeof raw !== 'number') fail(`${what} : nombre attendu`, 'PackBuild.java:1649-1654');
+        return f(raw);
+    }
+    function fFloats(raw, what) {
+        if (!Array.isArray(raw)) fail(`${what} : tableau de trois nombres attendu`, 'PackBuild.java:1656-1659');
+        if (raw.length !== 3) fail(`${what} : trois nombres attendus, reçu ${raw.length}`, 'PackBuild.java:1661-1664');
+        return raw.map((v, i) => fNumber(v, `${what}[${i}]`));
+    }
+    function fBool(raw, what) {
+        if (typeof raw !== 'boolean') fail(`${what} : true ou false attendu`, 'PackBuild.java:1642-1647');
+        return raw;
+    }
+    // Un triplet, ou une liste de triplets appliqués dans l'ordre (PackBuild.java:1625-1640)
+    function fTurns(raw, what) {
+        if (!Array.isArray(raw) || raw.length === 0) fail(`${what} : triplet, ou liste de triplets, attendu`, 'PackBuild.java:1626-1629');
+        if (Array.isArray(raw[0])) return raw.map((t, i) => fFloats(t, `${what}[${i}]`));
+        return [fFloats(raw, what)];
+    }
+
+    /** Fits.slotFit (PackBuild.java:1588-1622) avec les constructeurs de SlotFit (ModelFit.java:403-449). */
+    function readSlotFit(raw, path) {
+        const rotation = has(raw, 'rotation') ? fFloats(raw.rotation, path + '.rotation') : null;
+        const front = has(raw, 'front') && fBool(raw.front, path + '.front');
+        if (front && rotation) fail(`${path} : « front » et « rotation » s'excluent (front impose la rotation -30 / 135 / 0)`, 'PackBuild.java:1592-1594');
+        let slot;
+        if (has(raw, 'fit')) {
+            if (has(raw, 'translation') || has(raw, 'scale')) {
+                fail(`${path} : « fit » calcule translation et scale, ne pas les donner aussi`, 'PackBuild.java:1599-1602');
+            }
+            const fit = fNumber(raw.fit, path + '.fit');
+            if (Number.isNaN(fit) || fit <= 0 || fit > BC.MAX_FIT) { // ModelFit.java:414-417
+                fail(`${path} : fit ${fr(fit)} hors de ]0 ; 32] pixels (ModelFit.MAX_FIT = deux cases)`, 'ModelFit.java:414-417');
+            }
+            slot = { rotation, translation: null, scale: null, fit, front: false, turns: [] };
+        } else {
+            const translation = has(raw, 'translation') ? fFloats(raw.translation, path + '.translation') : null;
+            const scale = has(raw, 'scale') ? fFloats(raw.scale, path + '.scale') : null;
+            slot = { rotation, translation, scale, fit: 0, front: false, turns: [] };
+        }
+        [['rotation', 'rotation'], ['translation', 'translation'], ['scale', 'echelle']].forEach(([k, name]) => {
+            if (slot[k]) finite(slot[k], `${path} : ${name}`, 'ModelFit.java:543-547');
+        });
+        if (front) slot.front = true; // facingFront, ModelFit.java:423-429
+        if (has(raw, 'turn')) slot.turns = fTurns(raw.turn, path + '.turn').map((t, i) => finite(t, `${path} : pivot ${i}`, 'ModelFit.java:543-547'));
+        return slot;
+    }
+
+    /** Fits.read (PackBuild.java:1565-1586) : shift + un SlotFit par contexte présent. */
+    function readFits(settings, what) {
+        const shift = has(settings, 'shift') ? fFloats(settings.shift, what + '.shift') : null;
+        if (shift) finite(shift, `${what} : décalage`, 'ModelFit.java:110-114');
+        const slots = {};
+        for (const ctx of CONTEXTS) {
+            if (!has(settings, ctx)) continue;
+            const path = `${what}.${ctx}`;
+            if (!isObj(settings[ctx])) fail(`${path} : objet attendu`, 'PackBuild.java:1576-1578');
+            slots[ctx] = readSlotFit(settings[ctx], path);
+        }
+        return { shift: shift || [0, 0, 0], hasShift: !!shift, slots };
+    }
+
+    // PackPaths.relative (PackPaths.java:90-113)
+    function checkRelative(raw, what) {
+        if (!raw) fail(`${what} vide`, 'PackPaths.java:91-93');
+        if (raw.includes('\\')) fail(`${what} : antislash interdit dans un pack, reçu ${raw}`, 'PackPaths.java:94-97');
+        if (raw.charAt(0) === '/' || raw.endsWith('/')) fail(`${what} : chemin relatif attendu, sans barre au début ni à la fin, reçu ${raw}`, 'PackPaths.java:98-101');
+        if (raw.includes('//')) fail(`${what} : segment vide dans ${raw}`, 'PackPaths.java:102-104');
+        if (raw.split('/').some(s => s === '.' || s === '..')) fail(`${what} : les segments relatifs sont interdits, reçu ${raw}`, 'PackPaths.java:105-111');
+    }
+    function descriptorText(settings, key, what) { // Descriptor.text, PackBuild.java:1470-1478
+        const v = settings[key];
+        if (typeof v !== 'string' || v === '') fail(`${what} : « ${key} » : chaîne non vide attendue`, 'PackBuild.java:1470-1478');
+        return v;
+    }
+
+    /**
+     * Entry.read (PackBuild.java:1512-1552). `folder` : le dossier CIT de la catégorie
+     * (folders.<catégorie>), null s'il est inconnu (pack.json absent).
+     */
+    function readEntry(category, id, raw, folder) {
+        const what = `pack.json : ${category}.${id}`;
+        if (!ID_PATTERN.test(id)) fail(`${what} : identifiant invalide, attendu en minuscules sur [a-z0-9_.-] (nom de dossier et valeur de marqueur)`, 'PackBuild.java:1515-1519');
+        if (!isObj(raw)) fail(`${what} : objet attendu`, 'PackBuild.java:1520-1522');
+        let material = null;
+        if (has(raw, 'material')) material = descriptorText(raw, 'material', what);
+        else if (category === 'items') fail(`${what} : « material » attendu (l'item vanilla substitué)`, 'PackBuild.java:1528-1531 ; :1292');
+        let target = folder;
+        if (has(raw, 'folder')) target = descriptorText(raw, 'folder', what);
+        if (target != null) checkRelative(target, `${what} : dossier CIT`);
+        let marker = true;
+        if (has(raw, 'marker')) {
+            if (typeof raw.marker !== 'boolean') fail(`${what}.marker : true ou false attendu`, 'PackBuild.java:1544-1550');
+            marker = raw.marker;
+        }
+        return { category, id, material, folder: target, marker, fits: readFits(raw, what) };
+    }
+
+    // ---------- ModelFit.Rotation (ModelFit.java:241-306) ----------
+    const Rot = {
+        identity() { return [[1, 0, 0], [0, 1, 0], [0, 0, 1]]; },
+        matrix(e) { // Ry · Rx · Rz (ModelFit.java:250-261)
+            const a = e[0] * Math.PI / 180, b = e[1] * Math.PI / 180, c = e[2] * Math.PI / 180;
+            const rz = [[Math.cos(c), -Math.sin(c), 0], [Math.sin(c), Math.cos(c), 0], [0, 0, 1]];
+            const rx = [[1, 0, 0], [0, Math.cos(a), -Math.sin(a)], [0, Math.sin(a), Math.cos(a)]];
+            const ry = [[Math.cos(b), 0, Math.sin(b)], [0, 1, 0], [-Math.sin(b), 0, Math.cos(b)]];
+            return Rot.multiply(ry, Rot.multiply(rx, rz));
+        },
+        multiply(l, r) {
+            const o = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) o[i][j] = l[i][0] * r[0][j] + l[i][1] * r[1][j] + l[i][2] * r[2][j];
+            return o;
+        },
+        apply(m, v) { return [0, 1, 2].map(i => f(m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2])); },
+        euler(m) { // ModelFit.java:285-305
+            const x = Math.asin(Math.max(-1, Math.min(1, -m[1][2])));
+            let y, z;
+            if (Math.abs(Math.cos(x)) < 1e-6) {
+                z = 0;
+                y = x > 0 ? Math.atan2(m[0][1], m[0][0]) : Math.atan2(-m[0][1], m[0][0]);
+            } else {
+                y = Math.atan2(m[0][2], m[2][2]);
+                z = Math.atan2(m[1][0], m[1][1]);
+            }
+            const round = deg => { const r = f(Math.round(deg * 1000) / 1000); return r === 0 ? 0 : r; };
+            return [round(x * 180 / Math.PI), round(y * 180 / Math.PI), round(z * 180 / Math.PI)];
+        }
+    };
+
+    // ---------- ModelFit.Bounds (ModelFit.java:315-368) : boîte sans les rotations d'élément ----------
+    function boundsOf(elements) {
+        const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+        elements.forEach(e => {
+            for (let i = 0; i < 3; i++) {
+                min[i] = Math.min(min[i], e.from[i], e.to[i]);
+                max[i] = Math.max(max[i], e.from[i], e.to[i]);
+            }
+        });
+        return { min, max };
+    }
+    function turnedBounds(b, m) {
+        const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+        for (let c = 0; c < 8; c++) {
+            const p = [
+                f(((c & 1) === 0 ? b.min[0] : b.max[0]) - BC.PIVOT),
+                f(((c & 2) === 0 ? b.min[1] : b.max[1]) - BC.PIVOT),
+                f(((c & 4) === 0 ? b.min[2] : b.max[2]) - BC.PIVOT)];
+            const q = Rot.apply(m, p);
+            for (let i = 0; i < 3; i++) { min[i] = Math.min(min[i], q[i]); max[i] = Math.max(max[i], q[i]); }
+        }
+        return { min, max };
+    }
+    const center = (b, i) => f(f(b.min[i] + b.max[i]) / 2);
+    const extent = (b, i) => f(b.max[i] - b.min[i]);
+
+    /**
+     * SlotFit.applyTo (ModelFit.java:486-534) : composantes substituées, rotation composée avec
+     * les pivots (turn), translation et échelle calculées pour fit. Renvoie aussi les détails
+     * (boîte vue) pour l'aperçu. Ne valide pas : voir DisplayTransform.of dans mergeEntry.
+     */
+    function applySlot(slot, base, bounds) {
+        const ZERO = [0, 0, 0], ONE = [1, 1, 1];
+        const contextRotation = slot.rotation ? slot.rotation : slot.front ? BC.GUI_FRONT_ROTATION.slice() : base ? base.rotation : ZERO;
+        let translation = slot.translation ? slot.translation : base ? base.translation : ZERO;
+        let scale = slot.scale ? slot.scale : base ? base.scale : ONE;
+        let matrix = Rot.matrix(contextRotation);
+        let rotation = contextRotation.slice();
+        if (slot.turns.length) {
+            let turned = Rot.identity();
+            for (const t of slot.turns) turned = Rot.multiply(Rot.matrix(t), turned); // premier pivot le plus à droite
+            matrix = Rot.multiply(matrix, turned);
+            rotation = Rot.euler(matrix);
+        }
+        let seen = null, largest = null;
+        if (slot.fit > 0) {
+            if (!bounds) fail('Ajustement à la case sans géométrie pour le calculer', 'ModelFit.java:509-512');
+            seen = turnedBounds(bounds, matrix);
+            largest = Math.max(extent(seen, 0), extent(seen, 1));
+            const factor = largest > 0 ? f(slot.fit / f(f(BC.GUI_PIXELS_PER_BLOCK * largest) / BC.MODEL_UNITS)) : 1;
+            scale = [factor, factor, factor];
+            translation = [0, 1, 2].map(i => {
+                const v = f(0 - f(f(center(seen, i) * factor) / 2));
+                return Math.abs(v) < 1e-4 ? 0 : v;
+            });
+        }
+        return { rotation: rotation.slice(), translation: translation.slice(), scale: scale.slice(), seen, largest };
+    }
+
+    /** SlotFit.overrides (ModelFit.java:463-475), dans l'ordre de l'EnumMap (ModelFit.java:151-159). */
+    function overridesOf(fits) {
+        const out = [];
+        CONTEXTS.forEach(ctx => {
+            const s = fits.slots[ctx];
+            if (!s) return;
+            if (s.rotation || s.front || s.turns.length) out.push(ctx + '.rotation');
+            if (s.translation || s.fit > 0) out.push(ctx + '.translation');
+            if (s.scale || s.fit > 0) out.push(ctx + '.scale');
+        });
+        return out;
+    }
+
+    /**
+     * ModelFit.apply (ModelFit.java:161-200) + check (ModelFit.java:207-221). BC s'arrête au
+     * premier défaut ; ici tous sont listés (le premier est celui que BC afficherait), et le
+     * résultat est calculé quand même pour l'aperçu.
+     */
+    function mergeEntry(model, fits, what) {
+        const problems = [];
+        const sh = fits.shift;
+        const moved = p => [f(p[0] + sh[0]), f(p[1] + sh[1]), f(p[2] + sh[2])];
+        const elements = model.elements.map((el, i) => {
+            const out = {
+                from: moved(el.from), to: moved(el.to), faces: el.faces,
+                rotation: el.rotation ? Object.assign({}, el.rotation, { origin: moved(el.rotation.origin) }) : null
+            };
+            try {
+                checkCorner(out.from, `${what} : élément ${i} hors bornes après décalage ${frVec(sh)}, coin 'from'`);
+                checkCorner(out.to, `${what} : élément ${i} hors bornes après décalage ${frVec(sh)}, coin 'to'`);
+            } catch (e) {
+                problems.push({ text: e.message, ref: 'ModelFit.java:174-181 ; ' + e.ref });
+            }
+            return out;
+        });
+        const bounds = boundsOf(elements);
+        const display = {};
+        const details = {};
+        CONTEXTS.forEach(c => { if (model.display[c]) display[c] = clone(model.display[c]); });
+        CONTEXTS.forEach(c => {
+            const slot = fits.slots[c];
+            if (!slot) return;
+            const r = applySlot(slot, display[c] || null, bounds);
+            details[c] = { seen: r.seen, largest: r.largest };
+            display[c] = { rotation: r.rotation, translation: r.translation, scale: r.scale };
+            r.scale.forEach((v, i) => { // DisplayTransform.of dans applyTo
+                if (!(v > 0)) problems.push({ text: `${what} : display.${c} : échelle ${fr(v)} à l'indice ${i}, strictement positive attendue`, ref: 'ModelFit.java:533 ; DisplayTransform.java:86-90' });
+            });
+        });
+        CONTEXTS.forEach(c => {
+            const t = display[c];
+            if (!t) return;
+            for (let i = 0; i < 3; i++) {
+                if (Math.abs(t.translation[i]) > BC.MAX_TRANSLATION) {
+                    problems.push({ text: `${what} : display.${c}.translation[${i}] = ${fr(t.translation[i])} hors de [-24 ; 24] (ModelFit.MAX_TRANSLATION, le client 1.8 la tronquerait) : décaler la géométrie (shift) à la place`, ref: 'ModelFit.java:211-215' });
+                }
+                if (t.scale[i] > BC.MAX_SCALE) {
+                    problems.push({ text: `${what} : display.${c}.scale[${i}] = ${fr(t.scale[i])} au-delà de 4 (ModelFit.MAX_SCALE, le client 1.8 la tronquerait)`, ref: 'ModelFit.java:216-219' });
+                }
+            }
+        });
+        return { elements, display, bounds, details, problems };
+    }
+
+    // ---------- Fichiers de l'entrée : texturesOf + retexture (PackBuild.java:819-879) ----------
+    /** @param names noms des fichiers du dossier de l'entrée */
+    function textureFiles(names, what) {
+        const problems = [];
+        const suffixes = new Set();
+        names.forEach(name => {
+            if (!name.startsWith('texture') || (!name.endsWith('.png') && !name.endsWith('.png.mcmeta'))) return;
+            const suffix = name.slice('texture'.length);
+            if (suffix !== '.png' && suffix !== '.png.mcmeta' && !/^_\d+(\.png|\.png\.mcmeta)$/.test(suffix)) {
+                problems.push({ text: `${what} : ${name} attendu sous la forme texture[_<n>].png[.mcmeta]`, ref: 'PackBuild.java:833-838' });
+                return;
+            }
+            suffixes.add(suffix);
+        });
+        return { suffixes, problems };
+    }
+    function retextureProblems(model, suffixes, what) {
+        const problems = [];
+        Object.keys(model.textures).forEach(key => {
+            const value = model.textures[key];
+            if (value !== './texture' && !value.startsWith('./texture_')) {
+                problems.push({ text: `${what} : texture « ${key} » attendue en ./texture[_<n>], reçu ${value}`, ref: 'PackBuild.java:866-869' });
+                return;
+            }
+            const rest = value.slice('./texture'.length);
+            if (!suffixes.has(rest + '.png')) {
+                problems.push({ text: `${what} : texture « ${key} » cite ${value}, mais texture${rest}.png est absent du dossier de l'entrée`, ref: 'PackBuild.java:871-875' });
+            }
+        });
+        return problems;
+    }
+
+    /**
+     * Tout l'assemblage d'une entrée, dans l'ordre de BC : Entry.read, texturesOf, emitModelled
+     * (model.json ou texture seule), ModelReader.read, ModelFit.apply, retexture.
+     * @param o { category, id, entry (objet pack.json, {} si absent), folder, modelText (null si
+     *        pas de model.json), files (noms du dossier) }
+     */
+    function buildEntry(o) {
+        const res = { ok: false, flat: false, errors: [], warnings: [], notes: [], entry: null, model: null, merged: null, overrides: [], overridden: [], written: [] };
+        const what = `pack.json : ${o.category}.${o.id}`;
+        const err = (e) => res.errors.push({ text: e.message, ref: e.ref || '' });
+        let folder = o.folder == null ? null : o.folder;
+        if (o.folders) { // folders de pack.json ; auras et motes ont un défaut (PackBuild.java:1276-1282)
+            const defaults = { auras: 'beltaria/auras', motes: 'beltaria/motes' };
+            folder = has(o.folders, o.category) ? o.folders[o.category] : (defaults[o.category] || null);
+            if (folder == null) {
+                res.errors.push({ text: `pack.json : folders.${o.category} : dossier de sortie attendu sous mcpatcher/cit pour les entrées de ${o.category}`, ref: 'PackBuild.java:1349-1354' });
+                return res;
+            }
+            if (typeof folder !== 'string' || !folder) {
+                res.errors.push({ text: `pack.json : folders : « ${o.category} » : chaîne non vide attendue`, ref: 'PackBuild.java:1355 ; :1470-1478' });
+                return res;
+            }
+        }
+        try {
+            res.entry = readEntry(o.category, o.id, o.entry || {}, folder);
+        } catch (e) { if (!(e instanceof BcError)) throw e; err(e); return res; }
+        const raw = o.entry || {};
+        Object.keys(raw).forEach(k => { // clés ignorées par BC : conservées à l'export
+            if (/^(thirdperson|firstperson)_(lefthand|righthand)$|^(ground|fixed|gui|head)s$/.test(k)) {
+                res.warnings.push({ text: `« ${k} » n'est pas un contexte 1.8 : BC l'ignore sans rien dire (seuls ${CONTEXTS.join(', ')})`, ref: 'PackBuild.java:1570-1573 ; DisplaySlot.java:6-8' });
+            }
+            CONTEXTS.forEach(c => {
+                if (k === c && isObj(raw[c])) {
+                    Object.keys(raw[c]).forEach(sub => {
+                        if (!['rotation', 'translation', 'scale', 'front', 'fit', 'turn'].includes(sub)) {
+                            res.warnings.push({ text: `${c}.${sub} : clé inconnue, ignorée par BC (conservée à l'export)`, ref: 'PackBuild.java:1588-1617' });
+                        }
+                    });
+                }
+            });
+        });
+        res.overrides = overridesOf(res.entry.fits);
+        const files = o.files || [];
+        const tex = textureFiles(files, what);
+        const states = files.filter(n => n.startsWith('bow_') && n.endsWith('.png'));
+        if (o.modelText == null) {
+            if (!tex.suffixes.size && !states.length) {
+                res.errors.push({ text: `${what} : ni model.json ni texture.png dans le dossier de l'entrée`, ref: 'PackBuild.java:646-649' });
+                return res;
+            }
+            res.errors.push(...tex.problems);
+            res.flat = true;
+            res.ok = !res.errors.length;
+            res.notes.push({ text: 'Texture plate (pas de model.json) : règle CIT texture=, le client garde le modèle vanilla de la matière et ses placements vanilla, rien à régler.', ref: 'PackBuild.java:673-691 ; README.md:110-121' });
+            if (Object.keys(res.entry.fits.slots).length || res.entry.fits.hasShift) {
+                res.warnings.push({ text: 'Les réglages d\'affichage / shift de cette entrée sont lus mais jamais appliqués : sans model.json, BC n\'a pas de modèle à ajuster.', ref: 'PackBuild.java:656-691' });
+            }
+            return res;
+        }
+        if (tex.problems.length) { res.errors.push(...tex.problems); return res; }
+        try {
+            res.model = readModel(o.modelText);
+        } catch (e) {
+            if (!(e instanceof BcError)) throw e;
+            res.errors.push({ text: `model.json : ${e.message}`, ref: e.ref });
+            return res;
+        }
+        res.merged = mergeEntry(res.model, res.entry.fits, o.id);
+        res.errors.push(...res.merged.problems);
+        res.errors.push(...retextureProblems(res.model, tex.suffixes, 'model.json'));
+        res.written = CONTEXTS.filter(c => res.merged.display[c]);
+        res.overridden = res.overrides.map(s => {
+            const [ctx, comp] = s.split('.');
+            const m = res.model.display[ctx];
+            return { ctx, comp, model: m ? m[comp].slice() : null, final: res.merged.display[ctx][comp].slice() };
+        });
+        if (res.overrides.length) {
+            res.notes.push({ text: `pack.json impose, et model.json ne peut rien y changer : ${res.overrides.map(s => 'display.' + s).join(', ')}`, ref: 'PackBuild.java:546-570' });
+        }
+        CONTEXTS.forEach(c => {
+            const s = res.entry.fits.slots[c];
+            if (s && s.fit > BC.SLOT_SIZE) res.warnings.push({ text: `${c}.fit = ${fr(s.fit)} px : au-delà de 16, l'icône déborde sur les cases voisines (choix d'apparence, accepté par BC)`, ref: 'ModelFit.java:39-46' });
+        });
+        res.ok = !res.errors.length;
+        return res;
+    }
+
+    // ---------- Édition d'une entrée pack.json, exclusions de BC appliquées ----------
+    const SLOT_KEYS = Object.freeze(['rotation', 'front', 'translation', 'scale', 'fit', 'turn']);
+    function isVec3(v) { return Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number' && Number.isFinite(x)); }
+    /**
+     * Pose (ou retire, value = null) une composante d'un contexte. Refuse ce que BC refuserait :
+     * front avec rotation (PackBuild.java:1592-1594), fit avec translation / scale (:1599-1602),
+     * fit hors de ]0 ; 32] (ModelFit.java:414-417), échelle ≤ 0 (DisplayTransform.java:86-90).
+     * @return { ok, entry (nouvel objet ; clés inconnues et ordre conservés), error, ref }
+     */
+    function setSlotComponent(entry, ctx, comp, value) {
+        const no = (error, ref) => ({ ok: false, entry, error, ref });
+        if (!CONTEXTS.includes(ctx)) return no(`contexte « ${ctx} » inconnu : BC ne lit que ${CONTEXTS.join(', ')}`, 'DisplaySlot.java:17-22');
+        if (!SLOT_KEYS.includes(comp)) return no(`composante « ${comp} » inconnue (${SLOT_KEYS.join(', ')})`, 'PackBuild.java:1588-1617');
+        const out = clone(entry || {});
+        const slot = isObj(out[ctx]) ? out[ctx] : {};
+        if (value == null || (comp === 'front' && value === false)) {
+            delete slot[comp];
+        } else {
+            if (comp === 'rotation' && slot.front === true) return no(`${ctx} : « rotation » refusée, « front » l'exclut (front impose -30 / 135 / 0)`, 'PackBuild.java:1592-1594');
+            if (comp === 'front' && has(slot, 'rotation')) return no(`${ctx} : « front » refusé, une « rotation » est déjà donnée`, 'PackBuild.java:1592-1594');
+            if (comp === 'fit' && (has(slot, 'translation') || has(slot, 'scale'))) return no(`${ctx} : « fit » refusé, il calcule translation et scale : retirer celles-ci d'abord`, 'PackBuild.java:1599-1602');
+            if ((comp === 'translation' || comp === 'scale') && has(slot, 'fit')) return no(`${ctx} : « ${comp} » refusée, « fit » la calcule déjà`, 'PackBuild.java:1599-1602');
+            if (comp === 'front' && value !== true) return no(`${ctx}.front : true ou false attendu`, 'PackBuild.java:1642-1647');
+            if (['rotation', 'translation', 'scale'].includes(comp) && !isVec3(value)) return no(`${ctx}.${comp} : trois nombres attendus`, 'PackBuild.java:1656-1670');
+            if (comp === 'scale' && value.some(v => !(v > 0))) return no(`${ctx}.scale : échelle strictement positive attendue (BC refuse 0 et le négatif)`, 'DisplayTransform.java:86-90');
+            if (comp === 'fit' && !(typeof value === 'number' && value > 0 && value <= BC.MAX_FIT)) return no(`${ctx}.fit : entre 0 (exclu) et 32 pixels`, 'ModelFit.java:414-417');
+            if (comp === 'turn' && !(isVec3(value) || (Array.isArray(value) && value.length > 0 && value.every(isVec3)))) return no(`${ctx}.turn : triplet, ou liste de triplets, attendu`, 'PackBuild.java:1625-1640');
+            slot[comp] = clone(value);
+        }
+        if (Object.keys(slot).length) out[ctx] = slot; else delete out[ctx];
+        return { ok: true, entry: out };
+    }
+    /** shift [x, y, z] en seizièmes de bloc, ou null pour le retirer (PackBuild.java:1566-1567). */
+    function setShift(entry, value) {
+        const out = clone(entry || {});
+        if (value == null) { delete out.shift; return { ok: true, entry: out }; }
+        if (!isVec3(value)) return { ok: false, entry, error: 'shift : trois nombres attendus', ref: 'PackBuild.java:1656-1670' };
+        out.shift = value.slice();
+        return { ok: true, entry: out };
+    }
+    /** « 0, 0, -45 » ; « 0,90,0 ; 0,0,-45 » ; ou JSON ([0,0,-45] / [[0,90,0],[0,0,-45]]). */
+    function parseTurnText(text) {
+        const s = String(text || '').trim();
+        if (!s) return { ok: true, value: null };
+        let v;
+        if (s.charAt(0) === '[') {
+            try { v = JSON.parse(s); } catch (e) { return { ok: false, error: 'turn : JSON illisible' }; }
+        } else {
+            const groups = s.split(/[;|]/).map(g => g.trim()).filter(Boolean)
+                .map(g => g.split(/[\s,]+/).filter(Boolean).map(x => Number(x.replace(/^\+/, ''))));
+            v = groups.length === 1 ? groups[0] : groups;
+        }
+        if (isVec3(v) || (Array.isArray(v) && v.length > 0 && v.every(isVec3))) return { ok: true, value: v };
+        return { ok: false, error: 'turn : triplet (ex. 0, 0, -45) ou liste de triplets séparés par « ; » attendu' };
+    }
+
+    // ---------- Valeurs telles que BC les écrit : Json.number (Json.java:265-270) ----------
+    function javaFloat(v) {
+        const x = f(v);
+        if (x === Math.trunc(x) && Math.abs(x) < 9.2e18) return String(Object.is(x, -0) ? 0 : x);
+        for (let p = 1; p <= 9; p++) {
+            const s = x.toPrecision(p);
+            if (f(Number(s)) === x) {
+                let out = String(Number(s));
+                if (Math.abs(x) < 1e-3 || Math.abs(x) >= 1e7) out = javaSci(Number(s));
+                return out;
+            }
+        }
+        return String(x);
+    }
+    function javaSci(n) { // 1.0E-4 à la Java
+        const [m, e] = n.toExponential().split('e');
+        return (m.includes('.') ? m : m + '.0') + 'E' + Number(e);
+    }
+
+    // ---------- pack.json : édition qui préserve le texte (clés et entrées voisines intactes) ----------
+    function scanJson(text) {
+        let i = 0;
+        const ws = () => { while (i < text.length && /\s/.test(text[i])) i++; };
+        const str = () => {
+            const s = i;
+            i++;
+            while (i < text.length && text[i] !== '"') i += text[i] === '\\' ? 2 : 1;
+            if (i >= text.length) fail('pack.json : chaîne non fermée', 'PackBuild.java:1262-1268');
+            i++;
+            return JSON.parse(text.slice(s, i));
+        };
+        const value = () => {
+            ws();
+            const start = i;
+            const c = text[i];
+            if (c === '{') {
+                i++;
+                const members = [];
+                ws();
+                if (text[i] === '}') { i++; return { type: 'object', start, end: i, members }; }
+                for (;;) {
+                    ws();
+                    const keyStart = i;
+                    if (text[i] !== '"') fail('pack.json : clé attendue', 'PackBuild.java:1262-1268');
+                    const key = str();
+                    ws();
+                    if (text[i] !== ':') fail('pack.json : « : » attendu', 'PackBuild.java:1262-1268');
+                    i++;
+                    const v = value();
+                    members.push({ key, keyStart, valueStart: v.start, valueEnd: v.end, node: v });
+                    ws();
+                    if (text[i] === ',') { i++; continue; }
+                    if (text[i] === '}') { i++; break; }
+                    fail('pack.json : « , » ou « } » attendu', 'PackBuild.java:1262-1268');
+                }
+                return { type: 'object', start, end: i, members };
+            }
+            if (c === '[') {
+                i++;
+                const items = [];
+                ws();
+                if (text[i] === ']') { i++; return { type: 'array', start, end: i, items }; }
+                for (;;) {
+                    items.push(value());
+                    ws();
+                    if (text[i] === ',') { i++; continue; }
+                    if (text[i] === ']') { i++; break; }
+                    fail('pack.json : « , » ou « ] » attendu', 'PackBuild.java:1262-1268');
+                }
+                return { type: 'array', start, end: i, items };
+            }
+            if (c === '"') { str(); return { type: 'string', start, end: i }; }
+            const m = /^(-?\d+(\.\d+)?([eE][+-]?\d+)?|true|false|null)/.exec(text.slice(i, i + 64));
+            if (!m) fail('pack.json : valeur attendue', 'PackBuild.java:1262-1268');
+            i += m[0].length;
+            return { type: 'scalar', start, end: i };
+        };
+        const root = value();
+        return root;
+    }
+
+    /** Valeur JSON compacte au style du pack.json de BC : { "a": [0, 1, 2], "b": true } */
+    function compact(v) {
+        if (Array.isArray(v)) return '[' + v.map(compact).join(', ') + ']';
+        if (isObj(v)) {
+            const keys = Object.keys(v);
+            return keys.length ? '{ ' + keys.map(k => JSON.stringify(k) + ': ' + compact(v[k])).join(', ') + ' }' : '{}';
+        }
+        return JSON.stringify(v);
+    }
+    function lineIndent(text, pos) {
+        const ls = text.lastIndexOf('\n', pos - 1) + 1;
+        const m = /^[ \t]*/.exec(text.slice(ls, pos));
+        return m ? m[0] : '';
+    }
+    function sameJson(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+    /**
+     * Texte de l'entrée : une clé par ligne ; une valeur inchangée garde son texte d'origine.
+     * @param orig { node, text } de l'entrée d'origine, ou null
+     */
+    function entryText(entry, indent, step, nl, orig) {
+        const keys = Object.keys(entry);
+        if (!keys.length) return '{}';
+        const origVal = orig ? JSON.parse(orig.text.slice(orig.node.start, orig.node.end)) : null;
+        const lines = keys.map(k => {
+            let val = compact(entry[k]);
+            if (origVal && has(origVal, k) && sameJson(origVal[k], entry[k])) {
+                const m = orig.node.members.filter(x => x.key === k).pop();
+                if (m) val = orig.text.slice(m.valueStart, m.valueEnd);
+            }
+            return indent + step + JSON.stringify(k) + ': ' + val;
+        });
+        return '{' + nl + lines.join(',' + nl) + nl + indent + '}';
+    }
+
+    /**
+     * Remplace (ou ajoute) l'entrée category.id dans le texte de pack.json ; tout le reste du
+     * fichier est conservé à l'octet près, dans son ordre.
+     */
+    function replaceEntry(packText, category, id, entry) {
+        const root = scanJson(packText);
+        if (root.type !== 'object') fail('pack.json : objet attendu à la racine', 'PackBuild.java:1269-1271');
+        const nl = packText.includes('\r\n') ? '\r\n' : '\n';
+        const lastMember = node => node.members[node.members.length - 1];
+        const stepOf = (node, fallbackIndent) => {
+            const m = node.members[0];
+            if (!m) return '  ';
+            const inner = lineIndent(packText, m.keyStart);
+            return inner.length > fallbackIndent.length ? inner.slice(fallbackIndent.length) : '  ';
+        };
+        const rootIndent = lineIndent(packText, root.start);
+        const step = stepOf(root, rootIndent);
+        const catMember = root.members.filter(m => m.key === category).pop();
+        if (!catMember) { // section absente : ajoutée en fin de racine
+            const body = rootIndent + step + JSON.stringify(category) + ': {' + nl
+                + rootIndent + step + step + JSON.stringify(id) + ': ' + entryText(entry, rootIndent + step + step, step, nl, null) + nl
+                + rootIndent + step + '}';
+            const last = lastMember(root);
+            if (!last) return packText.slice(0, root.start) + '{' + nl + body + nl + rootIndent + '}' + packText.slice(root.end);
+            return packText.slice(0, last.valueEnd) + ',' + nl + body + packText.slice(last.valueEnd);
+        }
+        const cat = catMember.node;
+        if (cat.type !== 'object') fail(`pack.json : ${category} doit être un objet identifiant -> réglages`, 'PackBuild.java:1459-1468');
+        const catIndent = lineIndent(packText, catMember.keyStart);
+        const idMember = cat.members.filter(m => m.key === id).pop();
+        if (idMember) {
+            const ind = lineIndent(packText, idMember.keyStart);
+            const innerStep = idMember.node.type === 'object' && idMember.node.members.length
+                && packText.slice(idMember.node.start, idMember.node.end).includes('\n')
+                ? (lineIndent(packText, idMember.node.members[0].keyStart).slice(ind.length) || step) : step;
+            const origVal = JSON.parse(packText.slice(idMember.valueStart, idMember.valueEnd));
+            if (sameJson(origVal, entry)) return packText; // rien à changer : octets identiques
+            const t = entryText(entry, ind, innerStep, nl, { node: idMember.node, text: packText });
+            return packText.slice(0, idMember.valueStart) + t + packText.slice(idMember.valueEnd);
+        }
+        const last = lastMember(cat);
+        const ind = last ? lineIndent(packText, last.keyStart) : catIndent + step;
+        const t = JSON.stringify(id) + ': ' + entryText(entry, ind, step, nl, null);
+        if (!last) return packText.slice(0, cat.start) + '{' + nl + ind + t + nl + catIndent + '}' + packText.slice(cat.end);
+        return packText.slice(0, last.valueEnd) + ',' + nl + ind + t + packText.slice(last.valueEnd);
+    }
+    /** Extrait d'entrée prêt à coller dans la section de sa catégorie (indentation de pack-src). */
+    function entrySnippet(id, entry, nl) {
+        return '    ' + JSON.stringify(id) + ': ' + entryText(entry, '    ', '  ', nl || '\n', null);
+    }
+
+    // ---------- Chaîne de rendu client 1.8.9 (matrices 4x4 colonne, comme OpenGL / three.js) ----------
+    function m4id() { return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
+    function m4mul(a, b) {
+        const o = new Array(16);
+        for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+            let s = 0;
+            for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+            o[c * 4 + r] = s;
+        }
+        return o;
+    }
+    function m4T(x, y, z) { const m = m4id(); m[12] = x; m[13] = y; m[14] = z; return m; }
+    function m4S(x, y, z) { const m = m4id(); m[0] = x; m[5] = y; m[10] = z; return m; }
+    function m4R(deg, x, y, z) { // glRotatef
+        const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), t = 1 - c;
+        return [t * x * x + c, t * x * y + s * z, t * x * z - s * y, 0,
+            t * x * y - s * z, t * y * y + c, t * y * z + s * x, 0,
+            t * x * z + s * y, t * y * z - s * x, t * z * z + c, 0,
+            0, 0, 0, 1];
+    }
+    function chain(...ms) { return ms.reduce(m4mul, m4id()); } // premier appel GlStateManager = plus à gauche
+    function apply(m, p) { return [0, 1, 2].map(r => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]); }
+    const clampf = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+    // ItemTransformVec3f.Deserializer (ItemTransformVec3f.java:62-71) puis
+    // ItemCameraTransforms.applyTransform (ItemCameraTransforms.java:55-67) : T, Ry, Rx, Rz, S
+    function displayMatrix(t) {
+        const tr = t.translation.map(v => clampf(v * 0.0625, -1.5, 1.5));
+        const sc = t.scale.map(v => clampf(v, -4, 4));
+        return chain(m4T(tr[0], tr[1], tr[2]),
+            m4R(t.rotation[1], 0, 1, 0), m4R(t.rotation[0], 1, 0, 0), m4R(t.rotation[2], 0, 0, 1),
+            m4S(sc[0], sc[1], sc[2]));
+    }
+    // RenderItem.renderItem(stack, model) : scale 0,5 puis translate -0,5 (RenderItem.java:145,157)
+    function renderItemMatrix() { return chain(m4S(0.5, 0.5, 0.5), m4T(-0.5, -0.5, -0.5)); }
+    /**
+     * Le « ×2 » des contextes portés par une entité (3e/1re personne, tête) : ItemRenderer.renderItem
+     * double un modèle 3D (ItemRenderer.java:65-67) ; RenderItem.preTransform, appelé par
+     * renderItemModelTransform (RenderItem.java:320), double un item PLAT (RenderItem.java:252-257).
+     * Les deux réunis : tout item porté passe par ×2. Oublier preTransform était la cause de l'épée
+     * vanilla à moitié taille, cachée dans le bras, de l'ancien éditeur.
+     */
+    function entityItemScale() { return m4S(2, 2, 2); }
+
+    // Joueur : RendererLivingEntity.doRender (RendererLivingEntity.java:41-48, rotateCorpse :417)
+    // + RenderPlayer.preRenderCallback 0,9375 (RenderPlayer.java:136) ; yaw 0, pieds à l'origine.
+    function playerMatrix() {
+        return chain(m4R(180, 0, 1, 0), m4S(-1, -1, 1), m4S(0.9375, 0.9375, 0.9375), m4T(0, -1.5078125, 0));
+    }
+    // Porte-armure (ArmorStandRenderer, pas de preRenderCallback) posé en `y` blocs
+    function standMatrix(y) { return chain(m4T(0, y, 0), m4R(180, 0, 1, 0), m4S(-1, -1, 1), m4T(0, -1.5078125, 0)); }
+    // Hauteur du passager : Entity.updateRiderPosition (Entity.java:1952) = posY + getMountedYOffset
+    // (height × 0,75, Entity.java:1967-1970 ; joueur 1,8 => 1,35) + getYOffset du porte-armure (0, :1959)
+    const RIDER_OFFSET = 1.8 * 0.75;
+
+    // ModelBiped au repos tenant un item (heldItemRight = 1, ageInTicks = 0) :
+    // bras droit X = -π/10 (ModelBiped.java:168), Z = cos(0)×0,05 + 0,05 = 0,1 (ModelBiped.java:221)
+    const PLAYER_PARTS = Object.freeze([
+        { name: 'head', point: [0, 0, 0], angles: [0, 0, 0], box: [-4, -8, -4, 8, 8, 8], color: 0xb4845a },
+        { name: 'body', point: [0, 0, 0], angles: [0, 0, 0], box: [-4, 0, -2, 8, 12, 4], color: 0x2f9e9e },
+        { name: 'rightArm', point: [-5, 2, 0], angles: [-Math.PI / 10, 0, 0.1], box: [-3, -2, -2, 4, 12, 4], color: 0xb4845a },
+        { name: 'leftArm', point: [5, 2, 0], angles: [0, 0, -0.1], box: [-1, -2, -2, 4, 12, 4], color: 0xb4845a },
+        { name: 'rightLeg', point: [-1.9, 12, 0], angles: [0, 0, 0], box: [-2, 0, -2, 4, 12, 4], color: 0x3b3a8f },
+        { name: 'leftLeg', point: [1.9, 12, 0], angles: [0, 0, 0], box: [-2, 0, -2, 4, 12, 4], color: 0x3b3a8f }
+    ]); // boîtes et pivots : ModelBiped.java:55-77
+    // ModelArmorStand (ModelArmorStand.java:22-54) ; tête : pivot (0, 1, 0) posé par
+    // ModelArmorStandArmor.setRotationAngles (ModelArmorStandArmor.java:36)
+    const STAND_PARTS = Object.freeze([
+        { name: 'head', point: [0, 1, 0], angles: [0, 0, 0], box: [-1, -7, -1, 2, 7, 2], color: 0xa07a4a },
+        { name: 'body', point: [0, 0, 0], angles: [0, 0, 0], box: [-6, 0, -1.5, 12, 3, 3], color: 0xa07a4a },
+        { name: 'rightSide', point: [0, 0, 0], angles: [0, 0, 0], box: [-3, 3, -1, 2, 7, 2], color: 0xa07a4a },
+        { name: 'leftSide', point: [0, 0, 0], angles: [0, 0, 0], box: [1, 3, -1, 2, 7, 2], color: 0xa07a4a },
+        { name: 'waist', point: [0, 0, 0], angles: [0, 0, 0], box: [-4, 10, -1, 8, 2, 2], color: 0xa07a4a },
+        { name: 'rightLeg', point: [-1.9, 12, 0], angles: [0, 0, 0], box: [-1, 0, -1, 2, 11, 2], color: 0xa07a4a },
+        { name: 'leftLeg', point: [1.9, 12, 0], angles: [0, 0, 0], box: [-1, 0, -1, 2, 11, 2], color: 0xa07a4a }
+    ]);
+    const DEG = 180 / Math.PI;
+    // ModelRenderer.postRender : translate(point/16) puis rotate Z, Y, X (ModelRenderer.java:265-280)
+    function partMatrix(part) {
+        const [px, py, pz] = part.point, [ax, ay, az] = part.angles;
+        return chain(m4T(px / 16, py / 16, pz / 16), m4R(az * DEG, 0, 0, 1), m4R(ay * DEG, 0, 1, 0), m4R(ax * DEG, 1, 0, 0));
+    }
+    /** Cube unité [0;1]³ -> boîte d'une pièce, dans le monde. base : playerMatrix() ou standMatrix(y). */
+    function partBoxMatrix(base, part) {
+        const [x, y, z, w, h, d] = part.box;
+        return chain(base, partMatrix(part), m4T(x / 16, y / 16, z / 16), m4S(w / 16, h / 16, d / 16));
+    }
+    // LayerCustomHead, ItemBlock : translate(0,-0,25,0), rotate 180 Y, scale(0,625,-0,625,-0,625)
+    // (LayerCustomHead.java:57-72), puis ItemRenderer.renderItem(..., HEAD)
+    function headItemMatrix() { return chain(m4T(0, -0.25, 0), m4R(180, 0, 1, 0), m4S(0.625, -0.625, -0.625)); }
+
+    /** Support du contexte « head » selon la catégorie (porte-armure de BC). */
+    function headSupport(category) {
+        if (category === 'wings' || category === 'auras') return 'rider'; // CosmeticRenderer.java:50-75
+        if (category === 'blocks') return 'block';  // BlocksRenderer.java:321-325, PacketStand(false)
+        if (category === 'motes') return 'stand';   // PacketStand.floating()
+        return 'player';
+    }
+
+    /**
+     * Matrice finale du modèle (coordonnées modèle en blocs, [0;1]³ pour 0..16 px) dans la scène
+     * d'un contexte. opts.gui3d : modèle à éléments (toujours vrai pour un modèle BC, ModelBlock.java:245) ;
+     * opts.support : 'rider' | 'block' | 'stand' | 'player' (contexte head) ; opts.age : ticks au sol.
+     * Repères : monde en blocs, Y vers le haut, joueur face à +Z (yaw 0) ; GUI en pixels, Y vers le bas
+     * (repère écran, comme le client) ; 1re personne : repère caméra (regard -Z).
+     */
+    function contextMatrix(ctx, t, opts) {
+        const o = opts || {};
+        const gui3d = o.gui3d !== false;
+        const D = displayMatrix(t), R = renderItemMatrix();
+        switch (ctx) {
+            case 'firstperson': // ItemRenderer.transformFirstPersonItem(0, 0) (ItemRenderer.java:296-307) puis renderItem (:406)
+                return chain(m4T(0.56, -0.52, -0.71999997), m4R(45, 0, 1, 0), m4S(0.4, 0.4, 0.4), entityItemScale(), D, R);
+            case 'thirdperson': // LayerHeldItem : postRenderArm puis translate(-1/16, 7/16, 1/16) (LayerHeldItem.java:41-42,66)
+                return chain(playerMatrix(), partMatrix(PLAYER_PARTS[2]), m4T(-0.0625, 0.4375, 0.0625), entityItemScale(), D, R);
+            case 'head': {
+                const support = o.support || 'player';
+                let base;
+                if (support === 'player') base = chain(playerMatrix(), partMatrix(PLAYER_PARTS[0]));
+                else base = chain(standMatrix(support === 'rider' ? RIDER_OFFSET : 0), partMatrix(STAND_PARTS[0]));
+                return chain(base, headItemMatrix(), entityItemScale(), D, R);
+            }
+            case 'gui': // RenderItem.setupGuiTransform (RenderItem.java:376-396), coordonnées de case 0..16
+                return chain(m4T(8, 8, 0), m4S(1, 1, -1), m4S(0.5, 0.5, 0.5),
+                    gui3d ? chain(m4S(40, 40, 40), m4R(210, 1, 0, 0), m4R(-135, 0, 1, 0)) : chain(m4S(64, 64, 64), m4R(180, 1, 0, 0)),
+                    D, R);
+            case 'ground': { // RenderEntityItem.func_177077_a + doRender (RenderEntityItem.java:41-48, 125-127), hoverStart 0
+                const age = o.age || 0;
+                const bob = Math.sin(age / 10) * 0.1 + 0.1;
+                const spin = (age / 20) * DEG;
+                return chain(m4T(0, bob + 0.25 * t.scale[1], 0), m4R(spin, 0, 1, 0), gui3d ? m4S(0.5, 0.5, 0.5) : m4id(), D, R);
+            }
+            case 'fixed': // RenderItemFrame (RenderItemFrame.java:57-58,77,153-162), rotation 0, cadre face à +Z
+                return chain(m4R(180, 0, 1, 0), m4T(0, 0, 0.4375), m4S(0.5, 0.5, 0.5),
+                    gui3d ? m4id() : chain(m4R(180, 0, 1, 0), m4S(2, 2, 2)), D, R); // plat : rotation 180 + preTransform ×2
+            default:
+                throw new Error(`Contexte inconnu : ${ctx}`);
+        }
+    }
+
+    // ---------- Géométrie : FaceBakery 1.8.9 ----------
+    // Sommets par face (EnumFaceDirection.java:7-12) : W/E = from.x/to.x, D/U = y, N/S = z
+    const FACE_VERTS = {
+        down: [['W', 'D', 'S'], ['W', 'D', 'N'], ['E', 'D', 'N'], ['E', 'D', 'S']],
+        up: [['W', 'U', 'N'], ['W', 'U', 'S'], ['E', 'U', 'S'], ['E', 'U', 'N']],
+        north: [['E', 'U', 'N'], ['E', 'D', 'N'], ['W', 'D', 'N'], ['W', 'U', 'N']],
+        south: [['W', 'U', 'S'], ['W', 'D', 'S'], ['E', 'D', 'S'], ['E', 'U', 'S']],
+        west: [['W', 'U', 'N'], ['W', 'D', 'N'], ['W', 'D', 'S'], ['W', 'U', 'S']],
+        east: [['E', 'U', 'S'], ['E', 'D', 'S'], ['E', 'D', 'N'], ['E', 'U', 'N']]
+    };
+    const SCALE_22_5 = f(1 / f(Math.cos(0.39269909262657166)) - 1); // FaceBakery.java:14
+    const SCALE_45 = f(1 / f(Math.cos(Math.PI / 4)) - 1);          // FaceBakery.java:15
+    function rotatePart(p, rot) { // FaceBakery.rotatePart + rotateScale
+        if (!rot) return p;
+        const o = rot.origin.map(v => v * 0.0625); // BlockPart.java:98-99
+        const a = rot.angle * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+        const v = [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
+        let r, k;
+        if (rot.axis === 'x') { r = [v[0], c * v[1] - s * v[2], s * v[1] + c * v[2]]; k = [0, 1, 1]; }
+        else if (rot.axis === 'y') { r = [c * v[0] + s * v[2], v[1], -s * v[0] + c * v[2]]; k = [1, 0, 1]; }
+        else { r = [c * v[0] - s * v[1], s * v[0] + c * v[1], v[2]]; k = [1, 1, 0]; }
+        if (rot.rescale) {
+            const sc = Math.abs(rot.angle) === 22.5 ? SCALE_22_5 : SCALE_45;
+            k = k.map(x => x * sc + 1);
+        } else k = [1, 1, 1];
+        return [r[0] * k[0] + o[0], r[1] * k[1] + o[1], r[2] * k[2] + o[2]];
+    }
+    /**
+     * Quads cuits d'un modèle : { texture (#ref), face, pos[4] (blocs), uv[4] (0..1, v vers le bas) }.
+     * UV par sommet : BlockFaceUV.func_178348_a / func_178346_b avec la rotation de face (BlockFaceUV.java).
+     */
+    function bakeQuads(elements) {
+        const quads = [];
+        elements.forEach(el => {
+            const P = { W: el.from[0] / 16, D: el.from[1] / 16, N: el.from[2] / 16, E: el.to[0] / 16, U: el.to[1] / 16, S: el.to[2] / 16 };
+            Object.keys(el.faces).forEach(dir => {
+                const face = el.faces[dir];
+                const pos = FACE_VERTS[dir].map(([x, y, z]) => rotatePart([P[x], P[y], P[z]], el.rotation));
+                const uv = [0, 1, 2, 3].map(i => {
+                    const j = (i + face.rotation / 90) % 4;
+                    const u = (j === 0 || j === 1) ? face.uv[0] : face.uv[2];
+                    const v = (j === 0 || j === 3) ? face.uv[1] : face.uv[3];
+                    return [u / 16, v / 16];
+                });
+                quads.push({ texture: face.texture, face: dir, pos, uv });
+            });
+        });
+        return quads;
+    }
+    /** Boîte englobante d'une liste de points transformés par m. */
+    function bbox(m, points) {
+        const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+        points.forEach(p => {
+            const q = apply(m, p);
+            for (let i = 0; i < 3; i++) { min[i] = Math.min(min[i], q[i]); max[i] = Math.max(max[i], q[i]); }
+        });
+        return { min, max };
+    }
+    function quadPoints(quads) { return quads.reduce((a, q) => a.concat(q.pos), []); }
+
+    // ---------- Item plat : placements vanilla 1.8.9 (models/item/*.json des assets du client) ----------
+    const VANILLA = Object.freeze({
+        simple: { label: 'item simple vanilla (apple.json)', display: {
+            thirdperson: { rotation: [-90, 0, 0], translation: [0, 1, -3], scale: [0.55, 0.55, 0.55] },
+            firstperson: { rotation: [0, -135, 25], translation: [0, 4, 2], scale: [1.7, 1.7, 1.7] } } },
+        outil: { label: 'outil / épée vanilla (diamond_sword.json)', display: {
+            thirdperson: { rotation: [0, 90, -35], translation: [0, 1.25, -3.5], scale: [0.85, 0.85, 0.85] },
+            firstperson: { rotation: [0, -135, 25], translation: [0, 4, 2], scale: [1.7, 1.7, 1.7] } } },
+        arc: { label: 'arc vanilla (bow.json)', display: {
+            thirdperson: { rotation: [5, 80, -45], translation: [0.75, 0, 0.25], scale: [1, 1, 1] },
+            firstperson: { rotation: [0, -135, 25], translation: [0, 4, 2], scale: [1.7, 1.7, 1.7] } } },
+        canne: { label: 'canne à pêche vanilla (fishing_rod.json)', display: {
+            thirdperson: { rotation: [180, 90, -35], translation: [0, 0, -3.5], scale: [0.85, 0.85, 0.85] },
+            firstperson: { rotation: [0, 45, 25], translation: [0, 4, 2], scale: [1.7, 1.7, 1.7] } } }
+    });
+    function vanillaKind(material) {
+        const m = String(material || '');
+        if (/^bow$/.test(m)) return 'arc';
+        if (/^(fishing_rod|carrot_on_a_stick)$/.test(m)) return 'canne';
+        if (/_(sword|axe|pickaxe|shovel|hoe)$|^(stick|bone|blaze_rod)$/.test(m)) return 'outil';
+        return 'simple';
+    }
+    function identityT() { return { rotation: [0, 0, 0], translation: [0, 0, 0], scale: [1, 1, 1] }; }
+    function vanillaDisplay(material) {
+        const p = VANILLA[vanillaKind(material)];
+        const d = {};
+        CONTEXTS.forEach(c => { d[c] = p.display[c] ? clone(p.display[c]) : identityT(); });
+        return { kind: vanillaKind(material), label: p.label, display: d };
+    }
+
+    // ---------- Dossiers : repérage des entrées dans une arborescence pack-src ----------
+    /** @return { category, id, file } si le chemin est <...>/<catégorie>/<id>/<fichier> */
+    function entryPath(path) {
+        const parts = String(path).replace(/\\/g, '/').split('/').filter(Boolean);
+        for (let i = parts.length - 3; i >= 0; i--) {
+            if (CATEGORIES.includes(parts[i]) && i + 3 === parts.length) return { category: parts[i], id: parts[i + 1], file: parts[i + 2], root: parts.slice(0, i).join('/') };
+        }
+        return null;
+    }
+    /** Première frame d'une texture animée (.png.mcmeta) : carrée par défaut, frames[0] si donné. */
+    function firstFrame(w, h, mcmeta) {
+        const anim = mcmeta && isObj(mcmeta.animation) ? mcmeta.animation : null;
+        if (!anim) return { x: 0, y: 0, w, h };
+        const fw = typeof anim.width === 'number' ? anim.width : w;
+        const fh = typeof anim.height === 'number' ? anim.height : fw;
+        const perRow = Math.max(1, Math.floor(w / fw));
+        let index = 0;
+        if (Array.isArray(anim.frames) && anim.frames.length) {
+            const fr0 = anim.frames[0];
+            index = typeof fr0 === 'number' ? fr0 : (isObj(fr0) && typeof fr0.index === 'number' ? fr0.index : 0);
+        }
+        return { x: (index % perRow) * fw, y: Math.floor(index / perRow) * fh, w: Math.min(fw, w), h: Math.min(fh, h) };
+    }
+
+    return Object.freeze({
+        CONTEXTS, CATEGORIES, COMPONENTS, BC, VANILLA, PLAYER_PARTS, STAND_PARTS, RIDER_OFFSET, BcError,
+        readModel, readEntry, readFits, readSlotFit, applySlot, mergeEntry, overridesOf, buildEntry,
+        textureFiles, retextureProblems, Rot, boundsOf, turnedBounds,
+        SLOT_KEYS, setSlotComponent, setShift, parseTurnText,
+        javaFloat, scanJson, compact, replaceEntry, entrySnippet,
+        m4id, m4mul, m4T, m4S, m4R, chain, apply, displayMatrix, renderItemMatrix, playerMatrix, standMatrix,
+        partMatrix, partBoxMatrix, headItemMatrix, headSupport, contextMatrix,
+        bakeQuads, bbox, quadPoints, vanillaKind, vanillaDisplay, identityT, entryPath, firstFrame
+    });
+})();
+if (typeof window !== 'undefined') window.ItemModel = ItemModel;
+if (typeof module !== 'undefined') module.exports = ItemModel;
+</script>
+
+<script>
+// =====================================================================
+// --- 7. RÉGLAGE D'ENTRÉE BELTARIACONTENT : INTERFACE + APERÇU 3D ---
+// État modifiable unique (objet `st`), lu par la boucle de rendu ; tout se passe sur le thread
+// principal (lectures de fichiers asynchrones, mais chaque suite s'exécute seule), donc aucune
+// synchronisation n'est nécessaire. Le 16 px du slot est recalculé sur drapeau sale (dirty flag).
+// =====================================================================
+window.ItemModelUI = (() => {
+    'use strict';
+    const M = window.ItemModel;
+    const $ = id => document.getElementById(id);
+    const el = (tag, props, ...kids) => {
+        const e = document.createElement(tag);
+        if (props) Object.keys(props).forEach(k => {
+            if (k === 'class') e.className = props[k];
+            else if (k === 'text') e.textContent = props[k];
+            else if (k.startsWith('on')) e.addEventListener(k.slice(2), props[k]);
+            else if (props[k] !== undefined && props[k] !== null && props[k] !== false) e.setAttribute(k, props[k] === true ? '' : props[k]);
+        });
+        kids.forEach(k => { if (k != null) e.append(k); });
+        return e;
+    };
+
+    const CTX_INFO = {
+        thirdperson: { tab: '3e pers.', label: 'Tenu en main, vue 3e personne', note: 'Joueur au repos (bras droit −18°), sans swing ni blocage d\'épée. Aussi utilisé par les porte-armures et les mobs.' },
+        firstperson: { tab: '1re pers.', label: 'Vue 1re personne', note: 'Fenêtre 16:9, FOV 70 fixe de la main (EntityRenderer.renderHand) ; sans balancement de vue ni swing.' },
+        head: { tab: 'Tête', label: 'Porté au casque', note: '' },
+        gui: { tab: 'Inventaire', label: 'Inventaire (case 16 × 16)', note: 'Cadre gris = la case ; carré orange = la taille « fit » demandée. Vignette = rendu réel à 16 px.' },
+        ground: { tab: 'Au sol', label: 'Item au sol (EntityItem)', note: 'Flottement et rotation d\'un seul exemplaire (hoverStart = 0).' },
+        fixed: { tab: 'Cadre', label: 'Cadre (item frame)', note: 'Cadre vu de face, rotation 0.' }
+    };
+    const HEAD_NOTES = {
+        rider: 'Porte-armure marqueur (invisible en jeu, dessiné ici en filaire) qui chevauche le joueur : 1,35 bloc au-dessus des pieds (Entity.getMountedYOffset), tête du porte-armure +1,4453. Accroupi : BC écrit un second modèle penché (_sneak, CrouchPose), non montré.',
+        block: 'Porte-armure invisible posé au centre de la case du bloc (BlocksRenderer), tête +1,4453 bloc ; le cube filaire = la case.',
+        stand: 'Porte-armure volant (objets d\'aura), tête +1,4453 bloc au-dessus de sa position.',
+        player: 'Casque d\'un joueur : seul un ItemBlock y est dessiné en 1.8 (LayerCustomHead) ; pour une autre matière ce contexte n\'est jamais utilisé.'
+    };
+    const COMMON_NOTE = ' Approximations : éclairage simplifié, translucidité rendue opaque (seuil alpha 0,1 du client).';
+    const VEC_STEP = { rotation: 1, translation: 0.25, scale: 0.05 };
+    const COMP_LABEL = { rotation: 'Rotation (°)', translation: 'Translation (1/16)', scale: 'Échelle', front: 'front : de face', fit: 'fit (px)', turn: 'turn (pivots, °)' };
+
+    const st = {
+        active: false,
+        ctx: 'gui',
+        files: new Map(),     // chemin -> { path, size, read: () => Promise<Uint8Array> }
+        packPath: null, packText: null, pack: null,
+        entries: [],          // { key, category, id, dir, names: [], declared, hasModel, loose }
+        cur: null,            // entrée chargée : { key, category, id, dir, names, modelText, entry, declared }
+        textures: {},         // '' | '_2' ... -> { canvas, w, h }
+        flatImage: null,      // première frame de texture.png (item plat)
+        res: null,            // ItemModel.buildEntry
+        loadMsgs: [],         // { type, text }
+        actionMsg: null,
+        geoKey: '',
+        guiDirty: true,
+        uniform: true
+    };
+
+    // ---------- Lecture des fichiers (dossier, fichiers isolés, .zip) ----------
+    async function inflateRaw(data) {
+        if (typeof DecompressionStream === 'undefined') throw new Error('ce navigateur ne sait pas décompresser les .zip (DecompressionStream absent)');
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    /** Lecteur ZIP minimal : répertoire central, méthodes 0 (stockée) et 8 (deflate), lecture paresseuse. */
+    function readZip(buf, zipName) {
+        const u8 = new Uint8Array(buf);
+        const dv = new DataView(buf);
+        let eocd = -1;
+        for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
+            if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+        }
+        if (eocd < 0) throw new Error(`${zipName} : archive .zip illisible (répertoire central introuvable)`);
+        const count = dv.getUint16(eocd + 10, true);
+        let p = dv.getUint32(eocd + 16, true);
+        if (count === 0xffff || p === 0xffffffff) throw new Error(`${zipName} : archive ZIP64 non prise en charge`);
+        const out = [];
+        const dec = new TextDecoder();
+        for (let n = 0; n < count; n++) {
+            if (dv.getUint32(p, true) !== 0x02014b50) throw new Error(`${zipName} : répertoire central corrompu`);
+            const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+            const csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+            const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+            const lho = dv.getUint32(p + 42, true);
+            const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+            p += 46 + nlen + xlen + clen;
+            if (name.endsWith('/') || name.startsWith('__MACOSX/')) continue;
+            out.push({
+                path: name, size: usize,
+                read: async () => {
+                    if (flags & 1) throw new Error(`${name} : fichier chiffré dans l'archive`);
+                    const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+                    const data = u8.subarray(start, start + csize);
+                    if (method === 0) return data.slice();
+                    if (method === 8) return inflateRaw(data);
+                    throw new Error(`${name} : compression ${method} non prise en charge`);
+                }
+            });
+        }
+        return out;
+    }
+    const norm = p => String(p).replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+    async function ingest(items) {
+        // items : { path, read } ; un .zip est déplié (lecture paresseuse de son contenu)
+        for (const it of items) {
+            const path = norm(it.path);
+            if (/\.zip$/i.test(path)) {
+                const bytes = await it.read();
+                const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+                readZip(buf, path).forEach(z => st.files.set(norm(z.path), z));
+            } else {
+                st.files.set(path, Object.assign({}, it, { path }));
+            }
+        }
+    }
+    const textOf = async rec => new TextDecoder().decode(await rec.read());
+
+    /** Repère pack.json et les entrées <catégorie>/<id>/ (ou des fichiers isolés d'une seule entrée). */
+    async function index() {
+        st.loadMsgs = [];
+        const paths = [...st.files.keys()];
+        const packs = paths.filter(p => p === 'pack.json' || p.endsWith('/pack.json'))
+            .filter(p => !M.entryPath(p)).sort((a, b) => a.split('/').length - b.split('/').length || a.length - b.length);
+        st.packPath = packs[0] || null;
+        st.packText = null; st.pack = null;
+        if (st.packPath) {
+            st.packText = await textOf(st.files.get(st.packPath));
+            try {
+                st.pack = JSON.parse(st.packText);
+                if (!st.pack || typeof st.pack !== 'object' || Array.isArray(st.pack)) throw new Error('objet attendu à la racine');
+            } catch (e) {
+                st.pack = null;
+                st.loadMsgs.push({ type: 'err', text: `${st.packPath} : JSON invalide (${e.message}) ; BC refuserait tout le pack (PackBuild.java:1262-1271).` });
+            }
+        }
+        const byKey = new Map();
+        const loose = [];
+        paths.forEach(p => {
+            const e = M.entryPath(p);
+            if (e) {
+                const key = `${e.category}/${e.id}`;
+                if (!byKey.has(key)) byKey.set(key, { key, category: e.category, id: e.id, dir: p.slice(0, p.length - e.file.length), names: [], loose: false });
+                byKey.get(key).names.push(e.file);
+            } else if (/(^|\/)(model\.json|texture(_\d+)?\.png(\.mcmeta)?|texture[^/]*\.png(\.mcmeta)?|bow_[^/]*\.png|icon\.png)$/.test(p)) {
+                loose.push(p);
+            }
+        });
+        if (st.pack) { // entrées déclarées sans dossier : listées (BC exigerait le dossier)
+            M.CATEGORIES.forEach(c => {
+                const sec = st.pack[c];
+                if (sec && typeof sec === 'object' && !Array.isArray(sec)) Object.keys(sec).forEach(id => {
+                    const key = `${c}/${id}`;
+                    if (!byKey.has(key)) byKey.set(key, { key, category: c, id, dir: null, names: [], loose: false });
+                });
+            });
+        }
+        st.entries = [...byKey.values()].sort((a, b) => M.CATEGORIES.indexOf(a.category) - M.CATEGORIES.indexOf(b.category) || a.id.localeCompare(b.id));
+        if (loose.length) {
+            const dirs = [...new Set(loose.map(p => p.slice(0, p.lastIndexOf('/') + 1)))];
+            const dir = dirs.sort((a, b) => a.length - b.length)[0];
+            const names = loose.filter(p => p.slice(0, p.lastIndexOf('/') + 1) === dir).map(p => p.slice(dir.length));
+            const guessId = dir ? dir.split('/').filter(Boolean).pop() : '';
+            let category = 'wings', id = /^[a-z0-9_.-]+$/.test(guessId) ? guessId : 'mon_entree';
+            if (st.pack) {
+                const found = M.CATEGORIES.find(c => st.pack[c] && st.pack[c][id]);
+                if (found) category = found;
+            }
+            st.entries.unshift({ key: '*loose', category, id, dir, names, loose: true });
+        }
+        st.entries.forEach(e => {
+            e.hasModel = e.names.includes('model.json');
+            e.declared = !!(st.pack && st.pack[e.category] && Object.prototype.hasOwnProperty.call(st.pack[e.category], e.id));
+        });
+        const nModel = st.entries.filter(e => e.hasModel).length;
+        st.loadMsgs.push({ type: 'ok', text: `${st.files.size} fichier(s) lus${st.packPath ? ', pack.json : ' + st.packPath : ', sans pack.json'} ; ${st.entries.length} entrée(s), dont ${nModel} à model.json.` });
+        fillEntrySelect();
+    }
+
+    function fillEntrySelect() {
+        const sel = $('bcEntry');
+        sel.textContent = '';
+        if (!st.entries.length) { sel.append(el('option', { value: '', text: 'Aucune entrée : chargez un dossier, des fichiers ou un .zip' })); return; }
+        st.entries.forEach(e => {
+            const kind = e.loose ? 'fichiers isolés' : !e.dir ? 'déclarée, dossier absent' : e.hasModel ? 'modèle' : 'texture plate';
+            sel.append(el('option', { value: e.key, text: `${e.loose ? '★ ' : ''}${e.category}/${e.id} (${kind}${e.declared ? '' : ', hors pack.json'})` }));
+        });
+    }
+
+    async function decodeImage(bytes) {
+        const blob = new Blob([bytes], { type: 'image/png' });
+        if (typeof createImageBitmap === 'function') return createImageBitmap(blob);
+        const url = URL.createObjectURL(blob);
+        try {
+            return await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('image illisible')); i.src = url; });
+        } finally { URL.revokeObjectURL(url); }
+    }
+    async function frameCanvas(dir, name) {
+        const rec = st.files.get(dir + name);
+        if (!rec) return null;
+        const img = await decodeImage(await rec.read());
+        let meta = null;
+        const mrec = st.files.get(dir + name + '.mcmeta');
+        if (mrec) { try { meta = JSON.parse(await textOf(mrec)); } catch (e) { st.loadMsgs.push({ type: 'warn', text: `${name}.mcmeta illisible : première image entière utilisée.` }); } }
+        const fr = M.firstFrame(img.width, img.height, meta);
+        const c = document.createElement('canvas');
+        c.width = fr.w; c.height = fr.h;
+        c.getContext('2d').drawImage(img, fr.x, fr.y, fr.w, fr.h, 0, 0, fr.w, fr.h);
+        return { canvas: c, w: fr.w, h: fr.h, animated: !!meta };
+    }
+
+    // aria-busy sur le panneau pendant une lecture : posé avant le premier await, donc dès l'événement
+    function setBusy(delta) {
+        st.busy = Math.max(0, (st.busy || 0) + delta);
+        $('bcPanel').setAttribute('aria-busy', st.busy ? 'true' : 'false');
+    }
+    async function selectEntry(key) {
+        setBusy(1);
+        try { return await selectEntryNow(key); } finally { setBusy(-1); }
+    }
+    async function selectEntryNow(key) {
+        const e = st.entries.find(x => x.key === key);
+        if (!e) throw new Error(`entrée inconnue : ${key}`);
+        if (e.loose) {
+            $('bcLoose').hidden = false;
+            $('bcCat').value = e.category;
+            $('bcId').value = e.id;
+        } else $('bcLoose').hidden = true;
+        const dir = e.dir;
+        const modelRec = dir != null ? st.files.get(dir + 'model.json') : null;
+        const cur = { key, category: e.category, id: e.id, dir, names: e.names.slice(), loose: e.loose, modelText: modelRec ? await textOf(modelRec) : null };
+        st.textures = {};
+        st.flatImage = null;
+        if (dir != null) {
+            for (const name of e.names) {
+                const m = /^texture(_\d+)?\.png$/.exec(name);
+                if (m) {
+                    try { st.textures[m[1] || ''] = await frameCanvas(dir, name); } catch (err) { st.loadMsgs.push({ type: 'err', text: `${name} : ${err.message}` }); }
+                }
+            }
+            if (!cur.modelText) {
+                const flatName = e.names.includes('texture.png') ? 'texture.png' : e.names.find(n => /^bow_.*\.png$/.test(n) && n === 'bow_standby.png') || e.names.find(n => /^bow_.*\.png$/.test(n));
+                if (flatName) { try { st.flatImage = await frameCanvas(dir, flatName); } catch (err) { st.loadMsgs.push({ type: 'err', text: `${flatName} : ${err.message}` }); } }
+            }
+        }
+        st.cur = cur;
+        loadEntryObject();
+        st.geoKey = '';
+        recompute();
+        buildEditor();
+        refresh();
+        placeCamera();
+        $('bcEntry').value = key;
+        return st.res;
+    }
+    function loadEntryObject() {
+        const c = st.cur;
+        const sec = st.pack && st.pack[c.category];
+        c.declared = !!(sec && typeof sec === 'object' && Object.prototype.hasOwnProperty.call(sec, c.id));
+        c.entry = c.declared ? JSON.parse(JSON.stringify(sec[c.id])) : {};
+        c.original = JSON.parse(JSON.stringify(c.entry));
+    }
+
+    // ---------- Calcul (miroir BC) ----------
+    function recompute() {
+        const c = st.cur;
+        if (!c) { st.res = null; return; }
+        st.res = M.buildEntry({
+            category: c.category, id: c.id, entry: c.entry,
+            folders: st.pack ? (st.pack.folders && typeof st.pack.folders === 'object' ? st.pack.folders : {}) : null,
+            modelText: c.modelText, files: c.names
+        });
+        if (c.dir == null && !c.loose) st.res.errors.unshift({ text: `pack.json : ${c.category}.${c.id} : dossier ${c.category}/${c.id} absent des fichiers chargés (BC : « dossier absent »)`, ref: 'PackBuild.java:641 ; :881-885' });
+        st.guiDirty = true;
+        const key = (c.modelText || '') + '|' + JSON.stringify(st.res.merged ? st.res.entry.fits.shift : null) + '|' + Object.keys(st.textures).join(',') + '|' + (st.flatImage ? 'flat' : '');
+        if (key !== st.geoKey) { st.geoKey = key; rebuildItem(); }
+    }
+    function currentDisplay() {
+        const r = st.res;
+        if (!r) return null;
+        if (r.merged) {
+            const d = {};
+            M.CONTEXTS.forEach(ctx => { d[ctx] = r.merged.display[ctx] || M.identityT(); });
+            return { gui3d: true, display: d };
+        }
+        if (r.flat && st.flatImage) {
+            const v = M.vanillaDisplay(r.entry ? r.entry.material : null);
+            return { gui3d: false, display: v.display, vanilla: v };
+        }
+        return null;
+    }
+
+    // ---------- Édition (exclusions de BC appliquées par ItemModel.setSlotComponent) ----------
+    function setComponent(ctx, comp, value) {
+        if (!st.cur) return { ok: false, error: 'aucune entrée chargée' };
+        const r = M.setSlotComponent(st.cur.entry, ctx, comp, value);
+        if (!r.ok) { st.actionMsg = { type: 'err', text: `${r.error} (${r.ref})` }; refresh(); return r; }
+        st.cur.entry = r.entry;
+        st.actionMsg = null;
+        recompute();
+        refresh();
+        return r;
+    }
+    function setShift(value) {
+        if (!st.cur) return { ok: false, error: 'aucune entrée chargée' };
+        const r = M.setShift(st.cur.entry, value);
+        if (!r.ok) { st.actionMsg = { type: 'err', text: `${r.error} (${r.ref})` }; refresh(); return r; }
+        st.cur.entry = r.entry;
+        st.actionMsg = null;
+        recompute();
+        refresh();
+        return r;
+    }
+    function resetEntry() {
+        if (!st.cur) return;
+        st.cur.entry = JSON.parse(JSON.stringify(st.cur.original));
+        st.actionMsg = { type: 'ok', text: 'Entrée remise comme dans le pack.json chargé.' };
+        recompute(); buildEditor(); refresh();
+    }
+
+    // ---------- Panneau : éditeur du contexte ----------
+    const numIn = (value, step, label, onchange) => el('input', { type: 'number', step: String(step), value: String(value), 'aria-label': label, class: 'bc-num', onchange });
+    function readNum(input) { const v = parseFloat(String(input.value).replace(',', '.')); return Number.isFinite(v) ? v : null; }
+
+    function buildEditor() {
+        const box = $('bcCtxEditor');
+        box.textContent = '';
+        const shiftBox = $('bcShift');
+        shiftBox.textContent = '';
+        const c = st.cur, r = st.res;
+        document.querySelectorAll('#bcTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ctx === st.ctx)));
+        if (!c || !r) return;
+        if (!r.entry || r.flat || !r.model) {
+            box.append(el('div', { class: 'info-text', text: r.flat ? 'Placements vanilla, rien à régler : une texture plate garde le modèle vanilla de sa matière.' : 'Réglages indisponibles : corriger d\'abord les refus ci-dessous.' }));
+            if (!r.flat || !r.entry) return;
+        }
+        const disabled = !!r.flat;
+        const slot = c.entry[st.ctx] && typeof c.entry[st.ctx] === 'object' && !Array.isArray(c.entry[st.ctx]) ? c.entry[st.ctx] : {};
+        const final = r.merged && r.merged.display[st.ctx] ? r.merged.display[st.ctx] : M.identityT();
+        const hasK = k => Object.prototype.hasOwnProperty.call(slot, k);
+        const blocked = {
+            rotation: slot.front === true ? '« front » l\'exclut (PackBuild.java:1592)' : '',
+            front: hasK('rotation') ? 'une « rotation » est donnée (PackBuild.java:1592)' : '',
+            translation: hasK('fit') ? '« fit » la calcule (PackBuild.java:1599)' : '',
+            scale: hasK('fit') ? '« fit » la calcule (PackBuild.java:1599)' : '',
+            fit: hasK('translation') || hasK('scale') ? 'translation / scale données (PackBuild.java:1599)' : ''
+        };
+        box.append(el('div', { class: 'bc-ctxhead' }, el('code', { text: `"${st.ctx}"` }),
+            el('span', { class: 'ime-badge' + (Object.keys(slot).length ? ' own' : ''), text: Object.keys(slot).length ? 'réglé dans pack.json' : 'non réglé : model.json seul' })));
+        const row = (comp, controlsFn) => {
+            const on = hasK(comp) && !(comp === 'front' && slot.front !== true);
+            const why = blocked[comp];
+            const cb = el('input', { type: 'checkbox', id: `bc-on-${comp}`, 'aria-label': `Imposer ${comp}` });
+            cb.checked = on;
+            cb.disabled = disabled || (!!why && !on);
+            cb.addEventListener('change', () => {
+                if (cb.checked) {
+                    const init = { rotation: final.rotation.map(round4), translation: final.translation.map(round4), scale: final.scale.map(round4), front: true, fit: 16, turn: [0, 0, 0] }[comp];
+                    setComponent(st.ctx, comp, init);
+                } else setComponent(st.ctx, comp, null);
+                buildEditor();
+            });
+            const line = el('div', { class: 'bc-row' + (on ? ' on' : '') + (why && !on ? ' blocked' : ''), title: why && !on ? `Indisponible : ${why}` : '' },
+                el('label', { class: 'bc-comp', for: `bc-on-${comp}` }, cb, el('span', { text: COMP_LABEL[comp] })));
+            const ctl = el('div', { class: 'bc-ctl' });
+            controlsFn(ctl, on);
+            line.append(ctl);
+            if (why && !on) line.append(el('div', { class: 'bc-why', text: `Exclu : ${why}` }));
+            box.append(line);
+        };
+        const vec = comp => (ctl, on) => {
+            const vals = on && Array.isArray(slot[comp]) && slot[comp].length === 3 ? slot[comp] : final[comp];
+            const inputs = [0, 1, 2].map(i => numIn(round4(vals[i]), VEC_STEP[comp], `${comp} ${'XYZ'[i]}`, () => {
+                let v = inputs.map(readNum);
+                if (v.some(x => x === null)) { st.actionMsg = { type: 'err', text: `${comp} : nombre attendu` }; refresh(); return; }
+                if (comp === 'scale' && st.uniform) { const x = v[i]; v = [x, x, x]; inputs.forEach(n => { n.value = String(x); }); }
+                setComponent(st.ctx, comp, v);
+            }));
+            inputs.forEach((n, i) => { n.disabled = !on || disabled; n.id = `bc-${comp}-${i}`; });
+            ctl.append(...inputs);
+        };
+        row('rotation', vec('rotation'));
+        row('front', () => {});
+        row('translation', vec('translation'));
+        row('scale', vec('scale'));
+        const uni = el('input', { type: 'checkbox', id: 'bcUniform' });
+        uni.checked = st.uniform;
+        uni.addEventListener('change', () => { st.uniform = uni.checked; });
+        box.append(el('label', { class: 'bc-mini', for: 'bcUniform' }, uni, el('span', { text: 'échelle uniforme (X = Y = Z)' })));
+        row('fit', (ctl, on) => {
+            const n = numIn(on ? slot.fit : 16, 0.5, 'fit en pixels', () => {
+                const v = readNum(n);
+                if (v === null) { st.actionMsg = { type: 'err', text: 'fit : nombre attendu' }; refresh(); return; }
+                setComponent(st.ctx, 'fit', v);
+            });
+            n.id = 'bc-fit';
+            n.disabled = !on || disabled;
+            ctl.append(n);
+        });
+        row('turn', (ctl, on) => {
+            const t = el('input', { type: 'text', id: 'bc-turn', class: 'bc-text', value: on ? turnText(slot.turn) : '0, 0, -45', 'aria-label': 'turn', placeholder: '0, 0, -45 ; 0, 90, 0' });
+            t.disabled = !on || disabled;
+            t.addEventListener('change', () => {
+                const p = M.parseTurnText(t.value);
+                if (!p.ok || p.value === null) { st.actionMsg = { type: 'err', text: p.error || 'turn vide : décocher pour le retirer' }; refresh(); return; }
+                setComponent(st.ctx, 'turn', p.value);
+            });
+            ctl.append(t);
+        });
+        // shift
+        const sh = Array.isArray(c.entry.shift) ? c.entry.shift : null;
+        const scb = el('input', { type: 'checkbox', id: 'bc-on-shift', 'aria-label': 'Imposer shift' });
+        scb.checked = !!sh;
+        scb.disabled = disabled;
+        const sIn = [0, 1, 2].map(i => numIn(sh ? sh[i] : 0, 0.25, `shift ${'XYZ'[i]}`, () => {
+            const v = sIn.map(readNum);
+            if (v.some(x => x === null)) { st.actionMsg = { type: 'err', text: 'shift : nombre attendu' }; refresh(); return; }
+            setShift(v);
+        }));
+        sIn.forEach((n, i) => { n.disabled = !sh || disabled; n.id = `bc-shift-${i}`; });
+        scb.addEventListener('change', () => { setShift(scb.checked ? [0, 0, 0] : null); buildEditor(); });
+        shiftBox.append(el('div', { class: 'bc-row' + (sh ? ' on' : '') },
+            el('label', { class: 'bc-comp', for: 'bc-on-shift' }, scb, el('span', { text: 'shift (1/16 bloc)' })),
+            el('div', { class: 'bc-ctl' }, ...sIn)));
+    }
+    function turnText(t) {
+        if (!Array.isArray(t)) return '';
+        if (Array.isArray(t[0])) return t.map(x => x.join(', ')).join(' ; ');
+        return t.join(', ');
+    }
+    function round4(v) { const r = Math.round(v * 10000) / 10000; return Object.is(r, -0) ? 0 : r; }
+
+    // ---------- Panneau : messages, table, remplacements, export ----------
+    function renderMessages() {
+        const box = $('bcMsg');
+        box.textContent = '';
+        const r = st.res;
+        const list = [...st.loadMsgs];
+        if (st.actionMsg) list.push(st.actionMsg);
+        if (r) {
+            if (r.errors.length) list.push({ type: 'err', text: `Refusé par BeltariaContent (BC s'arrête au premier défaut) : ${r.errors.length} défaut(s).` });
+            else if (r.ok) list.push({ type: 'ok', text: r.flat ? 'Accepté par BC : règle CIT texture=, placements vanilla.' : 'Accepté par BC : le pack s\'assemblerait avec ces valeurs.' });
+            r.errors.forEach(e => list.push({ type: 'err', text: e.text, ref: e.ref }));
+            r.warnings.forEach(e => list.push({ type: 'warn', text: e.text, ref: e.ref }));
+            r.notes.forEach(e => list.push({ type: 'note', text: e.text, ref: e.ref }));
+            const cd = currentDisplay();
+            if (cd && cd.vanilla) list.push({ type: 'note', text: `Aperçu plat avec les placements de l'${cd.vanilla.label} (matière ${r.entry.material || 'inconnue'}) : approximation, la matière réelle décide.` });
+            if (st.cur && st.cur.category !== 'items' && st.cur.names.includes('icon.png')) list.push({ type: 'note', text: 'icon.png présent : les menus /wings et /aura montrent cette icône plate, pas le réglage « gui » (PackBuild.java:607-629).' });
+        }
+        list.forEach(m => box.append(el('div', { class: m.type }, el('span', { text: m.text }), m.ref ? el('span', { class: 'bc-ref', text: ` [${m.ref}]` }) : null)));
+    }
+    function fmtVec(v) { return v.map(M.javaFloat).join(', '); }
+    function renderTable() {
+        const box = $('bcTable');
+        box.textContent = '';
+        const r = st.res;
+        if (!r || !r.merged) { box.append(el('div', { class: 'info-text', text: r && r.flat ? 'Pas de model.json : BC n\'écrit aucun modèle, le client garde le modèle vanilla.' : 'Rien à écrire tant que l\'entrée est refusée à la lecture.' })); return; }
+        const t = el('table', { class: 'bc-table' });
+        t.append(el('thead', null, el('tr', null, el('th', { text: 'Contexte' }), el('th', { text: 'rotation · translation · scale (tel qu\'écrit)' }))));
+        const tb = el('tbody');
+        M.CONTEXTS.forEach(ctx => {
+            const d = r.merged.display[ctx];
+            const over = r.overrides.filter(s => s.startsWith(ctx + '.')).map(s => s.split('.')[1]);
+            const src = !d ? 'non écrit : défaut client (0 / 0 / 1)' : over.length ? `pack.json impose ${over.join(', ')}` + (r.model.display[ctx] ? '' : ' (absent de model.json)') : 'model.json';
+            const bad = r.errors.some(e => e.text.includes(`display.${ctx}`));
+            tb.append(el('tr', { class: (ctx === st.ctx ? 'cur ' : '') + (bad ? 'bad' : ''), 'data-ctx': ctx },
+                el('td', null, el('code', { text: ctx })),
+                el('td', null, d ? el('div', { class: 'bc-vals' },
+                    el('div', { text: `r [${fmtVec(d.rotation)}]` }), el('div', { text: `t [${fmtVec(d.translation)}]` }), el('div', { text: `s [${fmtVec(d.scale)}]` })) : null,
+                el('div', { class: 'bc-src', text: src }))));
+        });
+        t.append(tb);
+        box.append(t);
+    }
+    function renderOverridden() {
+        const box = $('bcOver');
+        box.textContent = '';
+        const r = st.res;
+        if (!r || !r.overridden || !r.overridden.length) { box.append(el('div', { class: 'info-text', text: r && r.merged ? 'Aucune composante de model.json n\'est remplacée.' : '—' })); return; }
+        const ul = el('ul', { class: 'bc-over' });
+        r.overridden.forEach(o => ul.append(el('li', null, el('code', { text: `display.${o.ctx}.${o.comp}` }),
+            el('span', { text: o.model ? ` : model.json [${fmtVec(o.model)}] → [${fmtVec(o.final)}]` : ` : absent de model.json → [${fmtVec(o.final)}]` }))));
+        box.append(el('div', { class: 'info-text', text: 'pack.json impose ces composantes : les éditer dans model.json ne change rien au pack (PackBuild.java:546-570, README « Ce que le descripteur impose »).' }), ul);
+    }
+    function exportSnippet() {
+        if (!st.cur) return '';
+        const nl = st.packText && st.packText.includes('\r\n') ? '\r\n' : '\n';
+        return M.entrySnippet(st.cur.id, st.cur.entry, nl);
+    }
+    function exportPack() {
+        if (!st.cur || st.packText == null || !st.pack) return null;
+        return M.replaceEntry(st.packText, st.cur.category, st.cur.id, st.cur.entry);
+    }
+    function renderExport() {
+        $('bcOut').value = exportSnippet();
+        const full = st.cur ? exportPack() : null;
+        $('bcDlPack').disabled = full == null;
+        const changed = full != null && full !== st.packText;
+        $('bcExportInfo').textContent = !st.cur ? '' : full == null ? 'Chargez pack.json pour exporter le fichier complet (seule cette entrée y change).'
+            : changed ? 'pack.json complet : seule cette entrée change, le reste du fichier est conservé à l\'octet près.' : 'pack.json inchangé (aucune modification).';
+    }
+
+    function refresh() {
+        document.querySelectorAll('#bcTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ctx === st.ctx)));
+        renderMessages();
+        renderTable();
+        renderOverridden();
+        renderExport();
+        updateEditorValues();
+        const info = CTX_INFO[st.ctx];
+        $('bcViewLabel').textContent = '';
+        $('bcViewLabel').append(el('span', { text: info.label + ' ' }), el('code', { text: st.ctx }));
+        const cd = currentDisplay();
+        let note = st.ctx === 'head' ? HEAD_NOTES[M.headSupport(st.cur ? st.cur.category : 'items')] : info.note;
+        if (st.ctx === 'gui' && st.res && st.res.merged && st.res.merged.details.gui && st.res.merged.details.gui.largest) {
+            note += ` Taille réelle mesurée ci-dessus ; BC calcule « fit » sur la boîte sans les rotations d'éléments, mesurée avant la vue isométrique du client (ModelFit.java:311-313, 516-517) : l'écart est normal.`;
+        }
+        if (!cd) note = st.cur ? 'Aucun aperçu : entrée refusée ou sans géométrie lisible.' : 'Chargez une entrée (dossier, fichiers ou .zip de pack-src).';
+        $('bcViewNote').textContent = note + (cd ? COMMON_NOTE : '');
+        measureGui();
+    }
+    function updateEditorValues() {
+        // valeurs affichées des composantes non imposées = valeurs finales (sans reconstruire le panneau)
+        const r = st.res;
+        if (!r || !r.merged || !st.cur) return;
+        const slot = st.cur.entry[st.ctx] || {};
+        const final = r.merged.display[st.ctx] || M.identityT();
+        ['rotation', 'translation', 'scale'].forEach(comp => {
+            if (slot && Object.prototype.hasOwnProperty.call(slot, comp)) return;
+            [0, 1, 2].forEach(i => { const n = $(`bc-${comp}-${i}`); if (n && document.activeElement !== n) n.value = String(round4(final[comp][i])); });
+        });
+    }
+
+    // ---------- Rendu three.js ----------
+    let R = null;
+    function lambert(color, opts) { return new THREE.MeshLambertMaterial(Object.assign({ color }, opts || {})); }
+    function addLights(scene) { // RenderHelper.enableStandardItemLighting : ambiant 0,4 + deux lumières 0,6
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const l1 = new THREE.DirectionalLight(0xffffff, 0.6); l1.position.set(0.2, 1, -0.7);
+        const l2 = new THREE.DirectionalLight(0xffffff, 0.6); l2.position.set(-0.2, 1, 0.7);
+        scene.add(l1, l2);
+    }
+    function fixedMesh(geo, mat, m) {
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.fromArray(m);
+        return mesh;
+    }
+    function checker() {
+        const c = document.createElement('canvas');
+        c.width = c.height = 2;
+        const g = c.getContext('2d');
+        g.fillStyle = '#f800f8'; g.fillRect(0, 0, 2, 2);
+        g.fillStyle = '#000'; g.fillRect(0, 0, 1, 1); g.fillRect(1, 1, 1, 1);
+        return c;
+    }
+    function initRenderer() {
+        const view = $('bcView');
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.autoClear = false;
+        view.insertBefore(renderer.domElement, view.firstChild);
+        const scene = new THREE.Scene();
+        const guiScene = new THREE.Scene();
+        addLights(scene);
+        guiScene.add(new THREE.AmbientLight(0xffffff, 0.45));
+        const gl = new THREE.DirectionalLight(0xffffff, 0.65); gl.position.set(-0.5, 0.8, 1); // éclairage GUI, approximé
+        guiScene.add(gl);
+        const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 100);
+        const guiCam = new THREE.OrthographicCamera(-8, 8, 8, -8, 0.1, 2000);
+        guiCam.position.set(8, -8, 500);
+        const slotCam = new THREE.OrthographicCamera(0, 16, 0, -16, 0.1, 2000);
+        slotCam.position.set(0, 0, 500);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        const unit = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0.5, 0.5);
+        const groups = { player: new THREE.Group(), stand: new THREE.Group(), block: new THREE.Group(), ground: new THREE.Group(), fixed: new THREE.Group() };
+        M.PLAYER_PARTS.forEach(p => groups.player.add(fixedMesh(unit, lambert(p.color), M.partBoxMatrix(M.playerMatrix(), p))));
+        // visière sur la face (-Z du modèle = devant le joueur) pour lire l'orientation
+        groups.player.add(fixedMesh(unit, lambert(0x2b1d12), M.partBoxMatrix(M.playerMatrix(), { point: [0, 0, 0], angles: [0, 0, 0], box: [-3, -5, -4.2, 6, 1.5, 0.3] })));
+        const wire = new THREE.LineBasicMaterial({ color: 0xffd27f });
+        const unitEdges = new THREE.EdgesGeometry(unit);
+        groups.standParts = M.STAND_PARTS;
+        const grass = [0x7a5a3a, 0x7a5a3a, 0x5d9b3a, 0x6b4a2e, 0x7a5a3a, 0x7a5a3a].map(c => lambert(c));
+        for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) {
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), grass);
+            b.position.set(x, -0.5, z);
+            groups.ground.add(b);
+        }
+        const blockBox = new THREE.LineSegments(unitEdges, new THREE.LineBasicMaterial({ color: 0xffffff }));
+        blockBox.position.set(-0.5, 0, -0.5);
+        groups.block.add(blockBox);
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(3, 0.05, 3), lambert(0x5d9b3a));
+        floor.position.set(0, -0.025, 0);
+        groups.block.add(floor);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 1), lambert(0x7d7d7d));
+        wall.position.set(0, 0, -1);
+        const board = new THREE.Mesh(new THREE.BoxGeometry(12 / 16, 12 / 16, 1 / 16), lambert(0x8a5a2b));
+        board.position.set(0, 0, -0.5 + 1 / 32);
+        const leather = new THREE.Mesh(new THREE.PlaneGeometry(10 / 16, 10 / 16), lambert(0xa0764a));
+        leather.position.set(0, 0, -0.5 + 1 / 16 + 0.001);
+        groups.fixed.add(wall, board, leather);
+        Object.keys(groups).forEach(k => { if (groups[k].isObject3D) scene.add(groups[k]); });
+        // porte-armure filaire : reconstruit selon le support
+        R = { renderer, scene, guiScene, camera, guiCam, slotCam, controls, groups, unit, unitEdges, wire, w: 0, h: 0,
+            item: new THREE.Group(), guiItem: new THREE.Group(), slotTarget: new THREE.WebGLRenderTarget(16, 16), slotPixels: new Uint8Array(16 * 16 * 4),
+            checker: new THREE.CanvasTexture(checker()), mats: [] };
+        R.checker.magFilter = THREE.NearestFilter; R.checker.minFilter = THREE.NearestFilter;
+        R.item.matrixAutoUpdate = false;
+        R.guiItem.matrixAutoUpdate = false;
+        scene.add(R.item);
+        guiScene.add(R.guiItem);
+        // case d'inventaire (pixels GUI, Y retourné) et cadre « fit »
+        const slotPart = (x, y, w, h, c, z) => {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c }));
+            m.position.set(x + w / 2, -(y + h / 2), z);
+            return m;
+        };
+        R.slotBg = new THREE.Group();
+        R.slotBg.add(slotPart(-1, -1, 18, 18, 0x373737, -400), slotPart(0, 0, 17, 17, 0xffffff, -399), slotPart(0, 0, 16, 16, 0x8b8b8b, -398));
+        guiScene.add(R.slotBg);
+        R.fitBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: 0xff8c1a }));
+        R.fitBox.position.set(8, -8, 300);
+        guiScene.add(R.fitBox);
+        R.measureBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: 0x29b6f6 }));
+        guiScene.add(R.measureBox);
+        new ResizeObserver(() => resize()).observe(view);
+        rebuildItem();
+        resize();
+    }
+    function buildStand(y) {
+        const g = R.groups.stand;
+        while (g.children.length) g.remove(g.children[0]);
+        M.STAND_PARTS.forEach(p => {
+            const l = new THREE.LineSegments(R.unitEdges, R.wire);
+            l.matrixAutoUpdate = false;
+            l.matrix.fromArray(M.partBoxMatrix(M.standMatrix(y), p));
+            g.add(l);
+        });
+    }
+    function textureFor(ref, model) {
+        // '#0' -> textures['0'] = './texture[_n]' -> fichier ; sinon damier violet/noir (comme le client)
+        let v = ref;
+        for (let i = 0; i < 8 && v && v.charAt(0) === '#'; i++) v = model.textures[v.slice(1)];
+        const m = /^\.\/texture(_\d+)?$/.exec(v || '');
+        const t = m ? st.textures[m[1] || ''] : null;
+        return t ? t.canvas : null;
+    }
+    function disposeGroup(g) {
+        while (g.children.length) {
+            const c = g.children[0];
+            g.remove(c);
+            if (c.geometry && !g.userData.sharedGeo) c.geometry.dispose();
+        }
+    }
+    function rebuildItem() {
+        if (!R) return;
+        disposeGroup(R.item);
+        R.guiItem.children.slice().forEach(c => R.guiItem.remove(c));
+        R.mats.forEach(m => { if (m.map && m.map !== R.checker) m.map.dispose(); m.dispose(); });
+        R.mats = [];
+        const r = st.res;
+        if (r && r.merged) {
+            const quads = M.bakeQuads(r.merged.elements);
+            const byTex = new Map();
+            quads.forEach(q => {
+                const canvas = textureFor(q.texture, r.model);
+                const k = canvas || 'missing';
+                if (!byTex.has(k)) byTex.set(k, []);
+                byTex.get(k).push(q);
+            });
+            byTex.forEach((qs, k) => {
+                const pos = [], uv = [], nor = [];
+                qs.forEach(q => {
+                    const [a, b, c] = q.pos;
+                    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - b[0], c[1] - b[1], c[2] - b[2]];
+                    let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+                    const len = Math.hypot(n[0], n[1], n[2]) || 1;
+                    n = n.map(x => x / len);
+                    [0, 1, 2, 0, 2, 3].forEach(i => { pos.push(...q.pos[i]); uv.push(...q.uv[i]); nor.push(...n); });
+                });
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+                geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+                let map = R.checker;
+                if (k !== 'missing') {
+                    map = new THREE.CanvasTexture(k);
+                    map.magFilter = THREE.NearestFilter; map.minFilter = THREE.NearestFilter; map.generateMipmaps = false;
+                    map.flipY = false; // v vers le bas, comme le client
+                }
+                const mat = new THREE.MeshLambertMaterial({ map, alphaTest: 0.1, side: THREE.FrontSide }); // alphaFunc(GREATER, 0.1), RenderItem.java:322
+                R.mats.push(mat);
+                const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false;
+                const gmesh = new THREE.Mesh(geo, mat); gmesh.frustumCulled = false;
+                R.item.add(mesh);
+                R.guiItem.add(gmesh);
+            });
+        } else if (r && r.flat && st.flatImage) {
+            const geo = flatGeometry(st.flatImage.canvas);
+            const lit = new THREE.MeshLambertMaterial({ vertexColors: true });
+            const flat = new THREE.MeshBasicMaterial({ vertexColors: true }); // setupGuiTransform : pas d'éclairage pour un item plat
+            R.mats.push(lit, flat);
+            const mesh = new THREE.Mesh(geo, lit); mesh.frustumCulled = false;
+            const gmesh = new THREE.Mesh(geo, flat); gmesh.frustumCulled = false;
+            R.item.add(mesh);
+            R.guiItem.add(gmesh);
+        }
+        st.guiDirty = true;
+    }
+    // ItemModelGenerator : planche de pixels, z de 7,5 à 8,5 px, bords sur les pixels opaques
+    function flatGeometry(canvas) {
+        const w = canvas.width, h = canvas.height;
+        const data = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+        const pos = [], nor = [], col = [];
+        const opaque = (x, y) => x >= 0 && y >= 0 && x < w && y < h && data[(y * w + x) * 4 + 3] >= 26;
+        const quad = (a, b, c, d, n, rgb) => { [a, b, c, a, c, d].forEach(v => { pos.push(...v); nor.push(...n); col.push(...rgb); }); };
+        const z0 = 7.5 / 16, z1 = 8.5 / 16;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            if (!opaque(x, y)) continue;
+            const i = (y * w + x) * 4, c = [data[i] / 255, data[i + 1] / 255, data[i + 2] / 255];
+            const x0 = x / w, x1 = (x + 1) / w, y0 = 1 - (y + 1) / h, y1 = 1 - y / h;
+            quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1], c);
+            quad([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1], c);
+            if (!opaque(x - 1, y)) quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0], c);
+            if (!opaque(x + 1, y)) quad([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0], c);
+            if (!opaque(x, y - 1)) quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], [0, 1, 0], c);
+            if (!opaque(x, y + 1)) quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, -1, 0], c);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        return geo;
+    }
+
+    function fitOrtho(cam, span, aspect, cx, cy) {
+        const hw = aspect >= 1 ? span * aspect / 2 : span / 2;
+        const hh = aspect >= 1 ? span / 2 : span / aspect / 2;
+        cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh;
+        cam.position.set(cx, cy, 500);
+        cam.updateProjectionMatrix();
+    }
+    function resize() {
+        if (!R) return;
+        const view = $('bcView');
+        const w = view.clientWidth, h = view.clientHeight;
+        if (!w || !h) return;
+        R.w = w; R.h = h;
+        R.renderer.setSize(w, h, false);
+        R.camera.aspect = w / h;
+        R.camera.updateProjectionMatrix();
+        fitOrtho(R.guiCam, 34, w / h, 8, -8);
+    }
+
+    // Caméra par contexte (cible = centre du joueur / du support ; décalage fixe ; orbite libre)
+    const CAM = {
+        thirdperson: { target: [-0.3, 0.95, 0.3], offset: [-2.2, 0.6, 2.4] },
+        head_rider: { target: [0, 1.5, -0.3], offset: [2.6, 0.9, -3.4] },
+        head_block: { target: [0, 0.7, 0], offset: [1.9, 1.1, 2.6] },
+        head_stand: { target: [0, 1.6, 0], offset: [1.9, 0.8, 2.6] },
+        head_player: { target: [0, 1.6, 0], offset: [1.6, 0.6, 2.2] },
+        ground: { target: [0, 0.3, 0], offset: [0.9, 0.7, 1.3] },
+        fixed: { target: [0, 0, -0.45], offset: [0.35, 0.15, 1.2] }
+    };
+    function camKey() {
+        if (st.ctx === 'head') return 'head_' + M.headSupport(st.cur ? st.cur.category : 'items');
+        return st.ctx;
+    }
+    function placeCamera() {
+        if (!R) return;
+        const c = st.ctx, fp = c === 'firstperson';
+        const k = camKey();
+        R.controls.enabled = !!CAM[k];
+        if (fp) {
+            R.camera.fov = 70;
+            R.camera.position.set(0, 0, 0);
+            R.controls.target.set(0, 0, -1);
+            R.camera.lookAt(0, 0, -1);
+        } else if (CAM[k]) {
+            R.camera.fov = 50;
+            const t = CAM[k].target, o = CAM[k].offset;
+            R.controls.target.set(t[0], t[1], t[2]);
+            R.camera.position.set(t[0] + o[0], t[1] + o[1], t[2] + o[2]);
+            R.camera.lookAt(R.controls.target);
+        }
+        R.camera.updateProjectionMatrix();
+        const support = M.headSupport(st.cur ? st.cur.category : 'items');
+        R.groups.player.visible = c === 'thirdperson' || (c === 'head' && (support === 'rider' || support === 'player'));
+        R.groups.stand.visible = c === 'head' && support !== 'player';
+        if (R.groups.stand.visible) buildStand(support === 'rider' ? M.RIDER_OFFSET : support === 'block' ? 0 : 0.5);
+        const headMat = R.groups.player.children[0].material; // tête translucide : l'item y entre souvent
+        headMat.transparent = c === 'head'; headMat.opacity = c === 'head' ? 0.35 : 1; headMat.depthWrite = c !== 'head';
+        R.groups.block.visible = c === 'head' && support === 'block';
+        R.groups.ground.visible = c === 'ground';
+        R.groups.fixed.visible = c === 'fixed';
+        const bg = { firstperson: '#111', gui: '#c6c6c6' };
+        $('bcView').style.background = bg[c] || 'linear-gradient(to bottom, #6f9cf0, #b8d0ff)';
+        $('bcCrosshair').style.display = fp ? 'block' : 'none';
+        resize();
+    }
+
+    function itemMatrix(ctx, time) {
+        const cd = currentDisplay();
+        if (!cd) return null;
+        const age = ctx === 'ground' && $('bcAnimate').checked ? time / 50 : 0; // 20 ticks par seconde
+        return M.contextMatrix(ctx, cd.display[ctx], { gui3d: cd.gui3d, support: M.headSupport(st.cur ? st.cur.category : 'items'), age });
+    }
+    function guiMatrix() { // repère GUI (Y vers le bas) -> scène three.js (Y vers le haut)
+        const cd = currentDisplay();
+        if (!cd) return null;
+        return M.chain(M.m4S(1, -1, 1), M.contextMatrix('gui', cd.display.gui, { gui3d: cd.gui3d }));
+    }
+    function measureGui() {
+        // boîte réelle à l'écran (bleu) et carré « fit » demandé (orange)
+        const box = $('bcFitInfo');
+        if (!box) return;
+        const r = st.res;
+        const cd = currentDisplay();
+        box.hidden = st.ctx !== 'gui';
+        if (!R || !cd || !r) { box.textContent = ''; return; }
+        let pts;
+        if (r.merged) pts = M.quadPoints(M.bakeQuads(r.merged.elements));
+        else pts = [[0, 0, 7.5 / 16], [1, 1, 8.5 / 16]];
+        const b = M.bbox(M.contextMatrix('gui', cd.display.gui, { gui3d: cd.gui3d }), pts);
+        const w = b.max[0] - b.min[0], h = b.max[1] - b.min[1];
+        R.measureBox.scale.set(w, h, 1);
+        R.measureBox.position.set((b.min[0] + b.max[0]) / 2, -(b.min[1] + b.max[1]) / 2, 301);
+        const slot = r.entry && r.entry.fits.slots.gui;
+        R.fitBox.visible = !!(slot && slot.fit > 0);
+        if (R.fitBox.visible) R.fitBox.scale.set(slot.fit, slot.fit, 1);
+        box.textContent = `Case : ${fmtPx(w)} × ${fmtPx(h)} px à l'écran (bleu), centre (${fmtPx((b.min[0] + b.max[0]) / 2)} ; ${fmtPx((b.min[1] + b.max[1]) / 2)})` + (R.fitBox.visible ? ` ; fit demandé ${fmtPx(slot.fit)} px (orange).` : '.');
+        st.lastGuiBox = { w, h, min: b.min, max: b.max };
+    }
+    const fmtPx = v => String(Math.round(v * 100) / 100).replace('.', ',');
+
+    let lastMatrix = null;
+    function frame(time) {
+        if (!st.active) return;
+        requestAnimationFrame(frame);
+        if (!R || !R.w) { resize(); if (!R || !R.w) return; }
+        const rd = R.renderer;
+        const m = itemMatrix(st.ctx, time);
+        R.item.visible = !!m && st.ctx !== 'gui';
+        if (m) { R.item.matrix.fromArray(m); R.item.matrixWorldNeedsUpdate = true; }
+        lastMatrix = m;
+        const g = guiMatrix();
+        R.guiItem.visible = !!g;
+        if (g) { R.guiItem.matrix.fromArray(g); R.guiItem.matrixWorldNeedsUpdate = true; }
+        rd.setScissorTest(false);
+        rd.setClearColor(0x000000, 0);
+        rd.clear();
+        if (st.ctx === 'gui') {
+            rd.render(R.guiScene, R.guiCam);
+        } else if (st.ctx === 'firstperson') {
+            const vw = Math.min(R.w, R.h * 16 / 9), vh = vw * 9 / 16;
+            const x = (R.w - vw) / 2, y = (R.h - vh) / 2;
+            rd.setScissorTest(true);
+            rd.setScissor(x, y + vh * 0.4, vw, vh * 0.6); rd.setClearColor(0x78a7ff, 1); rd.clear();
+            rd.setScissor(x, y, vw, vh * 0.4); rd.setClearColor(0x449944, 1); rd.clear();
+            rd.setScissor(x, y, vw, vh);
+            rd.setViewport(x, y, vw, vh);
+            R.camera.aspect = 16 / 9; R.camera.updateProjectionMatrix();
+            rd.render(R.scene, R.camera);
+            rd.setScissorTest(false);
+            rd.setViewport(0, 0, R.w, R.h);
+            R.camera.aspect = R.w / R.h; R.camera.updateProjectionMatrix();
+        } else {
+            R.controls.update();
+            rd.render(R.scene, R.camera);
+        }
+        if (st.guiDirty) renderSlot16();
+    }
+    /** Rendu réel de la case à 16 × 16 pixels (échelle GUI 1), recopié dans la vignette. */
+    function renderSlot16() {
+        st.guiDirty = false;
+        const rd = R.renderer;
+        const fitVis = R.fitBox.visible, mVis = R.measureBox.visible;
+        R.fitBox.visible = false; R.measureBox.visible = false;
+        rd.setRenderTarget(R.slotTarget);
+        rd.setClearColor(0x8b8b8b, 1);
+        rd.clear();
+        rd.render(R.guiScene, R.slotCam);
+        rd.readRenderTargetPixels(R.slotTarget, 0, 0, 16, 16, R.slotPixels);
+        rd.setRenderTarget(null);
+        R.fitBox.visible = fitVis; R.measureBox.visible = mVis;
+        const cv = $('bcSlot16');
+        const g = cv.getContext('2d');
+        const img = g.createImageData(16, 16);
+        for (let y = 0; y < 16; y++) img.data.set(R.slotPixels.subarray((15 - y) * 64, (16 - y) * 64), y * 64); // lecture GL : bas en premier
+        g.putImageData(img, 0, 0);
+    }
+
+    // ---------- Construction du panneau ----------
+    function buildPanel() {
+        const tabs = $('bcTabs');
+        M.CONTEXTS.forEach(c => tabs.append(el('button', { type: 'button', role: 'tab', 'data-ctx': c, title: c, text: CTX_INFO[c].tab, onclick: () => setContext(c) })));
+        M.CATEGORIES.forEach(c => $('bcCat').append(el('option', { value: c, text: c })));
+        $('bcToggle').addEventListener('change', e => setActive(e.target.checked));
+        const onFiles = async (list, rel) => {
+            const items = [...list].map(f => ({ path: (rel && f.webkitRelativePath) || f.name, size: f.size, read: async () => new Uint8Array(await f.arrayBuffer()) }));
+            await loadFiles(items, { replace: true });
+        };
+        $('bcDir').addEventListener('change', e => { const l = e.target.files; onFiles(l, true).catch(report).finally(() => { e.target.value = ''; }); });
+        $('bcFiles').addEventListener('change', e => { const l = e.target.files; onFiles(l, false).catch(report).finally(() => { e.target.value = ''; }); });
+        $('bcEntry').addEventListener('change', e => { if (e.target.value) selectEntry(e.target.value).catch(report); });
+        const relabel = () => {
+            const e = st.entries.find(x => x.loose);
+            if (!e) return;
+            e.category = $('bcCat').value;
+            const id = $('bcId').value.trim();
+            e.id = id;
+            e.declared = !!(st.pack && st.pack[e.category] && Object.prototype.hasOwnProperty.call(st.pack[e.category], e.id));
+            fillIds();
+            fillEntrySelect();
+            selectEntry('*loose').catch(report);
+        };
+        $('bcCat').addEventListener('change', relabel);
+        $('bcId').addEventListener('change', relabel);
+        $('bcReset').addEventListener('click', resetEntry);
+        $('bcCopy').addEventListener('click', () => copyText($('bcOut').value, 'Extrait copié.'));
+        $('bcDlPack').addEventListener('click', () => {
+            const t = exportPack();
+            if (t == null) return;
+            const a = el('a', { href: URL.createObjectURL(new Blob([t], { type: 'application/json' })), download: 'pack.json' });
+            document.body.append(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+        $('bcAnimate').addEventListener('change', () => {});
+    }
+    function fillIds() {
+        const dl = $('bcIds');
+        dl.textContent = '';
+        const sec = st.pack && st.pack[$('bcCat').value];
+        if (sec && typeof sec === 'object') Object.keys(sec).forEach(id => dl.append(el('option', { value: id })));
+    }
+    function copyText(text, ok) {
+        const fallback = () => { const ta = $('bcOut'); ta.focus(); ta.select(); document.execCommand('copy'); };
+        const done = () => { st.actionMsg = { type: 'ok', text: ok }; renderMessages(); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => { fallback(); done(); });
+        else { fallback(); done(); }
+    }
+    function report(err) {
+        st.loadMsgs.push({ type: 'err', text: err && err.message ? err.message : String(err) });
+        renderMessages();
+    }
+
+    // ---------- API (interface et tests) ----------
+    /**
+     * Charge des fichiers : [{ path, data }] (data : Uint8Array, ArrayBuffer, chaîne, ou base64 avec
+     * base64: true) ou [{ path, read }]. opts.replace : oublier les fichiers déjà chargés.
+     */
+    async function loadFiles(list, opts) {
+        setBusy(1);
+        try { return await loadFilesNow(list, opts); } finally { setBusy(-1); }
+    }
+    async function loadFilesNow(list, opts) {
+        if (!opts || opts.replace !== false) st.files.clear();
+        st.cur = null; st.res = null; st.actionMsg = null;
+        const items = list.map(x => {
+            if (x.read) return x;
+            let bytes;
+            if (x.base64) bytes = Uint8Array.from(atob(x.data), ch => ch.charCodeAt(0));
+            else if (typeof x.data === 'string') bytes = new TextEncoder().encode(x.data);
+            else if (x.data instanceof ArrayBuffer) bytes = new Uint8Array(x.data);
+            else bytes = new Uint8Array(x.data);
+            return { path: x.path, size: bytes.length, read: async () => bytes };
+        });
+        try {
+            await ingest(items);
+            await index();
+        } catch (e) { report(e); }
+        fillIds();
+        const withFiles = st.entries.filter(e => e.dir != null);
+        const first = st.entries.find(e => e.loose) || withFiles.find(e => e.hasModel) || withFiles[0] || st.entries[0];
+        if (first) await selectEntry(first.key);
+        else { recompute(); buildEditor(); refresh(); }
+        return getState();
+    }
+    function setContext(c) {
+        if (!M.CONTEXTS.includes(c)) throw new Error(`Contexte inconnu : ${c}`);
+        st.ctx = c;
+        placeCamera();
+        buildEditor();
+        refresh();
+    }
+    function setActive(on) {
+        st.active = !!on;
+        $('bcToggle').checked = st.active;
+        $('bcPanel').hidden = !st.active;
+        $('bcView').classList.toggle('on', st.active);
+        if (st.active) {
+            if (!R) initRenderer();
+            placeCamera();
+            refresh();
+            requestAnimationFrame(frame);
+        }
+    }
+    function getState() {
+        const r = st.res;
+        return {
+            ctx: st.ctx, active: st.active,
+            entries: st.entries.map(e => ({ key: e.key, category: e.category, id: e.id, hasModel: e.hasModel, declared: e.declared, loose: e.loose, dir: e.dir })),
+            packPath: st.packPath,
+            current: st.cur ? { key: st.cur.key, category: st.cur.category, id: st.cur.id, entry: JSON.parse(JSON.stringify(st.cur.entry)) } : null,
+            ok: r ? r.ok : false, flat: r ? r.flat : false,
+            errors: r ? r.errors.slice() : [], warnings: r ? r.warnings.slice() : [], notes: r ? r.notes.slice() : [],
+            display: r && r.merged ? JSON.parse(JSON.stringify(r.merged.display)) : null,
+            elements: r && r.merged ? JSON.parse(JSON.stringify(r.merged.elements)) : null,
+            overrides: r ? r.overrides.slice() : [], overridden: r ? JSON.parse(JSON.stringify(r.overridden || [])) : [],
+            textures: Object.keys(st.textures), loadMessages: st.loadMsgs.slice(), actionMessage: st.actionMsg,
+            itemMatrix: lastMatrix ? lastMatrix.slice() : null, guiBox: st.lastGuiBox || null
+        };
+    }
+
+    buildPanel();
+    fillEntrySelect();
+    refresh();
+
+    return {
+        get active() { return st.active; },
+        setActive, setContext, loadFiles, selectEntry, setComponent, setShift, resetEntry,
+        exportSnippet, exportPack, getState,
+        slotPixels() { return R ? Array.from(R.slotPixels) : null; }
+    };
+})();
 </script>
 </body>
 </html>
