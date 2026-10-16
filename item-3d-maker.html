@@ -188,6 +188,37 @@
         .bc-src { color: var(--st-muted); font-size: 0.95em; }
         .bc-over { margin: 4px 0; padding-left: 16px; font-size: 12px; overflow-wrap: anywhere; }
         textarea.bc-out { min-height: 110px; font-family: var(--st-mono) !important; font-size: 11px; resize: vertical; }
+        /* Curseurs : une ligne par axe (axe, curseur aux bornes de BC, champ libre) */
+        .bc-row.wide { grid-template-columns: minmax(0, 1fr); }
+        .bc-row.wide .bc-ctl { flex-direction: column; gap: 3px; }
+        .bc-axis { display: grid; grid-template-columns: 1.1em minmax(0, 1fr) 5.6em; gap: 6px; align-items: center; min-width: 0; }
+        .bc-axis > span { font: 600 11px var(--st-mono); color: var(--st-muted); }
+        .bc-axis input[type=range] { min-width: 0; margin: 0; height: 24px; accent-color: var(--st-accent); }
+        .bc-num.bad { border-color: var(--st-error-line); color: var(--st-error); }
+        .bc-turntext { margin-bottom: 3px; }
+        /* Barre de manipulation dans la vue 3D, avec l'étiquette du contexte dessous */
+        .bc-hud { position: absolute; top: 8px; left: 8px; max-width: calc(100% - 120px); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; pointer-events: none; z-index: 2; }
+        .bc-hud .bc-label, .bc-hud .bc-fitinfo { position: static; max-width: 100%; }
+        .bc-tools { pointer-events: auto; display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; border-radius: var(--st-radius-sm); background: rgba(2, 6, 23, 0.78); border: 1px solid var(--st-border-strong); }
+        .bc-tools button {
+            min-width: 30px; min-height: 30px; padding: 3px 7px; border-radius: 6px; border: 1px solid transparent; cursor: pointer;
+            background: transparent; color: var(--st-text); font: 600 11px/1.1 var(--st-font);
+        }
+        .bc-tools button:hover:not(:disabled) { background: var(--st-surface-2); }
+        .bc-tools button[aria-pressed="true"] { background: var(--st-accent); color: #fff; }
+        .bc-tools button:disabled { opacity: .45; cursor: not-allowed; }
+        .bc-tools button:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 1px; }
+        .bc-tools label { display: flex; align-items: center; gap: 4px; margin: 0 4px; font-size: 11px; color: var(--st-text); }
+        .bc-tools kbd { font: 10px var(--st-mono); color: var(--st-faint); margin-left: 2px; }
+        .bc-gizmo-why { pointer-events: none; font-size: 11px; color: var(--st-warn); background: rgba(2, 6, 23, 0.78); border: 1px solid var(--st-warn-line); border-radius: 6px; padding: 2px 8px; max-width: 100%; }
+        .bc-gizmo-why:empty { display: none; }
+        @media (max-width: 760px) {
+            .bc-hud { max-width: calc(100% - 84px); }
+            .bc-tools kbd { display: none; }
+            .bc-tools button { padding: 3px 5px; }
+            .bc-hud .bc-label { display: none; } /* l'onglet actif nomme déjà le contexte : la vue 3D reste dégagée */
+            .bc-hud .bc-fitinfo { font-size: 11px; }
+        }
         @media (max-width: 760px) {
             .bc-slot16 { width: 64px; height: 64px; }
             .bc-slot16-label { top: 76px; }
@@ -202,6 +233,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 </head>
 <body>
 
@@ -263,12 +295,12 @@
         <div id="bcPanel" hidden aria-busy="false">
             <div class="info-text">Miroir exact de l'assemblage BeltariaContent : <code>pack.json</code> remplace le <code>display</code> de <code>model.json</code>, client 1.8.9 + OptiFine CIT. Tout reste dans le navigateur.</div>
             <div class="bc-load">
-                <label class="bc-btn st-btn st-btn-soft" for="bcDir">📁 Dossier (entrée ou pack-src)</label>
+                <label class="bc-btn st-btn st-btn-soft" for="bcDir">📁 Dossier (entrée, pack-src ou pack du serveur)</label>
                 <input type="file" id="bcDir" webkitdirectory multiple>
                 <label class="bc-btn st-btn st-btn-soft" for="bcFiles">📄 Fichiers / .zip</label>
                 <input type="file" id="bcFiles" multiple accept=".json,.png,.mcmeta,.zip,application/json,application/zip,image/png">
             </div>
-            <div class="info-text">Dossier <code>&lt;catégorie&gt;/&lt;id&gt;/</code> (model.json + texture*.png [+ .mcmeta]), fichiers isolés, ou tout <code>pack-src</code> (dossier ou .zip) avec <code>pack.json</code>.</div>
+            <div class="info-text">Dossier <code>&lt;catégorie&gt;/&lt;id&gt;/</code> (model.json + texture*.png [+ .mcmeta]), fichiers isolés, ou tout <code>pack-src</code> ou le dossier pack du serveur (<code>plugins/BeltariaContent/pack</code>), en dossier ou en .zip, avec <code>pack.json</code> ; ses armures (<code>armor/&lt;set&gt;/</code>) habillent le mannequin.</div>
             <label class="bc-field">Entrée
                 <select id="bcEntry" aria-label="Entrée"></select>
             </label>
@@ -286,7 +318,40 @@
             <div class="ime-group-title">Géométrie de l'entrée</div>
             <div id="bcShift"></div>
             <label class="bc-mini"><input type="checkbox" id="bcAnimate" checked> Animer l'item au sol</label>
+            <div class="bc-load">
+                <button type="button" class="bc-btn st-btn" id="bcUndo" title="Annuler (Ctrl+Z)" disabled>↶ Annuler</button>
+                <button type="button" class="bc-btn st-btn" id="bcRedo" title="Rétablir (Ctrl+Y)" disabled>↷ Rétablir</button>
+            </div>
             <button type="button" class="bc-btn st-btn" id="bcReset">↺ Revenir au pack.json chargé</button>
+            <details open id="bcMannequin">
+                <summary>Mannequin : joueur et armure</summary>
+                <label class="bc-mini"><input type="checkbox" id="bcShowPlayer" checked> Afficher le joueur (vues 3e personne et Tête)</label>
+                <label class="bc-mini"><input type="checkbox" id="bcShowItem" checked> Afficher le modèle réglé</label>
+                <label class="bc-field">Peau
+                    <select id="bcSkin" aria-label="Peau du mannequin">
+                        <option value="default">Mannequin par défaut</option>
+                        <option value="custom" disabled>Peau chargée</option>
+                    </select>
+                </label>
+                <div class="bc-load" style="margin-top:6px">
+                    <label class="bc-btn st-btn st-btn-soft" for="bcSkinFile">🧍 Charger une peau (PNG 64×64 ou 64×32)</label>
+                    <input type="file" id="bcSkinFile" accept="image/png">
+                </div>
+                <label class="bc-field" style="margin-top:6px">Armure
+                    <select id="bcArmor" aria-label="Armure du mannequin"></select>
+                </label>
+                <div class="bc-load" style="margin-top:6px">
+                    <label class="bc-btn st-btn st-btn-soft" for="bcArmorFiles">🛡 Couches d'armure (layer_1.png + layer_2.png, ou layer.png)</label>
+                    <input type="file" id="bcArmorFiles" accept="image/png" multiple>
+                </div>
+                <label class="bc-field" style="margin-top:6px">Pose (vue Tête)
+                    <select id="bcPose" aria-label="Pose du mannequin">
+                        <option value="debout">Debout</option>
+                        <option value="bras">Bras écartés</option>
+                    </select>
+                </label>
+                <div class="info-text" id="bcManInfo" style="margin-top:6px"></div>
+            </details>
             <div id="bcMsg" class="ime-msg" aria-live="polite"></div>
             <details open>
                 <summary>Valeurs finales écrites par BC</summary>
@@ -320,8 +385,21 @@
         </div>
     </div>
     <div id="bcView">
-        <div class="bc-label" id="bcViewLabel"></div>
-        <div class="bc-fitinfo" id="bcFitInfo"></div>
+        <div class="bc-hud">
+            <div class="bc-tools" id="bcTools" role="toolbar" aria-label="Manipulation directe dans la vue 3D">
+                <button type="button" data-mode="translate" aria-pressed="false" title="Déplacer : translation du contexte (G)">✥ Déplacer<kbd>G</kbd></button>
+                <button type="button" data-mode="rotate" aria-pressed="false" title="Tourner : rotation du contexte (R)">⟳ Tourner<kbd>R</kbd></button>
+                <button type="button" data-mode="scale" aria-pressed="false" title="Échelle du contexte (S)">⤢ Échelle<kbd>S</kbd></button>
+                <button type="button" data-mode="shift" aria-pressed="false" title="Déplacer la géométrie (shift, toute l'entrée)">⇲ Shift</button>
+                <button type="button" data-mode="off" aria-pressed="false" title="Masquer la poignée">✕</button>
+                <button type="button" id="bcUndo3d" title="Annuler (Ctrl+Z)" aria-label="Annuler">↶</button>
+                <button type="button" id="bcRedo3d" title="Rétablir (Ctrl+Y)" aria-label="Rétablir">↷</button>
+                <label title="Aimantation : translation 0,25, rotation 15°, échelle 0,05 (Maj inverse pendant le geste)"><input type="checkbox" id="bcSnap"> Aimant</label>
+            </div>
+            <div class="bc-gizmo-why" id="bcGizmoWhy"></div>
+            <div class="bc-label" id="bcViewLabel"></div>
+            <div class="bc-fitinfo" id="bcFitInfo"></div>
+        </div>
         <canvas class="bc-slot16" id="bcSlot16" width="16" height="16" aria-label="Case d'inventaire à 16 pixels"></canvas>
         <div class="bc-slot16-label">case à 16 px</div>
         <div id="bcCrosshair"></div>
@@ -1533,38 +1611,257 @@ const ItemModel = (() => {
      * (repère écran, comme le client) ; 1re personne : repère caméra (regard -Z).
      */
     function contextMatrix(ctx, t, opts) {
+        return chain(contextPrefix(ctx, t, opts), displayMatrix(t), renderItemMatrix());
+    }
+    /**
+     * Tout ce que le client applique AVANT ItemCameraTransforms.applyTransform : contextMatrix =
+     * contextPrefix · displayMatrix(t) · renderItemMatrix(). Seul « ground » dépend de t (relevé
+     * 0,25 × scale.y, RenderEntityItem.java:44) ; la manipulation directe s'appuie sur ce découpage.
+     */
+    function contextPrefix(ctx, t, opts) {
         const o = opts || {};
         const gui3d = o.gui3d !== false;
-        const D = displayMatrix(t), R = renderItemMatrix();
         switch (ctx) {
             case 'firstperson': // ItemRenderer.transformFirstPersonItem(0, 0) (ItemRenderer.java:296-307) puis renderItem (:406)
-                return chain(m4T(0.56, -0.52, -0.71999997), m4R(45, 0, 1, 0), m4S(0.4, 0.4, 0.4), entityItemScale(), D, R);
+                return chain(m4T(0.56, -0.52, -0.71999997), m4R(45, 0, 1, 0), m4S(0.4, 0.4, 0.4), entityItemScale());
             case 'thirdperson': // LayerHeldItem : postRenderArm puis translate(-1/16, 7/16, 1/16) (LayerHeldItem.java:41-42,66)
-                return chain(playerMatrix(), partMatrix(PLAYER_PARTS[2]), m4T(-0.0625, 0.4375, 0.0625), entityItemScale(), D, R);
+                return chain(playerMatrix(), partMatrix(PLAYER_PARTS[2]), m4T(-0.0625, 0.4375, 0.0625), entityItemScale());
             case 'head': {
                 const support = o.support || 'player';
                 let base;
                 if (support === 'player') base = chain(playerMatrix(), partMatrix(PLAYER_PARTS[0]));
                 else base = chain(standMatrix(support === 'rider' ? RIDER_OFFSET : 0), partMatrix(STAND_PARTS[0]));
-                return chain(base, headItemMatrix(), entityItemScale(), D, R);
+                return chain(base, headItemMatrix(), entityItemScale());
             }
             case 'gui': // RenderItem.setupGuiTransform (RenderItem.java:376-396), coordonnées de case 0..16
                 return chain(m4T(8, 8, 0), m4S(1, 1, -1), m4S(0.5, 0.5, 0.5),
-                    gui3d ? chain(m4S(40, 40, 40), m4R(210, 1, 0, 0), m4R(-135, 0, 1, 0)) : chain(m4S(64, 64, 64), m4R(180, 1, 0, 0)),
-                    D, R);
+                    gui3d ? chain(m4S(40, 40, 40), m4R(210, 1, 0, 0), m4R(-135, 0, 1, 0)) : chain(m4S(64, 64, 64), m4R(180, 1, 0, 0)));
             case 'ground': { // RenderEntityItem.func_177077_a + doRender (RenderEntityItem.java:41-48, 125-127), hoverStart 0
                 const age = o.age || 0;
                 const bob = Math.sin(age / 10) * 0.1 + 0.1;
                 const spin = (age / 20) * DEG;
-                return chain(m4T(0, bob + 0.25 * t.scale[1], 0), m4R(spin, 0, 1, 0), gui3d ? m4S(0.5, 0.5, 0.5) : m4id(), D, R);
+                return chain(m4T(0, bob + 0.25 * t.scale[1], 0), m4R(spin, 0, 1, 0), gui3d ? m4S(0.5, 0.5, 0.5) : m4id());
             }
             case 'fixed': // RenderItemFrame (RenderItemFrame.java:57-58,77,153-162), rotation 0, cadre face à +Z
                 return chain(m4R(180, 0, 1, 0), m4T(0, 0, 0.4375), m4S(0.5, 0.5, 0.5),
-                    gui3d ? m4id() : chain(m4R(180, 0, 1, 0), m4S(2, 2, 2)), D, R); // plat : rotation 180 + preTransform ×2
+                    gui3d ? m4id() : chain(m4R(180, 0, 1, 0), m4S(2, 2, 2))); // plat : rotation 180 + preTransform ×2
             default:
                 throw new Error(`Contexte inconnu : ${ctx}`);
         }
     }
+    // L'aperçu dessine l'inventaire dans une scène Y vers le haut : repère GUI retourné (Y vers le bas)
+    const GUI_TO_SCENE = Object.freeze(m4S(1, -1, 1));
+    /** Matrice du modèle dans la scène three.js de l'aperçu (= contextMatrix, sauf « gui » retourné en Y). */
+    function sceneMatrix(ctx, t, opts) { return ctx === 'gui' ? chain(GUI_TO_SCENE, contextMatrix(ctx, t, opts)) : contextMatrix(ctx, t, opts); }
+    function scenePrefix(ctx, t, opts) { return ctx === 'gui' ? chain(GUI_TO_SCENE, contextPrefix(ctx, t, opts)) : contextPrefix(ctx, t, opts); }
+
+    // ---------- Manipulation directe : inverse exacte de la chaîne de rendu ----------
+    // Un point p du modèle (blocs, 0..1 pour 0..16 px) est dessiné en
+    //   W(p) = P · ( c(t)/16 + Rot(r) · S(s) · Rr · p ),   Rr = renderItemMatrix (×0,5 puis -0,5)
+    // avec P = scenePrefix (affine), c = translation bornée à ±24 (ItemTransformVec3f.java:62-71),
+    // Rot = Ry·Rx·Rz (ItemCameraTransforms.java:55-67, même ordre que ModelFit.Rotation.matrix).
+    // L'ancre A = W(0,5 ; 0,5 ; 0,5) = P · c/16 (Rr envoie le centre du modèle sur 0) est le pivot
+    // de la rotation et de l'échelle du client. Donc, avec L = partie linéaire de P :
+    //   translation : ΔW = L · Δc / 16          =>  Δc = 16 · L⁻¹ · ΔW (tout point bouge de ΔW)
+    //   rotation    : W' - A = Q · (W - A)       =>  Rot(r') = L⁻¹ · Q · L · Rot(r)
+    //                 (L est une similitude dans les six contextes : L⁻¹QL est une rotation)
+    //   échelle     : facteurs dans les axes du modèle, autour de A  =>  s' = s ∘ f
+    //   shift       : la géométrie bouge de Δs px  =>  ΔW = Lm · Δs / 16, Lm = linéaire de sceneMatrix
+    function lin3(m) { return [[m[0], m[4], m[8]], [m[1], m[5], m[9]], [m[2], m[6], m[10]]]; }
+    function det3(a) {
+        return a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+    }
+    function inv3(a) {
+        const d = det3(a);
+        if (!Number.isFinite(d) || Math.abs(d) < 1e-12) throw new Error('matrice non inversible : manipulation impossible dans ce contexte');
+        const c = (r1, c1, r2, c2) => a[r1][c1] * a[r2][c2] - a[r1][c2] * a[r2][c1];
+        return [
+            [c(1, 1, 2, 2) / d, -c(0, 1, 2, 2) / d, c(0, 1, 1, 2) / d],
+            [-c(1, 0, 2, 2) / d, c(0, 0, 2, 2) / d, -c(0, 0, 1, 2) / d],
+            [c(1, 0, 2, 1) / d, -c(0, 0, 2, 1) / d, c(0, 0, 1, 1) / d]];
+    }
+    function mul3v(a, v) { return [0, 1, 2].map(i => a[i][0] * v[0] + a[i][1] * v[1] + a[i][2] * v[2]); }
+    function transpose3(a) { return [0, 1, 2].map(i => [a[0][i], a[1][i], a[2][i]]); }
+    /** Rotation d'axe (unitaire ou non) et d'angle en degrés, 3x3 (Rodrigues, sens de glRotatef). */
+    function axisAngle3(axis, deg) {
+        const n = Math.hypot(axis[0], axis[1], axis[2]);
+        if (!(n > 0)) throw new Error('axe de rotation nul');
+        const x = axis[0] / n, y = axis[1] / n, z = axis[2] / n;
+        const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), t = 1 - c;
+        return [[t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+            [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+            [t * x * z - s * y, t * y * z + s * x, t * z * z + c]];
+    }
+    /** Décomposition Ry·Rx·Rz de ModelFit.Rotation.euler (ModelFit.java:285-305), sans l'arrondi au millième. */
+    function eulerExact(m) {
+        const x = Math.asin(Math.max(-1, Math.min(1, -m[1][2])));
+        let y, z;
+        if (Math.abs(Math.cos(x)) < 1e-9) {
+            z = 0;
+            y = x > 0 ? Math.atan2(m[0][1], m[0][0]) : Math.atan2(-m[0][1], m[0][0]);
+        } else {
+            y = Math.atan2(m[0][2], m[2][2]);
+            z = Math.atan2(m[1][0], m[1][1]);
+        }
+        const deg = v => { const d = v * 180 / Math.PI; return Object.is(d, -0) ? 0 : d; };
+        return [deg(x), deg(y), deg(z)];
+    }
+    /** Repère orthonormé (colonnes) d'une similitude, retourné sur un axe si elle inverse l'orientation. */
+    function orthoFrame(a) {
+        const cols = [0, 1, 2].map(j => { const v = [a[0][j], a[1][j], a[2][j]]; const n = Math.hypot(v[0], v[1], v[2]) || 1; return v.map(x => x / n); });
+        if (det3(a) < 0) cols[0] = cols[0].map(x => -x);
+        return [[cols[0][0], cols[1][0], cols[2][0]], [cols[0][1], cols[1][1], cols[2][1]], [cols[0][2], cols[1][2], cols[2][2]]];
+    }
+    /**
+     * Ancre et repères de la poignée : ancre A, repère « item » (axes de la translation JSON) et
+     * repère « modèle » (axes du modèle après rotation : ceux de l'échelle, de shift et de la rotation).
+     */
+    function gizmoFrame(ctx, t, opts) {
+        const P = scenePrefix(ctx, t, opts);
+        const L = lin3(P);
+        const W = lin3(sceneMatrix(ctx, t, opts));
+        return {
+            anchor: apply(sceneMatrix(ctx, t, opts), [0.5, 0.5, 0.5]),
+            item: orthoFrame(L),
+            model: orthoFrame(Rot.multiply(L, Rot.matrix(t.rotation))),
+            unit: Math.cbrt(Math.abs(det3(L))) / 16,      // blocs par unité de translation JSON
+            shiftUnit: Math.cbrt(Math.abs(det3(W))) / 16   // blocs par pixel de shift
+        };
+    }
+    /**
+     * Inverse exacte de la chaîne de rendu pour une manipulation dans la scène (voir l'en-tête).
+     * op : { mode: 'translate', world: [dx, dy, dz] } | { mode: 'rotate', axis: [x, y, z] (scène), angle: degrés }
+     *      | { mode: 'rotate', matrix: 3x3 } | { mode: 'scale', factor: [fx, fy, fz] (axes du modèle) }
+     *      | { mode: 'shift', world: [dx, dy, dz] }
+     * turns : pivots du contexte (SlotFit.turns) ; la rotation renvoyée est alors celle du contexte
+     * (« rotation » de pack.json) qui, composée avec les pivots, donne la rotation finale voulue.
+     * @return { rotation, translation, scale } (valeurs non arrondies), ou { shift: [Δx, Δy, Δz] } en px
+     */
+    function gizmoInverse(ctx, t, opts, op, turns) {
+        const L = lin3(scenePrefix(ctx, t, opts));
+        const out = { rotation: t.rotation.slice(), translation: t.translation.slice(), scale: t.scale.slice() };
+        switch (op && op.mode) {
+            case 'translate': {
+                const d = mul3v(inv3(L), op.world);
+                out.translation = t.translation.map((v, i) => v + 16 * d[i]);
+                return out;
+            }
+            case 'rotate': {
+                const Q = op.matrix || axisAngle3(op.axis, op.angle);
+                const finalRot = Rot.multiply(Rot.multiply(inv3(L), Rot.multiply(Q, L)), Rot.matrix(t.rotation));
+                if (turns && turns.length) {
+                    let turned = Rot.identity();
+                    for (const tr of turns) turned = Rot.multiply(Rot.matrix(tr), turned);
+                    out.contextRotation = eulerExact(Rot.multiply(finalRot, transpose3(turned)));
+                }
+                out.rotation = eulerExact(finalRot);
+                return out;
+            }
+            case 'scale':
+                out.scale = t.scale.map((v, i) => v * op.factor[i]);
+                return out;
+            case 'shift': {
+                const d = mul3v(inv3(lin3(sceneMatrix(ctx, t, opts))), op.world);
+                return { shift: d.map(v => 16 * v) };
+            }
+            default:
+                throw new Error(`manipulation inconnue : ${op && op.mode}`);
+        }
+    }
+
+    // ---------- Mannequin 1.8.9 : ModelPlayer (peau 64x64) + ModelBiped d'armure (LayerBipedArmor) ----------
+    // Pièces de ModelBiped (ModelBiped.java:55-77), texture 64 × 32 ; `mirror` pour les membres gauches.
+    const BIPED_PARTS = Object.freeze({
+        head: { point: [0, 0, 0], box: [-4, -8, -4, 8, 8, 8], uv: [0, 0] },
+        headwear: { point: [0, 0, 0], box: [-4, -8, -4, 8, 8, 8], uv: [32, 0], extra: 0.5 }, // modelSize + 0,5 (:59)
+        body: { point: [0, 0, 0], box: [-4, 0, -2, 8, 12, 4], uv: [16, 16] },
+        rightArm: { point: [-5, 2, 0], box: [-3, -2, -2, 4, 12, 4], uv: [40, 16] },
+        leftArm: { point: [5, 2, 0], box: [-1, -2, -2, 4, 12, 4], uv: [40, 16], mirror: true },
+        rightLeg: { point: [-1.9, 12, 0.1], box: [-2, 0, -2, 4, 12, 4], uv: [0, 16] },  // z 0,1 : setRotationAngles (ModelBiped.java:214)
+        leftLeg: { point: [1.9, 12, 0.1], box: [-2, 0, -2, 4, 12, 4], uv: [0, 16], mirror: true }
+    });
+    // ModelPlayer, bras larges (ModelPlayer.java:44-66) : peau 64 × 64, deuxième couche gonflée de 0,25
+    // (chapeau : 0,5, ModelBiped.java:59) ; le membre gauche a sa propre zone, sans miroir.
+    const SKIN_PARTS = Object.freeze([
+        { name: 'head', uv: [0, 0], wear: [32, 0], wearExtra: 0.5 },
+        { name: 'body', uv: [16, 16], wear: [16, 32], wearExtra: 0.25 },
+        { name: 'rightArm', uv: [40, 16], wear: [40, 32], wearExtra: 0.25 },
+        { name: 'leftArm', uv: [32, 48], wear: [48, 48], wearExtra: 0.25 },
+        { name: 'rightLeg', uv: [0, 16], wear: [0, 32], wearExtra: 0.25 },
+        { name: 'leftLeg', uv: [16, 48], wear: [0, 48], wearExtra: 0.25 }
+    ]);
+    // LayerBipedArmor : jambières = ModelBiped(0,5) sur layer_2, le reste = ModelBiped(1,0) sur layer_1
+    // (LayerBipedArmor.java:13-17 ; LayerArmorBase.java:91-99 et getArmorResource) ; pièces visibles
+    // par emplacement (LayerBipedArmor.java:19-46), dessinées casque, plastron, jambières, bottes (LayerArmorBase.java:32-38).
+    const ARMOR_PIECES = Object.freeze([
+        { slot: 4, name: 'helmet', layer: 1, size: 1.0, parts: ['head', 'headwear'] },
+        { slot: 3, name: 'chestplate', layer: 1, size: 1.0, parts: ['body', 'rightArm', 'leftArm'] },
+        { slot: 2, name: 'leggings', layer: 2, size: 0.5, parts: ['body', 'rightLeg', 'leftLeg'] },
+        { slot: 1, name: 'boots', layer: 1, size: 1.0, parts: ['rightLeg', 'leftLeg'] }
+    ]);
+    // Angles (radians, X/Y/Z) au repos, ageInTicks = 0, sans swing ni accroupi (ModelBiped.java:129-224) :
+    // bras ±0,1 en Z (:221-222) ; tenue d'un item : bras droit X = -π/10 (:168).
+    // « bras » : pose d'aide (bras écartés de 1,2 rad) pour voir le dos dégagé, pas une pose du jeu.
+    const POSES = Object.freeze({ debout: { label: 'Debout' }, bras: { label: 'Bras écartés' } });
+    function poseAngles(pose, holding) {
+        const spread = pose === 'bras' ? 1.2 : 0;
+        return {
+            head: [0, 0, 0], headwear: [0, 0, 0], body: [0, 0, 0],
+            rightArm: [holding ? -Math.PI / 10 : 0, 0, 0.1 + spread],
+            leftArm: [0, 0, -0.1 - spread],
+            rightLeg: [0, 0, 0], leftLeg: [0, 0, 0]
+        };
+    }
+    /**
+     * Les six faces d'une ModelBox : sommets (px, repère de la pièce) et UV (0..1), comme
+     * ModelBox (ModelBox.java:39-96) et TexturedQuad (TexturedQuad.java:17-25, flipFace :28-37).
+     * box : [x, y, z, w, h, d] ; tex : [u, v, largeur, hauteur de texture du modèle].
+     */
+    function modelBoxQuads(box, inflate, mirror, tex) {
+        const [x, y, z, w, h, d] = box;
+        const [u, v, tw, th] = tex;
+        let x1 = x - inflate, x2 = x + w + inflate;
+        const y1 = y - inflate, y2 = y + h + inflate, z1 = z - inflate, z2 = z + d + inflate;
+        if (mirror) { const s = x2; x2 = x1; x1 = s; }
+        const P7 = [x1, y1, z1], P0 = [x2, y1, z1], P1 = [x2, y2, z1], P2 = [x1, y2, z1];
+        const P3 = [x1, y1, z2], P4 = [x2, y1, z2], P5 = [x2, y2, z2], P6 = [x1, y2, z2];
+        const quad = (face, verts, u1, v1, u2, v2) => {
+            const uv = [[u2 / tw, v1 / th], [u1 / tw, v1 / th], [u1 / tw, v2 / th], [u2 / tw, v2 / th]];
+            const q = { face, pos: verts.map(p => p.slice()), uv };
+            if (mirror) { q.pos.reverse(); q.uv.reverse(); }
+            return q;
+        };
+        return [
+            quad('x2', [P4, P0, P1, P5], u + d + w, v + d, u + d + w + d, v + d + h),
+            quad('x1', [P7, P3, P6, P2], u, v + d, u + d, v + d + h),
+            quad('top', [P4, P3, P7, P0], u + d, v, u + d + w, v + d),
+            quad('bottom', [P1, P2, P6, P5], u + d + w, v + d, u + d + w + w, v),
+            quad('front', [P0, P7, P2, P1], u + d, v + d, u + d + w, v + d + h),
+            quad('back', [P3, P4, P5, P6], u + d + w + d, v + d, u + d + w + d + w, v + d + h)
+        ];
+    }
+    /**
+     * Boîtes du mannequin pour une pose : peau (ModelPlayer) puis armure (si `armor`), chacune
+     * { part, layer: 'skin' | 'armor1' | 'armor2', piece, box, inflate, mirror, tex, point, angles }.
+     */
+    function mannequinBoxes(pose, holding, armor) {
+        const ang = poseAngles(pose, holding);
+        const out = [];
+        SKIN_PARTS.forEach(s => {
+            const b = BIPED_PARTS[s.name];
+            const base = { part: s.name, layer: 'skin', piece: 'skin', box: b.box, mirror: false, point: b.point, angles: ang[s.name] };
+            out.push(Object.assign({}, base, { inflate: 0, tex: [s.uv[0], s.uv[1], 64, 64] }));
+            out.push(Object.assign({}, base, { part: s.name === 'head' ? 'headwear' : s.name, piece: 'skinwear', inflate: s.wearExtra, tex: [s.wear[0], s.wear[1], 64, 64] }));
+        });
+        if (armor) ARMOR_PIECES.forEach(a => a.parts.forEach(name => {
+            const b = BIPED_PARTS[name];
+            out.push({ part: name, layer: 'armor' + a.layer, piece: a.name, box: b.box, inflate: a.size + (b.extra || 0), mirror: !!b.mirror,
+                tex: [b.uv[0], b.uv[1], 64, 32], point: b.point, angles: ang[name] });
+        }));
+        return out;
+    }
+    /** Matrice px de pièce -> scène : RendererLivingEntity + ModelRenderer.render (translate point/16, rotate Z,Y,X). */
+    function mannequinBoxMatrix(b) { return chain(playerMatrix(), partMatrix(b), m4S(1 / 16, 1 / 16, 1 / 16)); }
 
     // ---------- Géométrie : FaceBakery 1.8.9 ----------
     // Sommets par face (EnumFaceDirection.java:7-12) : W/E = from.x/to.x, D/U = y, N/S = z
@@ -1688,6 +1985,8 @@ const ItemModel = (() => {
         javaFloat, scanJson, compact, replaceEntry, entrySnippet,
         m4id, m4mul, m4T, m4S, m4R, chain, apply, displayMatrix, renderItemMatrix, playerMatrix, standMatrix,
         partMatrix, partBoxMatrix, headItemMatrix, headSupport, contextMatrix,
+        contextPrefix, sceneMatrix, scenePrefix, gizmoFrame, gizmoInverse, eulerExact, axisAngle3, inv3, lin3,
+        BIPED_PARTS, SKIN_PARTS, ARMOR_PIECES, POSES, poseAngles, modelBoxQuads, mannequinBoxes, mannequinBoxMatrix,
         bakeQuads, bbox, quadPoints, vanillaKind, vanillaDisplay, identityT, entryPath, firstFrame
     });
 })();
@@ -1733,7 +2032,6 @@ window.ItemModelUI = (() => {
         player: 'Casque d\'un joueur : seul un ItemBlock y est dessiné en 1.8 (LayerCustomHead) ; pour une autre matière ce contexte n\'est jamais utilisé.'
     };
     const COMMON_NOTE = ' Approximations : éclairage simplifié, translucidité rendue opaque (seuil alpha 0,1 du client).';
-    const VEC_STEP = { rotation: 1, translation: 0.25, scale: 0.05 };
     const COMP_LABEL = { rotation: 'Rotation (°)', translation: 'Translation (1/16)', scale: 'Échelle', front: 'front : de face', fit: 'fit (px)', turn: 'turn (pivots, °)' };
 
     const st = {
@@ -1750,8 +2048,35 @@ window.ItemModelUI = (() => {
         actionMsg: null,
         geoKey: '',
         guiDirty: true,
-        uniform: true
+        uniform: true,
+        // Historique (Ctrl+Z / Ctrl+Y) : instantanés JSON de l'entrée ; `committed` = dernier état validé.
+        // Un geste continu (curseur, poignée) modifie l'entrée en direct et n'est validé qu'au relâchement.
+        hist: { undo: [], redo: [], committed: null },
+        editorKey: '',
+        // Mannequin : peau (null = mannequin par défaut), armures du pack + couches chargées à la main
+        armorSets: new Map(), // nom -> { name, l1, l2 (chemins ou null), custom: { c1, c2 } | undefined, problem }
+        armorName: '',
+        armorTex: null,       // { name, c1, c2 } : canvas des deux couches
+        armorMsg: null,
+        skin: null,           // canvas 64 × 64 (après conversion 1.8 d'une peau 64 × 32), null = défaut
+        skinMsg: null,
+        pose: 'debout',
+        showPlayer: true,
+        showItem: true,
+        // Manipulation directe
+        gizmoMode: 'translate',
+        snap: false,
+        shiftHeld: false
     };
+    const BC_LIMITS = Object.freeze({ // bornes des curseurs = limites de BC (ModelFit.java:31,34,46 ; DisplayTransform.java:86-90)
+        rotation: { min: -180, max: 180, step: 0.5 },
+        translation: { min: -M.BC.MAX_TRANSLATION, max: M.BC.MAX_TRANSLATION, step: 0.05 },
+        scale: { min: 0.05, max: M.BC.MAX_SCALE, step: 0.01 },
+        fit: { min: 0.25, max: M.BC.MAX_FIT, step: 0.25 }, // BC : ]0 ; 32] (0 refusé)
+        turn: { min: -180, max: 180, step: 0.5 },
+        shift: { step: 0.05 } // bornes calculées par entrée : éléments dans [-16 ; 32] après décalage
+    });
+    const SNAP = Object.freeze({ translation: 0.25, rotationDeg: 15, scale: 0.05, shift: 0.25 });
 
     // ---------- Lecture des fichiers (dossier, fichiers isolés, .zip) ----------
     async function inflateRaw(data) {
@@ -1878,6 +2203,41 @@ window.ItemModelUI = (() => {
         const nModel = st.entries.filter(e => e.hasModel).length;
         st.loadMsgs.push({ type: 'ok', text: `${st.files.size} fichier(s) lus${st.packPath ? ', pack.json : ' + st.packPath : ', sans pack.json'} ; ${st.entries.length} entrée(s), dont ${nModel} à model.json.` });
         fillEntrySelect();
+        indexArmor(paths);
+    }
+
+    // ---------- Armures du pack : armor/<set>/layer_1.png + layer_2.png, ou layer.png pour les deux ----------
+    // Même règle que PackBuild.layerSuffixes (PackBuild.java:766-785) : layer_<n>.png, sinon layer.png.
+    function indexArmor(paths) {
+        const custom = [...st.armorSets.values()].filter(s => s.custom);
+        st.armorSets = new Map();
+        const found = new Map();
+        paths.forEach(p => {
+            const m = /(?:^|\/)armor\/([^/]+)\/(layer(?:_[12])?\.png)$/.exec(p);
+            if (!m) return;
+            if (!found.has(m[1])) found.set(m[1], {});
+            found.get(m[1])[m[2]] = p;
+        });
+        [...found.keys()].sort((a, b) => a.localeCompare(b)).forEach(name => {
+            const f = found.get(name);
+            const l1 = f['layer_1.png'] || f['layer.png'] || null, l2 = f['layer_2.png'] || f['layer.png'] || null;
+            const problem = !l1 ? 'layer_1.png absente (ni layer.png)' : !l2 ? 'layer_2.png absente (ni layer.png)' : '';
+            st.armorSets.set(name, { name, l1, l2, problem });
+        });
+        custom.forEach(s => st.armorSets.set(s.name, s));
+        if (st.armorName && !st.armorSets.has(st.armorName)) { st.armorName = ''; st.armorTex = null; }
+        fillArmorSelect();
+    }
+    function fillArmorSelect() {
+        const sel = $('bcArmor');
+        sel.textContent = '';
+        sel.append(el('option', { value: '', text: 'aucune' }));
+        st.armorSets.forEach(s => {
+            const o = el('option', { value: s.name, text: s.custom ? `${s.name} (couches chargées)` : s.problem ? `${s.name} — refusé : ${s.problem}` : s.name });
+            if (s.problem) o.disabled = true;
+            sel.append(o);
+        });
+        sel.value = st.armorName;
     }
 
     function fillEntrySelect() {
@@ -1968,6 +2328,7 @@ window.ItemModelUI = (() => {
         c.declared = !!(sec && typeof sec === 'object' && Object.prototype.hasOwnProperty.call(sec, c.id));
         c.entry = c.declared ? JSON.parse(JSON.stringify(sec[c.id])) : {};
         c.original = JSON.parse(JSON.stringify(c.entry));
+        st.hist = { undo: [], redo: [], committed: JSON.stringify(c.entry) };
     }
 
     // ---------- Calcul (miroir BC) ----------
@@ -2001,23 +2362,26 @@ window.ItemModelUI = (() => {
     }
 
     // ---------- Édition (exclusions de BC appliquées par ItemModel.setSlotComponent) ----------
-    function setComponent(ctx, comp, value) {
+    // `live` : étape d'un geste continu (curseur glissé, poignée) ; validé dans l'historique au relâchement
+    function setComponent(ctx, comp, value, live) {
         if (!st.cur) return { ok: false, error: 'aucune entrée chargée' };
         const r = M.setSlotComponent(st.cur.entry, ctx, comp, value);
         if (!r.ok) { st.actionMsg = { type: 'err', text: `${r.error} (${r.ref})` }; refresh(); return r; }
         st.cur.entry = r.entry;
         st.actionMsg = null;
         recompute();
+        if (!live) commit();
         refresh();
         return r;
     }
-    function setShift(value) {
+    function setShift(value, live) {
         if (!st.cur) return { ok: false, error: 'aucune entrée chargée' };
         const r = M.setShift(st.cur.entry, value);
         if (!r.ok) { st.actionMsg = { type: 'err', text: `${r.error} (${r.ref})` }; refresh(); return r; }
         st.cur.entry = r.entry;
         st.actionMsg = null;
         recompute();
+        if (!live) commit();
         refresh();
         return r;
     }
@@ -2025,12 +2389,118 @@ window.ItemModelUI = (() => {
         if (!st.cur) return;
         st.cur.entry = JSON.parse(JSON.stringify(st.cur.original));
         st.actionMsg = { type: 'ok', text: 'Entrée remise comme dans le pack.json chargé.' };
+        recompute(); commit(); buildEditor(); refresh();
+    }
+
+    // ---------- Historique : Annuler / Rétablir (pile d'instantanés, pattern Memento) ----------
+    const HIST_MAX = 200;
+    function commit() {
+        if (!st.cur) return false;
+        const now = JSON.stringify(st.cur.entry);
+        if (now === st.hist.committed) return false;
+        st.hist.undo.push(st.hist.committed);
+        if (st.hist.undo.length > HIST_MAX) st.hist.undo.shift();
+        st.hist.redo = [];
+        st.hist.committed = now;
+        updateHistoryButtons();
+        return true;
+    }
+    function travel(from, to, label) {
+        if (!st.cur) return false;
+        commit(); // un geste en cours est d'abord validé
+        if (!from.length) return false;
+        to.push(st.hist.committed);
+        st.hist.committed = from.pop();
+        st.cur.entry = JSON.parse(st.hist.committed);
+        st.actionMsg = { type: 'ok', text: label };
         recompute(); buildEditor(); refresh();
+        return true;
+    }
+    function undo() { return travel(st.hist.undo, st.hist.redo, 'Modification annulée.'); }
+    function redo() { return travel(st.hist.redo, st.hist.undo, 'Modification rétablie.'); }
+    function updateHistoryButtons() {
+        const u = !st.cur || !st.hist.undo.length, r = !st.cur || !st.hist.redo.length;
+        ['bcUndo', 'bcUndo3d'].forEach(id => { const b = $(id); if (b) b.disabled = u; });
+        ['bcRedo', 'bcRedo3d'].forEach(id => { const b = $(id); if (b) b.disabled = r; });
     }
 
     // ---------- Panneau : éditeur du contexte ----------
     const numIn = (value, step, label, onchange) => el('input', { type: 'number', step: String(step), value: String(value), 'aria-label': label, class: 'bc-num', onchange });
     function readNum(input) { const v = parseFloat(String(input.value).replace(',', '.')); return Number.isFinite(v) ? v : null; }
+
+    // Aperçu en direct pendant un glissé : au plus une mise à jour par image (requestAnimationFrame)
+    let liveRaf = 0, livePending = null;
+    function scheduleLive(fn) {
+        livePending = fn;
+        if (!liveRaf) liveRaf = requestAnimationFrame(() => { liveRaf = 0; const f = livePending; livePending = null; if (f) f(); });
+    }
+    function flushLive() {
+        if (liveRaf) { cancelAnimationFrame(liveRaf); liveRaf = 0; }
+        const f = livePending; livePending = null;
+        if (f) f();
+    }
+    /** Valeur hors des limites de BC : affichée comme refusée, jamais bornée en silence. */
+    function outOfLimits(lim, v) { return lim.min != null && (v < lim.min - 1e-9 || v > lim.max + 1e-9); }
+    function markLimit(num, lim) {
+        const v = readNum(num);
+        const bad = v !== null && lim.bc && outOfLimits(lim, v);
+        num.classList.toggle('bad', bad);
+        num.title = bad ? `Hors des limites de BC [${lim.min} ; ${lim.max}] : refusé (voir les messages)` : '';
+    }
+    /**
+     * Une ligne « axe | curseur | champ ». Le curseur va exactement des bornes de BC (il ne peut pas
+     * produire de valeur refusée) ; le champ accepte tout, une valeur hors bornes est montrée refusée.
+     * onSlide(valeur, live) : live = true pendant le glissé, false au relâchement ; onType(valeur).
+     */
+    function axisLine(axis, id, lim, value, disabled, onSlide, onType) {
+        const range = el('input', { type: 'range', id: id + '-r', min: String(lim.min), max: String(lim.max), step: String(lim.step), 'aria-label': `${id.replace(/^bc-/, '')} : curseur` });
+        range.value = String(value);
+        const num = numIn(round4(value), lim.step, `${id.replace(/^bc-/, '').replace(/-(\d)$/, (m, i) => ' ' + 'XYZ'[i])}`, () => {
+            const v = readNum(num);
+            markLimit(num, lim);
+            if (v === null) { st.actionMsg = { type: 'err', text: `${id.replace(/^bc-/, '')} : nombre attendu` }; refresh(); return; }
+            range.value = String(v);
+            onType(v);
+        });
+        num.id = id;
+        num._lim = lim;
+        range.disabled = num.disabled = !!disabled;
+        range.addEventListener('input', () => {
+            const v = round4(Number(range.value));
+            num.value = String(v);
+            markLimit(num, lim);
+            scheduleLive(() => onSlide(v, true));
+        });
+        range.addEventListener('change', () => {
+            const v = round4(Number(range.value));
+            flushLive();
+            onSlide(v, false);
+        });
+        markLimit(num, lim);
+        return el('div', { class: 'bc-axis' }, el('span', { text: axis }), range, num);
+    }
+    /** Bornes de shift par axe : tout coin d'élément reste dans [-16 ; 32] (ModelFit.java:174-181), arrondies au pas. */
+    function shiftLimits() {
+        const r = st.res, step = BC_LIMITS.shift.step;
+        const out = [0, 1, 2].map(() => ({ min: -16, max: 16, step, bc: false }));
+        if (!r || !r.model) return out;
+        const b = M.boundsOf(r.model.elements);
+        return [0, 1, 2].map(i => {
+            const min = round4(Math.ceil((M.BC.MIN_COORDINATE - b.min[i]) / step - 1e-9) * step);
+            const max = round4(Math.floor((M.BC.MAX_COORDINATE - b.max[i]) / step + 1e-9) * step);
+            return min <= max ? { min, max, step, bc: true } : out[i];
+        });
+    }
+    function slotOf(ctx) {
+        const c = st.cur;
+        return c && c.entry[ctx] && typeof c.entry[ctx] === 'object' && !Array.isArray(c.entry[ctx]) ? c.entry[ctx] : {};
+    }
+    function structureKey() { // ce qui change la forme du panneau (cases cochées), pas les valeurs
+        if (!st.cur || !st.res) return '';
+        const slot = slotOf(st.ctx);
+        return [st.ctx, st.cur.key, Object.keys(slot).sort().join(','), slot.front === true, Array.isArray(slot.turn) && Array.isArray(slot.turn[0]),
+            Array.isArray(st.cur.entry.shift), !!st.res.flat, !!st.res.model].join('|');
+    }
 
     function buildEditor() {
         const box = $('bcCtxEditor');
@@ -2038,14 +2508,16 @@ window.ItemModelUI = (() => {
         const shiftBox = $('bcShift');
         shiftBox.textContent = '';
         const c = st.cur, r = st.res;
+        st.editorKey = structureKey();
         document.querySelectorAll('#bcTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ctx === st.ctx)));
+        updateHistoryButtons();
         if (!c || !r) return;
         if (!r.entry || r.flat || !r.model) {
             box.append(el('div', { class: 'info-text', text: r.flat ? 'Placements vanilla, rien à régler : une texture plate garde le modèle vanilla de sa matière.' : 'Réglages indisponibles : corriger d\'abord les refus ci-dessous.' }));
             if (!r.flat || !r.entry) return;
         }
         const disabled = !!r.flat;
-        const slot = c.entry[st.ctx] && typeof c.entry[st.ctx] === 'object' && !Array.isArray(c.entry[st.ctx]) ? c.entry[st.ctx] : {};
+        const slot = slotOf(st.ctx);
         const final = r.merged && r.merged.display[st.ctx] ? r.merged.display[st.ctx] : M.identityT();
         const hasK = k => Object.prototype.hasOwnProperty.call(slot, k);
         const blocked = {
@@ -2057,7 +2529,7 @@ window.ItemModelUI = (() => {
         };
         box.append(el('div', { class: 'bc-ctxhead' }, el('code', { text: `"${st.ctx}"` }),
             el('span', { class: 'ime-badge' + (Object.keys(slot).length ? ' own' : ''), text: Object.keys(slot).length ? 'réglé dans pack.json' : 'non réglé : model.json seul' })));
-        const row = (comp, controlsFn) => {
+        const row = (comp, controlsFn, wide) => {
             const on = hasK(comp) && !(comp === 'front' && slot.front !== true);
             const why = blocked[comp];
             const cb = el('input', { type: 'checkbox', id: `bc-on-${comp}`, 'aria-label': `Imposer ${comp}` });
@@ -2070,7 +2542,7 @@ window.ItemModelUI = (() => {
                 } else setComponent(st.ctx, comp, null);
                 buildEditor();
             });
-            const line = el('div', { class: 'bc-row' + (on ? ' on' : '') + (why && !on ? ' blocked' : ''), title: why && !on ? `Indisponible : ${why}` : '' },
+            const line = el('div', { class: 'bc-row' + (wide ? ' wide' : '') + (on ? ' on' : '') + (why && !on ? ' blocked' : ''), title: why && !on ? `Indisponible : ${why}` : '' },
                 el('label', { class: 'bc-comp', for: `bc-on-${comp}` }, cb, el('span', { text: COMP_LABEL[comp] })));
             const ctl = el('div', { class: 'bc-ctl' });
             controlsFn(ctl, on);
@@ -2080,58 +2552,82 @@ window.ItemModelUI = (() => {
         };
         const vec = comp => (ctl, on) => {
             const vals = on && Array.isArray(slot[comp]) && slot[comp].length === 3 ? slot[comp] : final[comp];
-            const inputs = [0, 1, 2].map(i => numIn(round4(vals[i]), VEC_STEP[comp], `${comp} ${'XYZ'[i]}`, () => {
-                let v = inputs.map(readNum);
+            const lim = Object.assign({ bc: comp !== 'rotation' }, BC_LIMITS[comp]);
+            const current = () => [0, 1, 2].map(i => readNum($(`bc-${comp}-${i}`)));
+            const push = (v, live) => {
                 if (v.some(x => x === null)) { st.actionMsg = { type: 'err', text: `${comp} : nombre attendu` }; refresh(); return; }
-                if (comp === 'scale' && st.uniform) { const x = v[i]; v = [x, x, x]; inputs.forEach(n => { n.value = String(x); }); }
-                setComponent(st.ctx, comp, v);
-            }));
-            inputs.forEach((n, i) => { n.disabled = !on || disabled; n.id = `bc-${comp}-${i}`; });
-            ctl.append(...inputs);
+                setComponent(st.ctx, comp, v.map(round4), live);
+            };
+            const lines = [0, 1, 2].map(i => axisLine('XYZ'[i], `bc-${comp}-${i}`, lim, vals[i], !on || disabled,
+                (x, live) => {
+                    let v = current();
+                    v[i] = x;
+                    if (comp === 'scale' && st.uniform) {
+                        v = [x, x, x];
+                        [0, 1, 2].forEach(k => { if (k !== i) { $(`bc-${comp}-${k}`).value = String(x); $(`bc-${comp}-${k}-r`).value = String(x); } });
+                    }
+                    push(v, live);
+                },
+                x => {
+                    let v = current();
+                    if (comp === 'scale' && st.uniform) { v = [x, x, x]; [0, 1, 2].forEach(k => { $(`bc-${comp}-${k}`).value = String(x); $(`bc-${comp}-${k}-r`).value = String(x); }); }
+                    push(v, false);
+                }));
+            ctl.append(...lines);
         };
-        row('rotation', vec('rotation'));
+        row('rotation', vec('rotation'), true);
         row('front', () => {});
-        row('translation', vec('translation'));
-        row('scale', vec('scale'));
+        row('translation', vec('translation'), true);
+        row('scale', vec('scale'), true);
         const uni = el('input', { type: 'checkbox', id: 'bcUniform' });
         uni.checked = st.uniform;
         uni.addEventListener('change', () => { st.uniform = uni.checked; });
-        box.append(el('label', { class: 'bc-mini', for: 'bcUniform' }, uni, el('span', { text: 'échelle uniforme (X = Y = Z)' })));
+        box.append(el('label', { class: 'bc-mini', for: 'bcUniform' }, uni, el('span', { text: 'échelle uniforme (X = Y = Z), curseurs et poignée' })));
         row('fit', (ctl, on) => {
-            const n = numIn(on ? slot.fit : 16, 0.5, 'fit en pixels', () => {
-                const v = readNum(n);
-                if (v === null) { st.actionMsg = { type: 'err', text: 'fit : nombre attendu' }; refresh(); return; }
-                setComponent(st.ctx, 'fit', v);
-            });
-            n.id = 'bc-fit';
-            n.disabled = !on || disabled;
-            ctl.append(n);
-        });
+            const lim = Object.assign({ bc: true }, BC_LIMITS.fit);
+            ctl.append(axisLine('px', 'bc-fit', lim, on ? slot.fit : 16, !on || disabled,
+                (v, live) => setComponent(st.ctx, 'fit', v, live), v => setComponent(st.ctx, 'fit', v)));
+        }, true);
         row('turn', (ctl, on) => {
-            const t = el('input', { type: 'text', id: 'bc-turn', class: 'bc-text', value: on ? turnText(slot.turn) : '0, 0, -45', 'aria-label': 'turn', placeholder: '0, 0, -45 ; 0, 90, 0' });
+            const single = on ? (Array.isArray(slot.turn) && slot.turn.length === 3 && !Array.isArray(slot.turn[0])) : true;
+            const t = el('input', { type: 'text', id: 'bc-turn', class: 'bc-text bc-turntext', value: on ? turnText(slot.turn) : '0, 0, -45', 'aria-label': 'turn', placeholder: '0, 0, -45 ; 0, 90, 0' });
             t.disabled = !on || disabled;
             t.addEventListener('change', () => {
                 const p = M.parseTurnText(t.value);
                 if (!p.ok || p.value === null) { st.actionMsg = { type: 'err', text: p.error || 'turn vide : décocher pour le retirer' }; refresh(); return; }
                 setComponent(st.ctx, 'turn', p.value);
+                buildEditor();
             });
             ctl.append(t);
-        });
-        // shift
+            const vals = on && single ? slot.turn : [0, 0, 0];
+            const lim = Object.assign({ bc: false }, BC_LIMITS.turn);
+            const current = () => [0, 1, 2].map(i => readNum($(`bc-turn-${i}`)));
+            const push = (v, live) => {
+                if (v.some(x => x === null)) return;
+                t.value = v.map(round4).join(', ');
+                setComponent(st.ctx, 'turn', v.map(round4), live);
+            };
+            [0, 1, 2].forEach(i => ctl.append(axisLine('XYZ'[i], `bc-turn-${i}`, lim, vals[i], !on || disabled || !single,
+                (x, live) => { const v = current(); v[i] = x; push(v, live); }, () => push(current(), false))));
+            if (on && !single) ctl.append(el('div', { class: 'bc-why', text: 'Liste de pivots : modifier le texte (un curseur par triplet unique seulement).' }));
+        }, true);
+        // shift (géométrie de toute l'entrée, en seizièmes de bloc)
         const sh = Array.isArray(c.entry.shift) ? c.entry.shift : null;
         const scb = el('input', { type: 'checkbox', id: 'bc-on-shift', 'aria-label': 'Imposer shift' });
         scb.checked = !!sh;
         scb.disabled = disabled;
-        const sIn = [0, 1, 2].map(i => numIn(sh ? sh[i] : 0, 0.25, `shift ${'XYZ'[i]}`, () => {
-            const v = sIn.map(readNum);
-            if (v.some(x => x === null)) { st.actionMsg = { type: 'err', text: 'shift : nombre attendu' }; refresh(); return; }
-            setShift(v);
-        }));
-        sIn.forEach((n, i) => { n.disabled = !sh || disabled; n.id = `bc-shift-${i}`; });
         scb.addEventListener('change', () => { setShift(scb.checked ? [0, 0, 0] : null); buildEditor(); });
-        shiftBox.append(el('div', { class: 'bc-row' + (sh ? ' on' : '') },
-            el('label', { class: 'bc-comp', for: 'bc-on-shift' }, scb, el('span', { text: 'shift (1/16 bloc)' })),
-            el('div', { class: 'bc-ctl' }, ...sIn)));
+        const lims = shiftLimits();
+        const curShift = () => [0, 1, 2].map(i => readNum($(`bc-shift-${i}`)));
+        const pushShift = (v, live) => {
+            if (v.some(x => x === null)) { st.actionMsg = { type: 'err', text: 'shift : nombre attendu' }; refresh(); return; }
+            setShift(v.map(round4), live);
+        };
+        const sLines = [0, 1, 2].map(i => axisLine('XYZ'[i], `bc-shift-${i}`, lims[i], sh ? sh[i] : 0, !sh || disabled,
+            (x, live) => { const v = curShift(); v[i] = x; pushShift(v, live); }, () => pushShift(curShift(), false)));
+        shiftBox.append(el('div', { class: 'bc-row wide' + (sh ? ' on' : '') },
+            el('label', { class: 'bc-comp', for: 'bc-on-shift' }, scb, el('span', { text: 'shift (1/16 bloc ; curseurs : éléments dans [-16 ; 32])' })),
+            el('div', { class: 'bc-ctl' }, ...sLines)));
     }
     function turnText(t) {
         if (!Array.isArray(t)) return '';
@@ -2149,7 +2645,7 @@ window.ItemModelUI = (() => {
         if (st.actionMsg) list.push(st.actionMsg);
         if (r && r.notLoaded) {
             const c = st.cur;
-            list.push({ type: 'warn', text: `Les fichiers de ${c.category}/${c.id} ne sont pas chargés : rien à vérifier tant qu'ils manquent. Chargez le dossier pack-src (ou pack/ du serveur) entier avec le bouton Dossier, ou le dossier ${c.category}/${c.id}/ avec pack.json.` });
+            list.push({ type: 'warn', text: `Les fichiers de ${c.category}/${c.id} ne sont pas chargés : rien à vérifier tant qu'ils manquent. Chargez tout pack-src ou le dossier pack du serveur (plugins/BeltariaContent/pack) avec le bouton Dossier, ou le dossier ${c.category}/${c.id}/ avec pack.json.` });
         } else if (r) {
             if (r.errors.length) list.push({ type: 'err', text: `Refusé par BeltariaContent (BC s'arrête au premier défaut) : ${r.errors.length} défaut(s).` });
             else if (r.ok) list.push({ type: 'ok', text: r.flat ? 'Accepté par BC : règle CIT texture=, placements vanilla.' : 'Accepté par BC : le pack s\'assemblerait avec ces valeurs.' });
@@ -2228,20 +2724,32 @@ window.ItemModelUI = (() => {
         if (st.ctx === 'gui' && st.res && st.res.merged && st.res.merged.details.gui && st.res.merged.details.gui.largest) {
             note += ` Taille réelle mesurée ci-dessus ; BC calcule « fit » sur la boîte sans les rotations d'éléments, mesurée avant la vue isométrique du client (ModelFit.java:311-313, 516-517) : l'écart est normal.`;
         }
-        if (!cd) note = st.cur ? 'Aucun aperçu : entrée refusée ou sans géométrie lisible.' : 'Chargez une entrée (dossier, fichiers ou .zip de pack-src).';
+        if (!cd) note = st.cur ? 'Aucun aperçu : entrée refusée ou sans géométrie lisible.' : 'Chargez une entrée : dossier, fichiers ou .zip de pack-src ou du dossier pack du serveur (plugins/BeltariaContent/pack).';
         $('bcViewNote').textContent = note + (cd ? COMMON_NOTE : '');
         measureGui();
+        updateGizmoUI();
     }
     function updateEditorValues() {
-        // valeurs affichées des composantes non imposées = valeurs finales (sans reconstruire le panneau)
+        // Champs et curseurs suivent l'entrée (poignée, annuler) sans reconstruire le panneau ; composantes
+        // non imposées = valeurs finales. Le champ ou curseur en cours d'utilisation n'est pas touché.
         const r = st.res;
-        if (!r || !r.merged || !st.cur) return;
-        const slot = st.cur.entry[st.ctx] || {};
+        if (!r || !st.cur) return;
+        if (structureKey() !== st.editorKey) { buildEditor(); return; }
+        if (!r.merged) return;
+        const slot = slotOf(st.ctx);
         const final = r.merged.display[st.ctx] || M.identityT();
+        const put = (id, v) => {
+            const n = $(id), s = $(id + '-r');
+            if (n && document.activeElement !== n && readNum(n) !== round4(v)) { n.value = String(round4(v)); if (n._lim) markLimit(n, n._lim); }
+            if (s && document.activeElement !== s) s.value = String(v);
+        };
         ['rotation', 'translation', 'scale'].forEach(comp => {
-            if (slot && Object.prototype.hasOwnProperty.call(slot, comp)) return;
-            [0, 1, 2].forEach(i => { const n = $(`bc-${comp}-${i}`); if (n && document.activeElement !== n) n.value = String(round4(final[comp][i])); });
+            const v = Array.isArray(slot[comp]) && slot[comp].length === 3 ? slot[comp] : final[comp];
+            [0, 1, 2].forEach(i => put(`bc-${comp}-${i}`, v[i]));
         });
+        if (typeof slot.fit === 'number') put('bc-fit', slot.fit);
+        if (Array.isArray(slot.turn) && slot.turn.length === 3 && !Array.isArray(slot.turn[0])) [0, 1, 2].forEach(i => put(`bc-turn-${i}`, slot.turn[i]));
+        if (Array.isArray(st.cur.entry.shift)) [0, 1, 2].forEach(i => put(`bc-shift-${i}`, st.cur.entry.shift[i]));
     }
 
     // ---------- Rendu three.js ----------
@@ -2252,12 +2760,6 @@ window.ItemModelUI = (() => {
         const l1 = new THREE.DirectionalLight(0xffffff, 0.6); l1.position.set(0.2, 1, -0.7);
         const l2 = new THREE.DirectionalLight(0xffffff, 0.6); l2.position.set(-0.2, 1, 0.7);
         scene.add(l1, l2);
-    }
-    function fixedMesh(geo, mat, m) {
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.fromArray(m);
-        return mesh;
     }
     function checker() {
         const c = document.createElement('canvas');
@@ -2289,9 +2791,7 @@ window.ItemModelUI = (() => {
         controls.dampingFactor = 0.1;
         const unit = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0.5, 0.5);
         const groups = { player: new THREE.Group(), stand: new THREE.Group(), block: new THREE.Group(), ground: new THREE.Group(), fixed: new THREE.Group() };
-        M.PLAYER_PARTS.forEach(p => groups.player.add(fixedMesh(unit, lambert(p.color), M.partBoxMatrix(M.playerMatrix(), p))));
-        // visière sur la face (-Z du modèle = devant le joueur) pour lire l'orientation
-        groups.player.add(fixedMesh(unit, lambert(0x2b1d12), M.partBoxMatrix(M.playerMatrix(), { point: [0, 0, 0], angles: [0, 0, 0], box: [-3, -5, -4.2, 6, 1.5, 0.3] })));
+        // groups.player : mannequin texturé (peau + armure), construit par buildMannequin selon la pose
         const wire = new THREE.LineBasicMaterial({ color: 0xffd27f });
         const unitEdges = new THREE.EdgesGeometry(unit);
         groups.standParts = M.STAND_PARTS;
@@ -2339,7 +2839,9 @@ window.ItemModelUI = (() => {
         R.measureBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: 0x29b6f6 }));
         guiScene.add(R.measureBox);
         new ResizeObserver(() => resize()).observe(view);
+        initGizmo();
         rebuildItem();
+        buildMannequin();
         resize();
     }
     function buildStand(y) {
@@ -2351,6 +2853,436 @@ window.ItemModelUI = (() => {
             l.matrix.fromArray(M.partBoxMatrix(M.standMatrix(y), p));
             g.add(l);
         });
+    }
+    // ---------- Mannequin : peau (ModelPlayer 64 × 64) + armure 1.8 (LayerBipedArmor) ----------
+    /** Peau par défaut, dessinée ici (proche de Steve, pas sa texture) : peau, cheveux, yeux, t-shirt, pantalon. */
+    function defaultSkin() {
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const g = c.getContext('2d');
+        const fill = (col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+        const part = (u, v, w, h, d, col) => fill(col, u, v, 2 * (d + w), d + h); // zone UV complète d'une ModelBox
+        part(0, 0, 8, 8, 8, '#b4845a');        // tête
+        fill('#3b2a1a', 8, 0, 8, 8);            // dessus : cheveux
+        fill('#3b2a1a', 0, 8, 32, 2);           // tour de tête : cheveux
+        fill('#3b2a1a', 24, 8, 8, 8);           // arrière : cheveux
+        fill('#ffffff', 9, 12, 2, 1); fill('#ffffff', 13, 12, 2, 1); // yeux
+        fill('#4a3a9a', 10, 12, 1, 1); fill('#4a3a9a', 13, 12, 1, 1);
+        fill('#6a4030', 11, 14, 2, 1);          // bouche
+        part(16, 16, 8, 12, 4, '#2f9e9e');      // torse : t-shirt
+        part(40, 16, 4, 12, 4, '#b4845a'); fill('#2f9e9e', 40, 16, 16, 8); // bras droit, manche
+        part(32, 48, 4, 12, 4, '#b4845a'); fill('#2f9e9e', 32, 48, 16, 8); // bras gauche
+        part(0, 16, 4, 12, 4, '#3b3a8f'); fill('#555555', 0, 29, 16, 3);   // jambe droite, chaussure
+        part(16, 48, 4, 12, 4, '#3b3a8f'); fill('#555555', 16, 61, 16, 3); // jambe gauche
+        return c;
+    }
+    /**
+     * Peau chargée -> canvas 64 × 64 comme le client 1.8 : une peau 64 × 32 reçoit ses membres gauches
+     * en miroir, puis zones opaques / transparentes (ImageBufferDownload.parseUserSkin, ImageBufferDownload.java:15-62).
+     */
+    function convertSkin(img) {
+        if (img.width !== 64 || (img.height !== 64 && img.height !== 32)) throw new Error(`peau ${img.width} × ${img.height} refusée : le client 1.8 attend 64 × 64 ou 64 × 32`);
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const g = c.getContext('2d');
+        g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, 64, 64);
+        const px = d.data;
+        const copy = (dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2) => { // Graphics.drawImage : dx1 > dx2 = miroir horizontal
+            const w = Math.abs(dx2 - dx1), h = Math.abs(dy2 - dy1);
+            const src = [];
+            for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const k = ((sy1 + j) * 64 + sx1 + i) * 4; src.push(px.slice(k, k + 4)); }
+            for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+                const x = dx1 < dx2 ? dx1 + i : dx1 - 1 - i, y = dy1 < dy2 ? dy1 + j : dy1 - 1 - j;
+                px.set(src[j * w + i], (y * 64 + x) * 4);
+            }
+        };
+        if (img.height === 32) [
+            [24, 48, 20, 52, 4, 16, 8, 20], [28, 48, 24, 52, 8, 16, 12, 20], [20, 52, 16, 64, 8, 20, 12, 32],
+            [24, 52, 20, 64, 4, 20, 8, 32], [28, 52, 24, 64, 0, 20, 4, 32], [32, 52, 28, 64, 12, 20, 16, 32],
+            [40, 48, 36, 52, 44, 16, 48, 20], [44, 48, 40, 52, 48, 16, 52, 20], [36, 52, 32, 64, 48, 20, 52, 32],
+            [40, 52, 36, 64, 44, 20, 48, 32], [44, 52, 40, 64, 40, 20, 44, 32], [48, 52, 44, 64, 52, 20, 56, 32]
+        ].forEach(a => copy(...a));
+        const area = (x1, y1, x2, y2, f) => { for (let y = y1; y < y2; y++) for (let x = x1; x < x2; x++) f((y * 64 + x) * 4); };
+        const opaque = (x1, y1, x2, y2) => area(x1, y1, x2, y2, k => { px[k + 3] = 255; });
+        const transparent = (x1, y1, x2, y2) => { // seulement si la zone n'a aucune transparence (ImageBufferDownload.java:77-90)
+            let any = false;
+            area(x1, y1, x2, y2, k => { if (px[k + 3] < 128) any = true; });
+            if (!any) area(x1, y1, x2, y2, k => { px[k + 3] = 0; });
+        };
+        opaque(0, 0, 32, 16); transparent(32, 0, 64, 32); opaque(0, 16, 64, 32);
+        transparent(0, 32, 16, 48); transparent(16, 32, 40, 48); transparent(40, 32, 56, 48);
+        transparent(0, 48, 16, 64); opaque(16, 48, 48, 64); transparent(48, 48, 64, 64);
+        g.putImageData(d, 0, 0);
+        return c;
+    }
+    async function imageFromData(data) {
+        let bytes = data;
+        if (typeof data === 'string') bytes = Uint8Array.from(atob(data.replace(/^data:[^,]*,/, '')), ch => ch.charCodeAt(0));
+        else if (data instanceof ArrayBuffer) bytes = new Uint8Array(data);
+        return decodeImage(bytes);
+    }
+    function canvasOf(img) {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        c.getContext('2d').drawImage(img, 0, 0);
+        return c;
+    }
+    function armorProblem(c, which) { // le client 1.8 lit les couches en UV 64 × 32 normalisées : toute taille 2:1 convient
+        return c.width !== c.height * 2 ? `${which} : ${c.width} × ${c.height}, rapport 2:1 attendu (64 × 32, 128 × 64, 512 × 256…), aperçu déformé` : '';
+    }
+    /** Charge les couches d'un set (nom de armor/<set>/ ou couches chargées à la main) ; '' = aucune. */
+    async function setArmor(name) {
+        st.armorMsg = null;
+        if (!name) { st.armorName = ''; st.armorTex = null; fillArmorSelect(); buildMannequin(); renderManInfo(); return getState(); }
+        const set = st.armorSets.get(name);
+        if (!set) throw new Error(`armure inconnue : ${name}`);
+        if (set.problem) { st.armorMsg = { type: 'err', text: `${name} : ${set.problem} ; BC refuserait ce set (PackBuild.java:766-785).` }; renderManInfo(); fillArmorSelect(); return getState(); }
+        let c1, c2;
+        if (set.custom) { c1 = set.custom.c1; c2 = set.custom.c2; }
+        else {
+            c1 = canvasOf(await decodeImage(await st.files.get(set.l1).read()));
+            c2 = set.l2 === set.l1 ? c1 : canvasOf(await decodeImage(await st.files.get(set.l2).read()));
+        }
+        st.armorName = name;
+        st.armorTex = { name, c1, c2 };
+        const warn = [armorProblem(c1, 'couche 1'), armorProblem(c2, 'couche 2')].filter(Boolean);
+        if (warn.length) st.armorMsg = { type: 'warn', text: warn.join(' ; ') };
+        fillArmorSelect();
+        buildMannequin();
+        renderManInfo();
+        return getState();
+    }
+    /** Couches chargées sans le pack : { layer1, layer2 } (octets, ArrayBuffer ou base64) ; une seule = les deux. */
+    async function setArmorLayers(o) {
+        const a = o.layer1 != null ? canvasOf(await imageFromData(o.layer1)) : null;
+        const b = o.layer2 != null ? canvasOf(await imageFromData(o.layer2)) : null;
+        if (!a && !b) throw new Error('aucune couche d\'armure fournie');
+        const name = o.name || 'couches chargées';
+        st.armorSets.set(name, { name, l1: null, l2: null, problem: '', custom: { c1: a || b, c2: b || a } });
+        return setArmor(name);
+    }
+    async function setSkin(data) {
+        st.skinMsg = null;
+        if (data == null) st.skin = null;
+        else {
+            try { st.skin = convertSkin(await imageFromData(data)); }
+            catch (e) { st.skinMsg = { type: 'err', text: e.message }; renderManInfo(); return getState(); }
+        }
+        const sel = $('bcSkin');
+        sel.querySelector('option[value="custom"]').disabled = !st.skin;
+        if (st.skin) st.customSkin = st.skin;
+        sel.value = st.skin ? 'custom' : 'default';
+        buildMannequin();
+        renderManInfo();
+        return getState();
+    }
+    function setPose(p) {
+        if (!M.POSES[p]) throw new Error(`pose inconnue : ${p}`);
+        st.pose = p;
+        $('bcPose').value = p;
+        buildMannequin();
+        renderManInfo();
+    }
+    function renderManInfo() {
+        const box = $('bcManInfo');
+        if (!box) return;
+        const parts = [];
+        parts.push(st.armorTex ? `Armure ${st.armorTex.name} : couche 1 ${st.armorTex.c1.width} × ${st.armorTex.c1.height} (casque, plastron, bottes, gonflée de 1 px), couche 2 ${st.armorTex.c2.width} × ${st.armorTex.c2.height} (jambières, 0,5 px).` : 'Sans armure.');
+        parts.push(st.ctx === 'thirdperson' ? 'En 3e personne, le bras droit garde la pose « tient un item » (le modèle en dépend).' : '');
+        box.textContent = parts.filter(Boolean).join(' ');
+        [st.armorMsg, st.skinMsg].filter(Boolean).forEach(m => box.append(el('div', { class: 'ime-msg' }, el('div', { class: m.type, text: m.text }))));
+    }
+    function skinTexture(canvas) {
+        const t = new THREE.CanvasTexture(canvas);
+        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+        t.flipY = false; // v vers le bas, comme TexturedQuad
+        return t;
+    }
+    function quadGeometry(quads) {
+        const pos = [], uv = [], nor = [];
+        quads.forEach(q => {
+            const [a, b, c] = q.pos;
+            const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+            let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+            const len = Math.hypot(n[0], n[1], n[2]) || 1;
+            n = n.map(x => x / len);
+            [0, 1, 2, 0, 2, 3].forEach(i => { pos.push(...q.pos[i]); uv.push(...q.uv[i]); nor.push(...n); });
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        return geo;
+    }
+    /** (Re)construit le mannequin : pose du contexte, peau, armure ; textures partagées par couche. */
+    function buildMannequin() {
+        if (!R) return;
+        const g = R.groups.player;
+        while (g.children.length) { const m = g.children[0]; g.remove(m); m.geometry.dispose(); }
+        (R.manMats || []).forEach(m => m.dispose());
+        (R.manTex || []).forEach(t => t.dispose());
+        R.manMats = []; R.manTex = [];
+        const head = st.ctx === 'head';
+        const maps = { skin: skinTexture(st.skin || defaultSkin()) };
+        R.manTex.push(maps.skin);
+        if (st.armorTex) {
+            maps.armor1 = skinTexture(st.armorTex.c1);
+            maps.armor2 = st.armorTex.c2 === st.armorTex.c1 ? maps.armor1 : skinTexture(st.armorTex.c2);
+            R.manTex.push(maps.armor1); if (maps.armor2 !== maps.armor1) R.manTex.push(maps.armor2);
+        }
+        const mats = {};
+        const matFor = (layer, isHead) => { // RendererLivingEntity : sans élimination des faces (:92), alpha 0,1
+            const k = layer + (isHead ? ':head' : '');
+            if (!mats[k]) {
+                const m = new THREE.MeshLambertMaterial({ map: maps[layer], alphaTest: 0.1, side: THREE.DoubleSide });
+                if (isHead && head) { m.transparent = true; m.opacity = 0.35; m.depthWrite = false; }
+                mats[k] = m; R.manMats.push(m);
+            }
+            return mats[k];
+        };
+        const boxes = M.mannequinBoxes(st.ctx === 'thirdperson' ? 'debout' : st.pose, st.ctx === 'thirdperson', !!st.armorTex);
+        const groups = new Map(); // une géométrie par (pièce, couche)
+        boxes.forEach(b => {
+            const isHead = b.part === 'head' || b.part === 'headwear';
+            const key = `${b.part}|${b.layer}`;
+            if (!groups.has(key)) groups.set(key, { b, isHead, quads: [] });
+            groups.get(key).quads.push(...M.modelBoxQuads(b.box, b.inflate, b.mirror, b.tex));
+        });
+        groups.forEach(({ b, isHead, quads }) => {
+            const mesh = new THREE.Mesh(quadGeometry(quads), matFor(b.layer, isHead));
+            mesh.matrixAutoUpdate = false;
+            mesh.matrix.fromArray(M.mannequinBoxMatrix(b));
+            mesh.frustumCulled = false;
+            mesh.renderOrder = isHead && head ? 2 : 0;
+            mesh.userData = { part: b.part, layer: b.layer };
+            g.add(mesh);
+        });
+    }
+    // ---------- Manipulation directe : poignée TransformControls (three.js r128) ----------
+    // La poignée tient un objet témoin (proxy) posé sur l'ancre du modèle ; chaque déplacement du témoin
+    // depuis le début du geste est converti en valeurs JSON par ItemModel.gizmoInverse (inverse exacte de
+    // la chaîne de rendu), jamais par incréments : aucune dérive. Tout se passe sur le thread principal.
+    const GZ = { tc: null, proxy: null, drag: null, scene: null, forceSnap: null };
+    const GIZMO_MODES = Object.freeze(['translate', 'rotate', 'scale', 'shift', 'off']);
+    function initGizmo() {
+        if (!THREE.TransformControls) { st.gizmoError = 'TransformControls non chargé : manipulation directe indisponible (curseurs seuls).'; return; }
+        GZ.proxy = new THREE.Object3D();
+        const tc = new THREE.TransformControls(R.camera, R.renderer.domElement);
+        tc.setSpace('local');
+        tc.setSize(1.2);
+        tc.addEventListener('dragging-changed', e => {
+            R.controls.enabled = !e.value && !!R.controlsAllowed; // l'orbite est coupée pendant le geste
+            if (e.value) gizmoStart(); else gizmoEnd();
+        });
+        tc.addEventListener('objectChange', () => { if (GZ.drag) gizmoMove(); });
+        GZ.tc = tc;
+    }
+    function effectiveSnap() { return GZ.forceSnap != null ? GZ.forceSnap : st.snap !== st.shiftHeld; } // Maj inverse l'aimant
+    function gizmoContext() {
+        const cd = currentDisplay();
+        const ctx = st.ctx;
+        return { ctx, t: cd ? JSON.parse(JSON.stringify(cd.display[ctx])) : M.identityT(), opts: { gui3d: cd ? cd.gui3d : true, support: M.headSupport(st.cur ? st.cur.category : 'items'), age: 0 } };
+    }
+    /** Raison pour laquelle la poignée est indisponible ('' = disponible) : exclusions de BC comprises. */
+    function gizmoBlocked(mode) {
+        const m = mode || st.gizmoMode;
+        if (m === 'off') return '';
+        if (!GZ.tc) return st.gizmoError || '';
+        const r = st.res;
+        if (!st.cur || !r) return '';
+        if (r.notLoaded) return '';
+        if (r.flat) return 'Texture plate : placements vanilla, rien à manipuler.';
+        if (!r.merged) return 'Entrée refusée à la lecture : rien à manipuler.';
+        if (st.ctx === 'firstperson') return 'Vue 1re personne fixe : régler avec les curseurs.';
+        if (!st.showItem) return 'Modèle masqué : rien à manipuler.';
+        const slot = slotOf(st.ctx);
+        const has = k => Object.prototype.hasOwnProperty.call(slot, k);
+        if (m === 'translate' && has('fit')) return '« fit » calcule la translation ici (PackBuild.java:1599) : décocher fit pour déplacer.';
+        if (m === 'scale' && has('fit')) return '« fit » calcule l\'échelle ici (PackBuild.java:1599) : décocher fit pour changer l\'échelle.';
+        if (m === 'rotate' && slot.front === true) return '« front » impose la rotation (PackBuild.java:1592) : décocher front pour tourner.';
+        if (m === 'shift' && has('fit')) return '« fit » recentre le modèle dans ce contexte : shift sans effet visible ici, le régler dans un autre contexte.';
+        return '';
+    }
+    /** Ancre de la poignée : centre du modèle (pivot du client), ou centre de la géométrie décalée pour shift. */
+    function anchorFor(mode, g) {
+        if (mode === 'shift' && st.res && st.res.merged) {
+            const b = st.res.merged.bounds;
+            return M.apply(M.sceneMatrix(g.ctx, g.t, g.opts), [0, 1, 2].map(i => (b.min[i] + b.max[i]) / 32));
+        }
+        return M.gizmoFrame(g.ctx, g.t, g.opts).anchor;
+    }
+    function basisQuaternion(b) {
+        const m = new THREE.Matrix4().set(b[0][0], b[0][1], b[0][2], 0, b[1][0], b[1][1], b[1][2], 0, b[2][0], b[2][1], b[2][2], 0, 0, 0, 0, 1);
+        return new THREE.Quaternion().setFromRotationMatrix(m);
+    }
+    function gizmoVisibleNow() {
+        return !!(GZ.tc && st.active && st.gizmoMode !== 'off' && st.res && st.res.merged && !gizmoBlocked());
+    }
+    /** Pose la poignée sur le modèle (hors geste) ; la place dans la scène et la caméra du contexte. */
+    function placeGizmo() {
+        if (!GZ.tc || GZ.drag) return;
+        const tc = GZ.tc;
+        const scene = st.ctx === 'gui' ? R.guiScene : R.scene;
+        if (GZ.scene !== scene) {
+            if (GZ.scene) { GZ.scene.remove(tc); GZ.scene.remove(GZ.proxy); }
+            scene.add(GZ.proxy); scene.add(tc);
+            tc.camera = st.ctx === 'gui' ? R.guiCam : R.camera;
+            GZ.scene = scene;
+        }
+        if (!gizmoVisibleNow()) { if (tc.object) tc.detach(); return; }
+        const g = gizmoContext();
+        const fr = M.gizmoFrame(g.ctx, g.t, g.opts);
+        const a = anchorFor(st.gizmoMode, g);
+        GZ.proxy.position.set(a[0], a[1], a[2]);
+        GZ.proxy.quaternion.copy(basisQuaternion(st.gizmoMode === 'translate' ? fr.item : fr.model));
+        GZ.proxy.scale.set(1, 1, 1);
+        GZ.proxy.updateMatrixWorld(true);
+        const mode = st.gizmoMode === 'shift' ? 'translate' : st.gizmoMode;
+        if (tc.mode !== mode) tc.setMode(mode);
+        tc.setRotationSnap(effectiveSnap() ? SNAP.rotationDeg * Math.PI / 180 : null);
+        if (tc.object !== GZ.proxy) tc.attach(GZ.proxy);
+    }
+    function gizmoStart() {
+        const g = gizmoContext();
+        const slots = st.res && st.res.entry ? st.res.entry.fits.slots : {};
+        GZ.drag = Object.assign(g, {
+            mode: st.gizmoMode,
+            turns: slots[g.ctx] ? slots[g.ctx].turns : [],
+            shift: Array.isArray(st.cur.entry.shift) ? st.cur.entry.shift.slice() : [0, 0, 0],
+            pos: GZ.proxy.position.clone(), quat: GZ.proxy.quaternion.clone()
+        });
+    }
+    function snapChanged(v, start, step, min) {
+        return v.map((x, i) => {
+            if (Math.abs(x - start[i]) < 1e-7) return start[i];
+            const s = Math.round(x / step) * step;
+            return min != null ? Math.max(min, s) : s;
+        });
+    }
+    /** Applique une manipulation (depuis le début du geste) : valeurs JSON arrondies à 4 décimales. */
+    function applyGizmo(d, op, live) {
+        const res = M.gizmoInverse(d.ctx, d.t, d.opts, op, d.turns);
+        const snap = effectiveSnap();
+        let out;
+        if (d.mode === 'shift') {
+            let v = d.shift.map((s, i) => s + res.shift[i]);
+            if (snap) v = snapChanged(v, d.shift, SNAP.shift);
+            out = setShift(v.map(round4), live);
+        } else if (d.mode === 'translate') {
+            let v = res.translation;
+            if (snap) v = snapChanged(v, d.t.translation, SNAP.translation);
+            out = setComponent(d.ctx, 'translation', v.map(round4), live);
+        } else if (d.mode === 'rotate') {
+            out = setComponent(d.ctx, 'rotation', (d.turns && d.turns.length ? res.contextRotation : res.rotation).map(round4), live);
+        } else {
+            let v = res.scale;
+            if (snap) v = snapChanged(v, d.t.scale, SNAP.scale, SNAP.scale);
+            out = setComponent(d.ctx, 'scale', v.map(round4), live);
+        }
+        // la poignée suit le modèle tel que le client le dessine (aimant, bornes de l'aperçu)
+        const a = anchorFor(d.mode, gizmoContext());
+        GZ.proxy.position.set(a[0], a[1], a[2]);
+        return out;
+    }
+    function gizmoMove() {
+        const d = GZ.drag;
+        if (!d) return null;
+        let op;
+        if (d.mode === 'translate' || d.mode === 'shift') {
+            const w = GZ.proxy.position.clone().sub(d.pos);
+            op = { mode: d.mode, world: [w.x, w.y, w.z] };
+        } else if (d.mode === 'rotate') {
+            const q = GZ.proxy.quaternion.clone().multiply(d.quat.clone().invert()); // rotation du geste, repère de la scène
+            const e = new THREE.Matrix4().makeRotationFromQuaternion(q).elements;
+            op = { mode: 'rotate', matrix: [[e[0], e[4], e[8]], [e[1], e[5], e[9]], [e[2], e[6], e[10]]] };
+        } else {
+            let f = [GZ.proxy.scale.x, GZ.proxy.scale.y, GZ.proxy.scale.z];
+            if (st.uniform) { const k = [0, 1, 2].reduce((a, i) => Math.abs(f[i] - 1) > Math.abs(f[a] - 1) ? i : a, 0); f = [f[k], f[k], f[k]]; }
+            if (f.some(x => !(x > 0))) return null; // échelle retournée : BC la refuserait, le geste l'ignore
+            op = { mode: 'scale', factor: f };
+        }
+        return applyGizmo(d, op, true);
+    }
+    function gizmoEnd() {
+        if (!GZ.drag) return;
+        GZ.drag = null;
+        commit();
+        GZ.proxy.scale.set(1, 1, 1);
+        refresh();
+    }
+    function setGizmoMode(mode) {
+        if (!GIZMO_MODES.includes(mode)) throw new Error(`mode de poignée inconnu : ${mode}`);
+        st.gizmoMode = mode;
+        updateGizmoUI();
+        if (R) placeGizmo();
+    }
+    function updateGizmoUI() {
+        document.querySelectorAll('#bcTools button[data-mode]').forEach(b => {
+            b.setAttribute('aria-pressed', String(b.dataset.mode === st.gizmoMode));
+            const why = gizmoBlocked(b.dataset.mode);
+            b.disabled = !!why;
+            b.title = (b.title.split(' — ')[0]) + (why ? ` — ${why}` : '');
+        });
+        const why = gizmoBlocked();
+        $('bcGizmoWhy').textContent = why;
+        $('bcSnap').checked = st.snap;
+        updateHistoryButtons();
+    }
+    /**
+     * Geste simulé (interface de test et d'automatisation), par le même chemin que la poignée :
+     * translate / shift : déplacement [dx, dy, dz] dans la scène ; rotate : { axis: [x, y, z] (scène)
+     * ou 'X' | 'Y' | 'Z' (axes de la poignée), angle: degrés } ; scale : facteurs [fx, fy, fz] (axes du modèle).
+     * opts.snap : force l'aimant (true / false) pour ce geste.
+     */
+    function gizmoDrag(mode, delta, opts) {
+        if (!R) throw new Error('aperçu inactif : setActive(true) d\'abord');
+        setGizmoMode(mode);
+        const why = gizmoBlocked();
+        if (why) { st.actionMsg = { type: 'err', text: why }; refresh(); return { ok: false, error: why }; }
+        if (!GZ.tc) return { ok: false, error: st.gizmoError };
+        GZ.forceSnap = opts && typeof opts.snap === 'boolean' ? opts.snap : null;
+        try {
+            placeGizmo();
+            gizmoStart();
+            if (mode === 'translate' || mode === 'shift') GZ.proxy.position.add(new THREE.Vector3(delta[0], delta[1], delta[2]));
+            else if (mode === 'rotate') {
+                let axis;
+                if (typeof delta.axis === 'string') axis = new THREE.Vector3(...({ X: [1, 0, 0], Y: [0, 1, 0], Z: [0, 0, 1] })[delta.axis]).applyQuaternion(GZ.proxy.quaternion);
+                else axis = new THREE.Vector3(delta.axis[0], delta.axis[1], delta.axis[2]).normalize();
+                let ang = delta.angle;
+                if (effectiveSnap()) ang = Math.round(ang / SNAP.rotationDeg) * SNAP.rotationDeg;
+                GZ.proxy.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, ang * Math.PI / 180));
+            } else if (mode === 'scale') GZ.proxy.scale.set(delta[0], delta[1], delta[2]);
+            const r = gizmoMove();
+            gizmoEnd();
+            return r ? Object.assign({ ok: r.ok }, r.ok ? {} : { error: r.error }) : { ok: false, error: 'geste ignoré' };
+        } finally { GZ.forceSnap = null; }
+    }
+    /** Point d'une poignée à l'écran (coordonnées client) : cherche, le long de l'axe projeté, un point que
+     *  TransformControls reconnaît pour cet axe (mêmes objets de sélection que la souris). */
+    function gizmoHandlePoint(axis) {
+        if (!GZ.tc || !GZ.tc.object) return null;
+        const tc = GZ.tc, cam = tc.camera, canvas = R.renderer.domElement;
+        tc.updateMatrixWorld();
+        const rect = canvas.getBoundingClientRect();
+        const ray = new THREE.Raycaster();
+        const dir = new THREE.Vector3(...({ X: [1, 0, 0], Y: [0, 1, 0], Z: [0, 0, 1] })[axis] || [1, 0, 0]).applyQuaternion(GZ.proxy.quaternion);
+        const o = GZ.proxy.position.clone();
+        const len = cam.isOrthographicCamera ? (cam.top - cam.bottom) / cam.zoom * tc.size / 7 : o.distanceTo(cam.position) * Math.min(1.9 * Math.tan(Math.PI * cam.fov / 360) / cam.zoom, 7) * tc.size / 7;
+        const picker = tc._gizmo.picker[tc.mode];
+        for (let i = 1; i <= 120; i++) { // l'axe peut être retourné vers la caméra (TransformControls : AXIS_FLIP_TRESHOLD)
+            const k = i % 2 ? (i + 1) / 2 : -i / 2;
+            const p = o.clone().addScaledVector(dir, len * k / 60).project(cam);
+            ray.setFromCamera({ x: p.x, y: p.y }, cam);
+            const hit = ray.intersectObject(picker, true).find(h => h.object.visible); // comme TransformControls : la première poignée visible
+            if (hit && hit.object.name === axis) {
+                const c = o.clone().project(cam);
+                return { x: rect.left + (p.x + 1) / 2 * rect.width, y: rect.top + (1 - p.y) / 2 * rect.height,
+                    ox: rect.left + (c.x + 1) / 2 * rect.width, oy: rect.top + (1 - c.y) / 2 * rect.height };
+            }
+        }
+        return null;
     }
     function textureFor(ref, model) {
         // '#0' -> textures['0'] = './texture[_n]' -> fichier ; sinon damier violet/noir (comme le client)
@@ -2485,7 +3417,7 @@ window.ItemModelUI = (() => {
         if (!R) return;
         const c = st.ctx, fp = c === 'firstperson';
         const k = camKey();
-        R.controls.enabled = !!CAM[k];
+        R.controls.enabled = R.controlsAllowed = !!CAM[k];
         if (fp) {
             R.camera.fov = 70;
             R.camera.position.set(0, 0, 0);
@@ -2500,11 +3432,10 @@ window.ItemModelUI = (() => {
         }
         R.camera.updateProjectionMatrix();
         const support = M.headSupport(st.cur ? st.cur.category : 'items');
-        R.groups.player.visible = c === 'thirdperson' || (c === 'head' && (support === 'rider' || support === 'player'));
+        R.groups.player.visible = st.showPlayer && (c === 'thirdperson' || (c === 'head' && (support === 'rider' || support === 'player')));
         R.groups.stand.visible = c === 'head' && support !== 'player';
         if (R.groups.stand.visible) buildStand(support === 'rider' ? M.RIDER_OFFSET : support === 'block' ? 0 : 0.5);
-        const headMat = R.groups.player.children[0].material; // tête translucide : l'item y entre souvent
-        headMat.transparent = c === 'head'; headMat.opacity = c === 'head' ? 0.35 : 1; headMat.depthWrite = c !== 'head';
+        buildMannequin(); // pose du contexte ; tête translucide en vue Tête (l'item y entre souvent)
         R.groups.block.visible = c === 'head' && support === 'block';
         R.groups.ground.visible = c === 'ground';
         R.groups.fixed.visible = c === 'fixed';
@@ -2512,12 +3443,16 @@ window.ItemModelUI = (() => {
         $('bcView').style.background = bg[c] || 'linear-gradient(to bottom, #6f9cf0, #b8d0ff)';
         $('bcCrosshair').style.display = fp ? 'block' : 'none';
         resize();
+        placeGizmo();
+        updateGizmoUI();
+        renderManInfo();
     }
 
     function itemMatrix(ctx, time) {
         const cd = currentDisplay();
         if (!cd) return null;
-        const age = ctx === 'ground' && $('bcAnimate').checked ? time / 50 : 0; // 20 ticks par seconde
+        // 20 ticks par seconde ; figé pendant la manipulation (la poignée suit un modèle immobile)
+        const age = ctx === 'ground' && $('bcAnimate').checked && !gizmoVisibleNow() ? time / 50 : 0;
         return M.contextMatrix(ctx, cd.display[ctx], { gui3d: cd.gui3d, support: M.headSupport(st.cur ? st.cur.category : 'items'), age });
     }
     function guiMatrix() { // repère GUI (Y vers le bas) -> scène three.js (Y vers le haut)
@@ -2555,11 +3490,12 @@ window.ItemModelUI = (() => {
         if (!R || !R.w) { resize(); if (!R || !R.w) return; }
         const rd = R.renderer;
         const m = itemMatrix(st.ctx, time);
-        R.item.visible = !!m && st.ctx !== 'gui';
+        R.item.visible = !!m && st.ctx !== 'gui' && st.showItem;
         if (m) { R.item.matrix.fromArray(m); R.item.matrixWorldNeedsUpdate = true; }
         lastMatrix = m;
         const g = guiMatrix();
-        R.guiItem.visible = !!g;
+        R.guiItem.visible = !!g && st.showItem;
+        placeGizmo();
         if (g) { R.guiItem.matrix.fromArray(g); R.guiItem.matrixWorldNeedsUpdate = true; }
         rd.setScissorTest(false);
         rd.setClearColor(0x000000, 0);
@@ -2589,15 +3525,19 @@ window.ItemModelUI = (() => {
     function renderSlot16() {
         st.guiDirty = false;
         const rd = R.renderer;
-        const fitVis = R.fitBox.visible, mVis = R.measureBox.visible;
+        const fitVis = R.fitBox.visible, mVis = R.measureBox.visible, tcVis = GZ.tc ? GZ.tc.visible : false;
         R.fitBox.visible = false; R.measureBox.visible = false;
+        if (GZ.tc) GZ.tc.visible = false; // la poignée n'existe pas en jeu
+        const giVis = R.guiItem.visible;
+        R.guiItem.visible = !!guiMatrix(); // la vignette montre le rendu réel, même modèle masqué
         rd.setRenderTarget(R.slotTarget);
         rd.setClearColor(0x8b8b8b, 1);
         rd.clear();
         rd.render(R.guiScene, R.slotCam);
         rd.readRenderTargetPixels(R.slotTarget, 0, 0, 16, 16, R.slotPixels);
         rd.setRenderTarget(null);
-        R.fitBox.visible = fitVis; R.measureBox.visible = mVis;
+        R.fitBox.visible = fitVis; R.measureBox.visible = mVis; R.guiItem.visible = giVis;
+        if (GZ.tc) GZ.tc.visible = tcVis;
         const cv = $('bcSlot16');
         const g = cv.getContext('2d');
         const img = g.createImageData(16, 16);
@@ -2641,7 +3581,52 @@ window.ItemModelUI = (() => {
             setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         });
         $('bcAnimate').addEventListener('change', () => {});
+        // Historique
+        ['bcUndo', 'bcUndo3d'].forEach(id => $(id).addEventListener('click', () => undo()));
+        ['bcRedo', 'bcRedo3d'].forEach(id => $(id).addEventListener('click', () => redo()));
+        // Poignée
+        document.querySelectorAll('#bcTools button[data-mode]').forEach(b => b.addEventListener('click', () => setGizmoMode(b.dataset.mode)));
+        $('bcSnap').addEventListener('change', e => { st.snap = e.target.checked; if (R) placeGizmo(); });
+        document.addEventListener('keydown', e => {
+            if (!st.active) return;
+            if (e.key === 'Shift' && !st.shiftHeld) { st.shiftHeld = true; if (R) placeGizmo(); return; }
+            const tg = e.target;
+            const typing = tg && (tg.isContentEditable || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT'
+                || (tg.tagName === 'INPUT' && !['checkbox', 'range', 'button', 'radio', 'file'].includes(tg.type)));
+            if (typing) return; // les champs gardent leurs raccourcis natifs (annuler la saisie, lettres)
+            const k = e.key.toLowerCase();
+            if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+                if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+                else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+                return;
+            }
+            if (e.altKey || e.metaKey) return;
+            const mode = { g: 'translate', r: 'rotate', s: 'scale' }[k];
+            if (mode) { e.preventDefault(); setGizmoMode(mode); }
+        });
+        document.addEventListener('keyup', e => { if (e.key === 'Shift' && st.shiftHeld) { st.shiftHeld = false; if (R) placeGizmo(); } });
+        window.addEventListener('blur', () => { if (st.shiftHeld) { st.shiftHeld = false; if (R) placeGizmo(); } });
+        // Mannequin
+        $('bcShowPlayer').addEventListener('change', e => setShowPlayer(e.target.checked));
+        $('bcShowItem').addEventListener('change', e => setShowItem(e.target.checked));
+        $('bcPose').addEventListener('change', e => setPose(e.target.value));
+        $('bcSkin').addEventListener('change', e => { st.skin = e.target.value === 'custom' && st.customSkin ? st.customSkin : null; buildMannequin(); renderManInfo(); });
+        $('bcSkinFile').addEventListener('change', e => {
+            const f = e.target.files[0];
+            if (f) f.arrayBuffer().then(b => setSkin(new Uint8Array(b))).catch(report).finally(() => { e.target.value = ''; });
+        });
+        $('bcArmor').addEventListener('change', e => setArmor(e.target.value).catch(report));
+        $('bcArmorFiles').addEventListener('change', e => {
+            const files = [...e.target.files];
+            const read = f => f.arrayBuffer().then(b => new Uint8Array(b));
+            const two = files.find(f => /layer_2/i.test(f.name)), one = files.find(f => /layer_1/i.test(f.name)) || files.find(f => f !== two);
+            Promise.all([one ? read(one) : null, two ? read(two) : null])
+                .then(([a, b]) => setArmorLayers({ layer1: a, layer2: b, name: 'couches chargées' }))
+                .catch(report).finally(() => { e.target.value = ''; });
+        });
     }
+    function setShowPlayer(on) { st.showPlayer = !!on; $('bcShowPlayer').checked = st.showPlayer; if (R) placeCamera(); }
+    function setShowItem(on) { st.showItem = !!on; $('bcShowItem').checked = st.showItem; updateGizmoUI(); if (R) placeGizmo(); }
     function fillIds() {
         const dl = $('bcIds');
         dl.textContent = '';
@@ -2683,6 +3668,7 @@ window.ItemModelUI = (() => {
         try {
             await ingest(items);
             await index();
+            if (st.armorName) await setArmor(st.armorName); // même set, fichiers relus
         } catch (e) { report(e); }
         fillIds();
         const withFiles = st.entries.filter(e => e.dir != null);
@@ -2723,19 +3709,80 @@ window.ItemModelUI = (() => {
             elements: r && r.merged ? JSON.parse(JSON.stringify(r.merged.elements)) : null,
             overrides: r ? r.overrides.slice() : [], overridden: r ? JSON.parse(JSON.stringify(r.overridden || [])) : [],
             textures: Object.keys(st.textures), loadMessages: st.loadMsgs.slice(), actionMessage: st.actionMsg,
-            itemMatrix: lastMatrix ? lastMatrix.slice() : null, guiBox: st.lastGuiBox || null
+            itemMatrix: lastMatrix ? lastMatrix.slice() : null, guiBox: st.lastGuiBox || null,
+            history: { undo: st.hist.undo.length, redo: st.hist.redo.length },
+            gizmo: {
+                mode: st.gizmoMode, snap: st.snap, blocked: gizmoBlocked(), attached: !!(GZ.tc && GZ.tc.object),
+                anchor: GZ.proxy ? GZ.proxy.position.toArray() : null
+            },
+            mannequin: {
+                showPlayer: st.showPlayer, showItem: st.showItem, pose: st.pose, skin: st.skin ? 'custom' : 'default',
+                armor: st.armorTex ? { name: st.armorTex.name, layer1: [st.armorTex.c1.width, st.armorTex.c1.height], layer2: [st.armorTex.c2.width, st.armorTex.c2.height] } : null,
+                armorSets: [...st.armorSets.values()].map(s => ({ name: s.name, ok: !s.problem, problem: s.problem, custom: !!s.custom })),
+                meshes: R ? R.groups.player.children.map(m => m.userData.part + ':' + m.userData.layer) : [],
+                visible: R ? R.groups.player.visible : false,
+                message: st.armorMsg || st.skinMsg
+            }
         };
+    }
+    /** Simule le glissé d'un curseur (input pendant le geste, change au relâchement) ; coche la composante si besoin. */
+    function setSlider(ctx, comp, axis, value) {
+        if (ctx && ctx !== st.ctx) setContext(ctx);
+        const id = comp === 'fit' ? 'bc-fit' : `bc-${comp}-${axis}`;
+        const on = comp === 'shift' ? $('bc-on-shift') : $(`bc-on-${comp}`);
+        if (on && !on.checked) {
+            if (on.disabled) return { ok: false, error: `${comp} indisponible : ${(on.closest('.bc-row') || {}).title || 'exclu'}` };
+            on.checked = true;
+            on.dispatchEvent(new Event('change'));
+        }
+        const s = $(id + '-r');
+        if (!s) return { ok: false, error: `curseur ${id} introuvable` };
+        if (s.disabled) return { ok: false, error: `curseur ${id} désactivé` };
+        s.value = String(value);
+        s.dispatchEvent(new Event('input'));
+        s.dispatchEvent(new Event('change'));
+        return { ok: !st.actionMsg || st.actionMsg.type !== 'err', value: Number(s.value), error: st.actionMsg && st.actionMsg.type === 'err' ? st.actionMsg.text : undefined };
+    }
+    /** Point du mannequin (px dans le repère d'une pièce ModelBiped) -> scène, pose du contexte courant. */
+    function playerPoint(part, p) {
+        const b = M.mannequinBoxes(st.ctx === 'thirdperson' ? 'debout' : st.pose, st.ctx === 'thirdperson', false).find(x => x.part === part);
+        if (!b) throw new Error(`pièce inconnue : ${part}`);
+        return M.apply(M.mannequinBoxMatrix(b), p);
+    }
+    /** Couleur rendue (RGBA) au point de la scène donné, lue dans la toile WebGL ; null hors de la vue. */
+    function samplePixel(world) {
+        if (!R) return null;
+        const cam = st.ctx === 'gui' ? R.guiCam : R.camera;
+        cam.updateMatrixWorld();
+        const p = new THREE.Vector3(world[0], world[1], world[2]).project(cam);
+        if (Math.abs(p.x) > 1 || Math.abs(p.y) > 1) return null;
+        const cv = R.renderer.domElement;
+        const x = Math.floor((p.x + 1) / 2 * cv.width), y = Math.floor((1 - p.y) / 2 * cv.height);
+        const c = document.createElement('canvas');
+        c.width = c.height = 1;
+        const g = c.getContext('2d');
+        g.drawImage(cv, x, y, 1, 1, 0, 0, 1, 1);
+        return Array.from(g.getImageData(0, 0, 1, 1).data);
     }
 
     buildPanel();
     fillEntrySelect();
+    fillArmorSelect();
     refresh();
+    renderManInfo();
 
     return {
         get active() { return st.active; },
-        setActive, setContext, loadFiles, selectEntry, setComponent, setShift, resetEntry,
+        setActive, setContext, loadFiles, selectEntry, setComponent: (ctx, comp, value) => setComponent(ctx, comp, value),
+        setShift: value => setShift(value), resetEntry,
         exportSnippet, exportPack, getState,
-        slotPixels() { return R ? Array.from(R.slotPixels) : null; }
+        slotPixels() { return R ? Array.from(R.slotPixels) : null; },
+        // curseurs, poignée, historique
+        setSlider, gizmoDrag, setGizmoMode, gizmoHandlePoint, setSnap(on) { st.snap = !!on; updateGizmoUI(); if (R) placeGizmo(); },
+        undo, redo,
+        // mannequin
+        setArmor, setArmorLayers, setSkin, setPose, setShowPlayer, setShowItem, playerPoint, samplePixel,
+        cameraPosition() { return R ? R.camera.position.toArray() : null; }
     };
 })();
 </script>
