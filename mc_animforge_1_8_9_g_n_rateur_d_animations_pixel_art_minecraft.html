@@ -428,7 +428,7 @@
         <!-- ================================================================= -->
         <!-- COLONNE CENTRALE (4 col) : APERÇU ANIMÉ LIVE & SLOT 1.8.9         -->
         <!-- ================================================================= -->
-        <section class="lg:col-span-4 flex flex-col gap-3.5 sticky top-16">
+        <section class="lg:col-span-4 flex flex-col gap-3.5 lg:sticky lg:top-16">
             <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
                     <div>
@@ -540,8 +540,8 @@
                         </label>
                     </div>
 
-                    <div class="checkerboard rounded-xl border border-slate-800 h-[360px] overflow-y-auto overflow-x-auto p-3 flex justify-center items-start">
-                        <canvas id="canvasStripPreview" class="pixelated shadow-xl border border-white/10"></canvas>
+                    <div class="checkerboard rounded-xl border border-slate-800 h-[360px] overflow-y-auto overflow-x-auto p-3 flex items-start">
+                        <canvas id="canvasStripPreview" class="pixelated mx-auto shadow-xl border border-white/10"></canvas>
                     </div>
                 </div>
 
@@ -1173,7 +1173,8 @@
             }
 
             // Taille d'affichage CSS dans le cadre central (conserve canvas.width = w intact)
-            const fitScale = Math.max(1, Math.min(Math.floor(280 / w), Math.floor(280 / h)));
+            const fitRatio = Math.min(280 / w, 280 / h);
+            const fitScale = fitRatio >= 1 ? Math.floor(fitRatio) : fitRatio; // Réduit les images > 280 px au lieu de les rogner
             liveCanvas.style.width = `${w * fitScale}px`;
             liveCanvas.style.height = `${h * fitScale}px`;
 
@@ -1297,6 +1298,10 @@
                 img.onload = () => {
                     const w = img.naturalWidth || img.width;
                     const h = img.naturalHeight || img.height;
+                    if (!w || !h) {
+                        showToast('Image sans dimensions exploitables (0 px).', 'warn');
+                        return;
+                    }
 
                     const off = document.createElement('canvas');
                     off.width = w;
@@ -1313,9 +1318,15 @@
                     generateAllFrames();
 
                     showToast(`Image importée en ${w}×${h} px ! Spritesheet : ${w}×${h * state.frameCount} px.`, 'success');
+                    if (w !== h) {
+                        // Minecraft 1.8.9 découpe une texture animée en frames carrées de W×W
+                        showToast(`Attention : image non carrée (${w}×${h}). Minecraft 1.8.9 découpe les frames en ${w}×${w} px, l'animation sera incorrecte en jeu.`, 'warn');
+                    }
                 };
+                img.onerror = () => showToast('Impossible de lire cette image (fichier corrompu ou format non supporté).', 'warn');
                 img.src = ev.target.result;
             };
+            reader.onerror = () => showToast('Impossible de lire ce fichier.', 'warn');
             reader.readAsDataURL(file);
         }
 
@@ -1588,7 +1599,8 @@
                 const intervalMs = state.frameTimeTicks * 50; // 1 tick MC = 50 ms
                 if (timestamp - state.lastTickTimestamp >= intervalMs) {
                     state.currentFrameIndex = (state.currentFrameIndex + 1) % state.frames.length;
-                    state.lastTickTimestamp = timestamp;
+                    // Avance d'un intervalle exact (sans dérive), sauf après une longue pause
+                    state.lastTickTimestamp = (timestamp - state.lastTickTimestamp >= intervalMs * 2) ? timestamp : state.lastTickTimestamp + intervalMs;
                     renderCurrentLiveFrame();
                 }
             }
@@ -1922,8 +1934,14 @@
                 const w = state.exportStripCanvas.width;
                 const h = state.exportStripCanvas.height;
                 const link = document.createElement('a');
+                const dataUrl = state.exportStripCanvas.toDataURL('image/png');
+                if (dataUrl === 'data:,') {
+                    // Canvas au-delà des limites du navigateur : toDataURL renvoie une image vide
+                    showToast(`Spritesheet trop grand pour le navigateur (${w}×${h} px) : réduisez le nombre de frames ou la taille de l'image.`, 'warn');
+                    return;
+                }
                 link.download = `${state.itemName}.png`;
-                link.href = state.exportStripCanvas.toDataURL('image/png');
+                link.href = dataUrl;
                 link.click();
                 showToast(`Spritesheet exporté : ${state.itemName}.png (${w}×${h} px) !`, 'success');
             });
