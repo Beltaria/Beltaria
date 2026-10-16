@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualiseur d'Items 3D & Animations (Correction FPS)</title>
     <style>
         body { 
@@ -60,6 +61,13 @@
             mix-blend-mode: difference; z-index: 5;
         }
         .highlight-check { background: rgba(230, 126, 34, 0.15); padding: 10px; border-radius: 5px; border: 1px solid #e67e22; }
+
+        /* Téléphone : panneau au-dessus, vue 3D en dessous */
+        @media (max-width: 700px) {
+            body { flex-direction: column; }
+            #sidebar { width: auto; max-height: 45vh; padding: 15px; gap: 12px; border-right: none; border-bottom: 2px solid #e67e22; }
+            #viewer { min-height: 0; }
+        }
     </style>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -196,6 +204,8 @@
     async function processFiles(files) {
         document.getElementById('loading').style.display = 'block';
         
+        // Libère la mémoire GPU de l'item précédent (géométries + matériaux partagés)
+        itemGroup.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
         scene.remove(itemGroup);
         itemGroup = new THREE.Group();
         scene.add(itemGroup);
@@ -218,8 +228,11 @@
 
             baseItemSize = img.width; // Sauvegarde la résolution (16, 32, etc.)
 
+            // Une seule frame : on garde toute la hauteur (image non carrée)
+            const frameHeight = frameCount > 1 ? img.width : img.height;
             for (let i = 0; i < frameCount; i++) {
-                const fGroup = buildVoxelFrame(img, 0, i * img.width, img.width, img.width, currentThickness);
+                // Épaisseur 1 : l'épaisseur réelle est appliquée par itemGroup.scale.z
+                const fGroup = buildVoxelFrame(img, 0, i * frameHeight, img.width, frameHeight, 1);
                 fGroup.visible = (i === 0);
                 frames.push(fGroup);
                 itemGroup.add(fGroup);
@@ -231,7 +244,7 @@
 
             for (let i = 0; i < sortedFiles.length; i++) {
                 const img = await loadImage(sortedFiles[i]);
-                const fGroup = buildVoxelFrame(img, 0, 0, img.width, img.height, currentThickness);
+                const fGroup = buildVoxelFrame(img, 0, 0, img.width, img.height, 1);
                 fGroup.visible = (i === 0);
                 frames.push(fGroup);
                 itemGroup.add(fGroup);
@@ -249,10 +262,11 @@
     }
 
     function loadImage(file) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const url = URL.createObjectURL(file);
             const img = new Image();
-            img.onload = () => resolve(img);
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`Image illisible : ${file.name}`)); };
             img.src = url;
         });
     }
@@ -304,17 +318,23 @@
     }
 
     document.getElementById('itemUpload').addEventListener('change', (e) => {
-        if (e.target.files.length > 0) processFiles(e.target.files);
+        if (e.target.files.length > 0) processFiles(e.target.files).catch(err => {
+            console.error(err);
+            document.getElementById('statusText').innerText = err.message;
+            document.getElementById('loading').style.display = 'none';
+        });
+        e.target.value = ''; // Permet de recharger le même fichier après l'avoir modifié
     });
 
     function resetCameraToItem() {
         if(frames.length > 0) {
-            const box = new THREE.Box3().setFromObject(itemGroup);
-            const size = box.getSize(new THREE.Vector3()).length();
-            camera.position.set(0, 0, size * 1.2);
+            // Transformation réinitialisée AVANT la mesure (sinon l'échelle du mode FPS fausse la distance)
             itemGroup.position.set(0, 0, 0);
             itemGroup.rotation.set(0, 0, 0);
             itemGroup.scale.set(1, 1, currentThickness);
+            const box = new THREE.Box3().setFromObject(itemGroup);
+            const size = box.getSize(new THREE.Vector3()).length();
+            camera.position.set(0, 0, size * 1.2);
         }
     }
 
@@ -356,7 +376,7 @@
             controls.enabled = true;
             autoRotateCheckbox.disabled = false;
             crosshair.style.display = 'none';
-            viewerDiv.style.background = "none";
+            viewerDiv.style.background = ""; // Rend le fond CSS par défaut (#1e1e24)
             
             camera.fov = 45;
             camera.updateProjectionMatrix();
