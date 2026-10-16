@@ -13,7 +13,6 @@ Tout tourne en local dans la page : aucune image n'est envoyée sur un serveur.
 | Aperçu d'armure 3D (layer 1 / layer 2, enchantement animé) | [armor_layer_preview.html](https://beltaria.github.io/Beltaria/armor_layer_preview.html) |
 | Items 3D & réglage d'entrée BeltariaContent (`pack.json`) | [item-3d-maker.html](https://beltaria.github.io/Beltaria/item-3d-maker.html) |
 | Éditeur d'items (`items.yml` de BeltariaContent, infobulle 1.8.9) | [lore-preview.html](https://beltaria.github.io/Beltaria/lore-preview.html) |
-| Menus des cosmétiques (`config.yml` : ailes, auras, traînées) | [cosmetics-config.html](https://beltaria.github.io/Beltaria/cosmetics-config.html) |
 | Minerais (`ores.yml`) | [ores-editor.html](https://beltaria.github.io/Beltaria/ores-editor.html) |
 | GIF vers spritesheet | [gif_to_spritesheet.html](https://beltaria.github.io/Beltaria/gif_to_spritesheet.html) |
 | Générateur de grades (icônes du texte, badges de niveau) | [rank-generator.html](https://beltaria.github.io/Beltaria/rank-generator.html) |
