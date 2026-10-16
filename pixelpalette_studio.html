@@ -65,6 +65,7 @@
     <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30">
         <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
+                <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap">←<span class="hidden sm:inline"> Beltaria Studio</span></a>
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-amber-500 p-0.5 shadow-lg shadow-purple-500/20">
                     <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
                         <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -354,7 +355,7 @@
 
                 <div class="flex items-center gap-2 text-xs">
                     <label for="selMappingMode" class="text-slate-400 shrink-0 text-[11px]">Distribution :</label>
-                    <select id="selMappingMode" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
+                    <select id="selMappingMode" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
                         <option value="preserve_contrast">Préserver le contraste du modèle (Recommandé)</option>
                         <option value="source_range">Calquer l'écart min/max des couleurs d'Image 2</option>
                         <option value="uniform">Répartition linéaire uniforme</option>
@@ -1140,6 +1141,11 @@
                     // Dimensions natives strictes de l'image importée
                     const w = img.naturalWidth || img.width;
                     const h = img.naturalHeight || img.height;
+                    // Au-delà de 4096×4096 px (limite canvas d'iOS Safari, Chrome renvoie un canvas vide sans erreur)
+                    if (!w || !h || w * h > 16777216) {
+                        showToast(`Image trop grande ou sans dimensions (${w}×${h} px, max 4096×4096 px).`, 'warn');
+                        return;
+                    }
 
                     const offCanvas = document.createElement('canvas');
                     offCanvas.width = w;
@@ -1443,6 +1449,7 @@
             state.palette1 = extractPaletteFromImageData(state.img1Data);
             state.palette2 = extractPaletteFromImageData(state.img2Data);
 
+            setMode2('auto');
             autoSelectMainFamilyOnImg1();
             autoSelectMainRampOnImg2();
             state.manualOverrides.clear();
@@ -1624,7 +1631,7 @@
 
             const inputCustomColor2 = document.getElementById('inputCustomColor2');
             document.getElementById('btnAddCustomColor2').addEventListener('click', () => inputCustomColor2.click());
-            inputCustomColor2.addEventListener('input', (e) => {
+            inputCustomColor2.addEventListener('change', (e) => {
                 const hex = e.target.value.toUpperCase();
                 const { r, g, b } = hexToRgb(hex);
                 if (!state.palette2.has(hex)) {
@@ -1739,6 +1746,7 @@
             btnCompare.addEventListener('mouseleave', stopCompare);
             btnCompare.addEventListener('touchstart', (e) => { e.preventDefault(); startCompare(); });
             btnCompare.addEventListener('touchend', stopCompare);
+            btnCompare.addEventListener('touchcancel', stopCompare);
 
             // Téléchargement PNG aux dimensions natives exactes
             document.getElementById('btnDownloadPng').addEventListener('click', () => {
@@ -1756,16 +1764,22 @@
             });
 
             // Contrôles de Zoom simples sur les 3 panneaux
-            function setupZoom(suffix, propName) {
+            function setupZoom(suffix, propName, canvasId) {
+                // En mode Auto, on part de l'échelle réellement affichée (et non d'un 4x arbitraire)
+                const currentScale = () => {
+                    if (typeof state[propName] === 'number') return state[propName];
+                    const c = document.getElementById(canvasId);
+                    return c.width > 0 && c.clientWidth > 0 ? Math.round((c.clientWidth / c.width) * 100) / 100 : 4;
+                };
                 document.getElementById(`zoomIn${suffix}`).addEventListener('click', () => {
-                    const cur = typeof state[propName] === 'number' ? state[propName] : 4;
+                    const cur = currentScale();
                     state[propName] = Math.min(32, cur < 2 ? cur + 0.5 : Math.round(cur + 2));
                     document.getElementById(`zoomLabel${suffix}`).textContent = `${state[propName]}x`;
                     updateResultAndUI();
                 });
                 document.getElementById(`zoomOut${suffix}`).addEventListener('click', () => {
-                    const cur = typeof state[propName] === 'number' ? state[propName] : 4;
-                    state[propName] = Math.max(0.5, cur <= 2 ? cur - 0.5 : Math.round(cur - 2));
+                    const cur = currentScale();
+                    state[propName] = Math.max(Math.min(0.5, cur), cur <= 2 ? cur - 0.5 : Math.round(cur - 2));
                     document.getElementById(`zoomLabel${suffix}`).textContent = `${state[propName]}x`;
                     updateResultAndUI();
                 });
@@ -1780,9 +1794,9 @@
                     updateResultAndUI();
                 });
             }
-            setupZoom('1', 'zoom1');
-            setupZoom('2', 'zoom2');
-            setupZoom('Res', 'zoomRes');
+            setupZoom('1', 'zoom1', 'canvasImg1');
+            setupZoom('2', 'zoom2', 'canvasImg2');
+            setupZoom('Res', 'zoomRes', 'canvasResult');
 
             // Clignotement optionnel des pixels sélectionnés sur l'Image 1
             setInterval(() => {
@@ -1791,6 +1805,11 @@
                     renderDisplayCanvas('canvasImg1', 'scrollWrap1', state.img1Data, state.zoom1, state.selectedHex1);
                 }
             }, 450);
+            // Décocher en pleine phase "blanche" laissait les pixels surlignés figés
+            document.getElementById('chkBlinkSelection').addEventListener('change', () => {
+                state.blinkPhase = false;
+                renderDisplayCanvas('canvasImg1', 'scrollWrap1', state.img1Data, state.zoom1, state.selectedHex1);
+            });
 
             document.getElementById('btnLoadDemo').addEventListener('click', () => {
                 loadDefaultDemo();

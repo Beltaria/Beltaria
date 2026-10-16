@@ -92,6 +92,7 @@
 
     .row > * {
       flex: 1;
+      min-width: 0;
     }
 
     /* Section Enchantements */
@@ -108,6 +109,10 @@
     .enchants-actions {
       display: flex;
       gap: 10px;
+    }
+
+    .enchants-actions select {
+      min-width: 0;
     }
 
     .btn {
@@ -180,10 +185,7 @@
       border: 2px solid #100010;
       border-radius: 3px;
       padding: 8px 10px;
-      box-shadow:
-        inset 0 0 0 2px #28007f,
-        inset 0 0 0 4px #5000ff,
-        4px 4px 15px rgba(0, 0, 0, 0.75);
+      box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.75);
       font-family: 'Minecraftia', monospace, sans-serif;
       font-size: 16px;
       line-height: 1.4;
@@ -192,8 +194,24 @@
       image-rendering: pixelated;
     }
 
+    /* Bordure vanilla 1.8 : un seul anneau en dégradé vertical 0x505000FF -> 0x5028007F (alpha 0x50) */
+    .mc-tooltip::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px solid;
+      border-image: linear-gradient(rgba(80, 0, 255, 0.314), rgba(40, 0, 127, 0.314)) 1;
+      pointer-events: none;
+    }
+
+    /* Vanilla : 2px (x2) d'espace sous le nom de l'item */
+    .mc-line:first-child {
+      margin-bottom: 4px;
+    }
+
     .mc-line {
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
       /* Ombrage pixel-art de Minecraft : décalage 2px vers le bas/droite */
       text-shadow: 2px 2px 0px #3f3f3f;
     }
@@ -207,6 +225,7 @@
   </style>
 </head>
 <body>
+  <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;margin-bottom:12px">← Beltaria Studio</a>
 
   <h1>Minecraft Lore Previewer</h1>
 
@@ -384,7 +403,8 @@
             continue;
           } else if (code === 'r') {
             flushBuffer();
-            currentColor = MC_COLORS[defaultColorCode] || MC_COLORS['f'];
+            // Vanilla : §r revient à la couleur passée à drawString, blanche (-1) pour les tooltips
+            currentColor = MC_COLORS['f'];
             isBold = false;
             isItalic = false;
             isUnderline = false;
@@ -439,10 +459,8 @@
       let rawName = document.getElementById('itemName').value || 'Épée';
       const defaultRarity = document.getElementById('itemRarity').value;
       
-      // Si l'utilisateur n'a pas mis de code au début, on applique la rareté
-      if (!rawName.startsWith('&') && !rawName.startsWith('§')) {
-        rawName = defaultRarity + rawName;
-      }
+      // Vanilla 1.8 : couleur de rareté + italique (nom personnalisé) devant le nom ; un code couleur de l'utilisateur les remplace
+      rawName = defaultRarity + '&o' + rawName;
       lines.push(parseMinecraftCodes(rawName, 'b'));
 
       // 2. Enchantements (Lignes suivantes, toujours en gris &7 dans Minecraft vanilla)
@@ -456,7 +474,7 @@
       if (loreText.trim().length > 0) {
         const loreLines = loreText.split('\n');
         loreLines.forEach(line => {
-          lines.push(parseMinecraftCodes(line, '5')); // Par défaut le lore custom sans code est violet (&5)
+          lines.push(parseMinecraftCodes('&5&o' + line, '5')); // Vanilla 1.8 : le lore est préfixé de §5§o (violet italique)
         });
       }
 

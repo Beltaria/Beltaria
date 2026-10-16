@@ -81,6 +81,7 @@
         
         <!-- En-tête -->
         <div class="text-center">
+            <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;margin-bottom:16px">← Beltaria Studio</a>
             <h1 class="text-3xl font-bold text-white mb-2">Extracteur de GIF vers SpriteSheet</h1>
             <p class="text-gray-400 text-sm">Découpez, redimensionnez (Pixel Art) et compilez les images d'un GIF de haut en bas.</p>
         </div>
@@ -182,6 +183,7 @@
                 
                 // Décompression complète pour obtenir les pixels bruts (RGBA)
                 parsedFrames = decompressFrames(gif, true);
+                if (parsedFrames.length === 0 || !gif.lsd.width || !gif.lsd.height) throw new Error("Aucune frame décodée");
                 
                 // Récupération des dimensions d'origine
                 originalWidth = gif.lsd.width;
@@ -198,14 +200,15 @@
                 errorMessage.classList.remove('hidden');
             } finally {
                 loadingIndicator.classList.add('hidden');
+                fileInput.value = ''; // Permet de recharger le même fichier après l'avoir modifié
             }
         });
 
         convertBtn.addEventListener('click', () => {
             if (parsedFrames.length === 0) return;
 
-            const targetW = parseInt(widthInput.value) || originalWidth;
-            const targetH = parseInt(heightInput.value) || originalHeight;
+            const targetW = parseInt(widthInput.value) > 0 ? parseInt(widthInput.value) : originalWidth;
+            const targetH = parseInt(heightInput.value) > 0 ? parseInt(heightInput.value) : originalHeight;
 
             // Création du canvas de rendu final (Toutes les frames verticalement)
             const spriteCanvas = document.createElement('canvas');
@@ -266,6 +269,15 @@
 
             // Utilisation de toBlob au lieu de toDataURL pour éviter le crash mémoire sur les gros GIFs
             spriteCanvas.toBlob((blob) => {
+                // Canvas trop grand pour le navigateur : toBlob renvoie null
+                if (!blob) {
+                    errorMessage.textContent = `Erreur : SpriteSheet trop grand (${targetW}x${targetH * parsedFrames.length} px). Réduisez la taille.`;
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                errorMessage.classList.add('hidden');
+                // Libère l'image générée précédemment
+                if (previewImg.src.startsWith('blob:')) URL.revokeObjectURL(previewImg.src);
                 const url = URL.createObjectURL(blob);
                 
                 previewImg.src = url;
@@ -296,6 +308,13 @@
 
         ['dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-dark-hover', 'bg-gray-800'), false);
+        });
+
+        // Le preventDefault ci-dessus annule le dépôt natif sur l'input : on transmet le fichier nous-mêmes
+        dropZone.addEventListener('drop', (e) => {
+            if (!e.dataTransfer || e.dataTransfer.files.length === 0) return;
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
         });
     </script>
 </body>

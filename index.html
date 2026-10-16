@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beltaria Studio</title>
+<meta name="description" content="Outils pixel art Minecraft 1.8 de Beltaria : animations, recoloriage, armures, items 3D, lore et spritesheets.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%231a1426'/%3E%3Cpath fill='%23c084fc' d='M1 1h4v1H1zM1 2h1v5H1zM5 2h1v2H5zM2 4h3v1H2zM5 5h2v2H5zM2 6h3v1H2z'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0d0b14;
+    --surface: #16121f;
+    --surface-hover: #1d1829;
+    --border: #2a2338;
+    --border-hover: #6d4fa3;
+    --text: #ece8f4;
+    --muted: #9a92ad;
+    --accent: #c084fc;
+    --accent-2: #e879f9;
+    --tag: #241d33;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 16px 40px; }
+  header { margin-bottom: 40px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo { width: 44px; height: 44px; image-rendering: pixelated; flex: none; }
+  h1 {
+    margin: 0; font-size: clamp(28px, 5vw, 40px); font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #fff, #e9d5ff 55%, var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lead { color: var(--muted); margin: 12px 0 0; max-width: 60ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .card {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 20px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: inherit; text-decoration: none;
+    transition: border-color .15s, background-color .15s, transform .15s;
+  }
+  .card:hover { background: var(--surface-hover); border-color: var(--border-hover); transform: translateY(-2px); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card-head { display: flex; align-items: center; gap: 12px; }
+  .icon {
+    width: 40px; height: 40px; flex: none; border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--tag); color: var(--accent);
+  }
+  .icon svg { width: 22px; height: 22px; }
+  .card h2 { margin: 0; font-size: 17px; font-weight: 700; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--tag); color: #cbbfe0; }
+  footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--accent); }
+  @media (max-width: 400px) { .grid { grid-template-columns: 1fr; } .wrap { padding-top: 36px; } }
+  @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect width="8" height="8" rx="1" fill="#1a1426"/><path fill="#c084fc" d="M1 1h4v1H1zM1 2h1v5H1zM5 2h1v2H5zM2 4h3v1H2zM5 5h2v2H5zM2 6h3v1H2z"/></svg>
+      <h1>Beltaria Studio</h1>
+    </div>
+    <p class="lead">Les outils pixel art Minecraft 1.8 de Beltaria. Tout tourne dans le navigateur : vos images restent sur votre machine.</p>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="animforge.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></span>
+        <h2>MC AnimForge</h2>
+      </div>
+      <p>Génère des animations pixel art : glint sur la tête ou la lame, particules flottantes, gouttes et aura, sans redimensionnement.</p>
+      <div class="tags"><span class="tag">Animation</span><span class="tag">.mcmeta</span></div>
+    </a>
+
+    <a class="card" href="pixelpalette_studio.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg></span>
+        <h2>PixelPalette Studio</h2>
+      </div>
+      <p>Recoloriage intelligent : choisissez les couleurs à remplacer sur une image et appliquez les teintes d'une autre, avec variations automatiques.</p>
+      <div class="tags"><span class="tag">Couleurs</span><span class="tag">Recoloriage</span></div>
+    </a>
+
+    <a class="card" href="armor_and_ingot_fusion.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg></span>
+        <h2>Fusion armure &amp; lingot</h2>
+      </div>
+      <p>Applique les couleurs d'un lingot à une armure en conservant la luminosité de la texture d'origine, puis permet d'ajuster teinte, saturation, luminosité et contraste.</p>
+      <div class="tags"><span class="tag">Armure</span><span class="tag">Couleurs</span></div>
+    </a>
+
+    <a class="card" href="armor_layer_preview.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/></svg></span>
+        <h2>Aperçu d'armure 3D</h2>
+      </div>
+      <p>Visualise les couches d'armure 1.8 sur un joueur en 3D, avec l'effet d'enchantement animé.</p>
+      <div class="tags"><span class="tag">Armure</span><span class="tag">3D</span></div>
+    </a>
+
+    <a class="card" href="item-3d-maker.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zm0 0v18m8-13.5l-8 4.5-8-4.5"/></svg></span>
+        <h2>Items 3D &amp; animations</h2>
+      </div>
+      <p>Affiche une texture d'item en relief 3D et prévisualise ses animations image par image.</p>
+      <div class="tags"><span class="tag">Item</span><span class="tag">3D</span></div>
+    </a>
+
+    <a class="card" href="lore-preview.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg></span>
+        <h2>Lore &amp; tooltips</h2>
+      </div>
+      <p>Compose le nom et le lore d'un item avec les codes couleur et de formatage, et voit le tooltip tel qu'en jeu.</p>
+      <div class="tags"><span class="tag">Texte</span><span class="tag">Codes §</span></div>
+    </a>
+
+    <a class="card" href="gif_to_spritesheet.html">
+      <div class="card-head">
+        <span class="icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v4H4zM4 10h16v4H4zM4 16h16v4H4z"/></svg></span>
+        <h2>GIF vers spritesheet</h2>
+      </div>
+      <p>Découpe les images d'un GIF, les redimensionne en pixel art et les empile verticalement en une spritesheet.</p>
+      <div class="tags"><span class="tag">Animation</span><span class="tag">GIF</span></div>
+    </a>
+  </main>
+
+  <footer>
+    <a href="https://github.com/Beltaria/Beltaria">Code source sur GitHub</a>
+  </footer>
+</div>
+</body>
+</html>

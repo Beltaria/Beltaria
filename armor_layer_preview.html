@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualiseur d'Armure Minecraft 1.8 (Enchantement Animé)</title>
     <style>
         body { 
@@ -12,12 +13,12 @@
         #sidebar { 
             width: 350px; background-color: rgba(30, 30, 40, 0.95); 
             padding: 25px; box-shadow: 2px 0 15px rgba(0,0,0,0.8); 
-            display: flex; flex-direction: column; gap: 20px; z-index: 10; 
+            display: flex; flex-direction: column; gap: 20px; z-index: 10; flex-shrink: 0;
             border-right: 2px solid #5a1e2b;
         }
         #viewer { 
             flex-grow: 1; display: flex; justify-content: center; 
-            align-items: center; position: relative; cursor: grab;
+            align-items: center; position: relative; cursor: grab; min-width: 0;
         }
         #viewer:active { cursor: grabbing; }
         h2 { margin-top: 0; color: #e74c3c; font-size: 1.5em; text-transform: uppercase; letter-spacing: 1px; }
@@ -37,6 +38,11 @@
         .status { font-size: 0.85em; color: #888; margin-top: 10px; display: block; word-break: break-all; }
         .controls { margin-top: auto; padding-top: 20px; border-top: 1px solid #444; display: flex; flex-direction: column; gap: 10px; }
         .highlight-check { background: rgba(138, 43, 226, 0.2); padding: 10px; border-radius: 5px; border: 1px solid #8a2be2; }
+        @media (max-width: 700px) {
+            body { flex-direction: column; height: auto; overflow: auto; }
+            #sidebar { width: auto; border-right: none; border-bottom: 2px solid #5a1e2b; }
+            #viewer { height: 70vh; }
+        }
     </style>
     <!-- Chargement sécurisé de la librairie -->
     <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0/bundles/skinview3d.bundle.min.js"></script>
@@ -44,6 +50,7 @@
 <body>
 
 <div id="sidebar">
+    <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;align-self:flex-start;margin-bottom:12px">← Beltaria Studio</a>
     <h2>⚔️ Rendu d'Armure</h2>
     <div style="font-size: 0.95em; color: #aaa; line-height: 1.5;">
         Nouvel effet d'enchantement : vague dynamique et fluide style Minecraft Vanilla.
@@ -65,10 +72,10 @@
 
     <div class="controls">
         <label style="cursor:pointer; display:flex; align-items:center; gap:10px;" class="highlight-check">
-            <input type="checkbox" id="glowing"> ✨ Activer l'Enchantement
+            <input type="checkbox" id="glowing" autocomplete="off"> ✨ Activer l'Enchantement
         </label>
         <label style="cursor:pointer; display:flex; align-items:center; gap:10px;">
-            <input type="checkbox" id="autoRotate" checked> Rotation Automatique
+            <input type="checkbox" id="autoRotate" checked autocomplete="off"> Rotation Automatique
         </label>
     </div>
 </div>
@@ -80,10 +87,11 @@
 <script>
     // 1. Initialisation de la 3D
     const canvas3d = document.getElementById("skin_canvas");
+    const viewerEl = document.getElementById("viewer");
     const viewer = new skinview3d.SkinViewer({
         canvas: canvas3d,
-        width: window.innerWidth - 400,
-        height: window.innerHeight
+        width: viewerEl.clientWidth,
+        height: viewerEl.clientHeight
     });
     
     viewer.autoRotate = true;
@@ -95,8 +103,8 @@
         viewer.autoRotate = e.target.checked;
     });
     window.addEventListener("resize", () => {
-        viewer.width = window.innerWidth - 400;
-        viewer.height = window.innerHeight;
+        viewer.width = viewerEl.clientWidth;
+        viewer.height = viewerEl.clientHeight;
     });
 
     // 2. Toiles pour la création de texture
@@ -190,28 +198,23 @@
 
         ctx.drawImage(armorCanvas, 0, 0);
 
-        // Rendu dans la 3D
-        if (isAnimFrame) {
-            // Rendu ultra-rapide sans retoucher la posture (pour l'animation)
-            viewer.loadSkin(mainCanvas.toDataURL("image/png"));
-        } else {
+        // Rendu dans la 3D : un canvas est chargé de façon synchrone (pas de toDataURL ni d'images qui arrivent dans le désordre)
+        viewer.loadSkin(mainCanvas, { model: "default" });
+
+        // loadSkin remet l'échelle de base des bras : on regonfle la couche externe (armure) à chaque rendu
+        const bulk = 1.08;
+        viewer.playerObject.skin.getBodyParts().forEach(part => {
+            const outer = part.outerLayer;
+            if (!outer.userData.baseScale) outer.userData.baseScale = outer.scale.clone();
+            outer.scale.copy(outer.userData.baseScale).multiplyScalar(bulk);
+        });
+
+        if (!isAnimFrame) {
             // Premier chargement ou changement de fichier (on applique la posture A-Pose)
-            viewer.loadSkin(mainCanvas.toDataURL("image/png")).then(() => {
-                if (viewer.playerObject && viewer.playerObject.skin) {
-                    viewer.playerObject.skin.rightArm.rotation.z = -0.15;
-                    viewer.playerObject.skin.leftArm.rotation.z = 0.15;
-                    viewer.playerObject.skin.rightLeg.rotation.z = -0.05;
-                    viewer.playerObject.skin.leftLeg.rotation.z = 0.05;
-                    
-                    const bulk = 1.08;
-                    const parts = ['jacket', 'hat', 'rightSleeve', 'leftSleeve', 'rightPants', 'leftPants'];
-                    parts.forEach(part => {
-                        if (viewer.playerObject.skin[part]) {
-                            viewer.playerObject.skin[part].scale.set(bulk, bulk, bulk);
-                        }
-                    });
-                }
-            }).catch(err => console.log(err));
+            viewer.playerObject.skin.rightArm.rotation.z = -0.15;
+            viewer.playerObject.skin.leftArm.rotation.z = 0.15;
+            viewer.playerObject.skin.rightLeg.rotation.z = -0.05;
+            viewer.playerObject.skin.leftLeg.rotation.z = 0.05;
         }
     }
 
@@ -238,9 +241,19 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
+                const statusText = document.getElementById(statusId);
+                img.onerror = function() {
+                    statusText.textContent = "❌ " + file.name + " : image illisible";
+                    statusText.style.color = "#e74c3c";
+                };
                 img.onload = function() {
+                    // Les coordonnées de updateTexture supposent le format 1.8 (64x32)
+                    if (img.width !== 64 || img.height !== 32) {
+                        statusText.textContent = "❌ " + file.name + " : " + img.width + "x" + img.height + " (attendu 64x32)";
+                        statusText.style.color = "#e74c3c";
+                        return;
+                    }
                     if (isLayer1) imgLayer1 = img; else imgLayer2 = img;
-                    const statusText = document.getElementById(statusId);
                     statusText.textContent = "✅ " + file.name;
                     statusText.style.color = "#2ecc71";
                     updateTexture(false); // Faux car ce n'est pas l'animation, c'est un nouveau fichier

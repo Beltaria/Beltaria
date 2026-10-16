@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC AnimForge 1.8.9 — Générateur d'Animations Pixel Art Minecraft</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090c14;
+            color: #e2e8f0;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Rendu Pixel Art strict sans aucun flou */
+        .pixelated {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        /* Damier de transparence sombre */
+        .checkerboard {
+            background-color: #131722;
+            background-image:
+                linear-gradient(45deg, #1e2434 25%, transparent 25%),
+                linear-gradient(-45deg, #1e2434 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #1e2434 75%),
+                linear-gradient(-45deg, transparent 75%, #1e2434 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        }
+        /* Slot d'inventaire style Minecraft 1.8.9 */
+        .mc-slot {
+            background-color: #8b8b8b;
+            border-top: 3px solid #373737;
+            border-left: 3px solid #373737;
+            border-right: 3px solid #ffffff;
+            border-bottom: 3px solid #ffffff;
+            box-shadow: inset 0 0 0 2px #8b8b8b;
+        }
+        /* Barres de défilement */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d121d;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a855f7;
+        }
+        input[type="range"] {
+            accent-color: #a855f7;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+
+    <!-- ===================================================================== -->
+    <!-- EN-TÊTE & PRESETS RAPIDES                                             -->
+    <!-- ===================================================================== -->
+    <header class="border-b border-slate-800/90 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-[1680px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap">←<span class="hidden sm:inline"> Beltaria Studio</span></a>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-rose-500 p-0.5 shadow-lg shadow-purple-500/20">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-fuchsia-400 bg-clip-text text-transparent">
+                            MC AnimForge 1.8.9
+                        </h1>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 mono">
+                            Spritesheet Vertical 1:1
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400">Générateur d'animations Minecraft (Glint sur la tête/lame, Particules flottantes, Gouttes & Aura) sans redimensionnement</p>
+                </div>
+            </div>
+
+            <!-- Presets d'animations prêts à l'emploi -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] font-semibold text-slate-400 mr-1">Presets :</span>
+                <button type="button" data-preset="glint_sparkles" class="preset-btn px-2.5 py-1.5 rounded-lg bg-purple-600/25 hover:bg-purple-600/40 text-xs font-medium text-purple-200 border border-purple-500/40 transition">
+                    ✨ Glint Tête + Étincelles
+                </button>
+                <button type="button" data-preset="sanguine_drips" class="preset-btn px-2.5 py-1.5 rounded-lg bg-rose-600/25 hover:bg-rose-600/40 text-xs font-medium text-rose-200 border border-rose-500/40 transition">
+                    🩸 Sanguinaire (Gouttes + Reflet)
+                </button>
+                <button type="button" data-preset="rising_embers" class="preset-btn px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 text-xs font-medium text-amber-200 border border-amber-500/40 transition">
+                    🔥 Braises & Aura Dorée
+                </button>
+                <button type="button" data-preset="cryo_orbit" class="preset-btn px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 text-xs font-medium text-cyan-200 border border-cyan-500/40 transition">
+                    ❄️ Orbite Cryolithe
+                </button>
+                <button type="button" id="btnRegenSeed" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition" title="Générer un nouveau placement aléatoire des particules">
+                    🎲 Varier Particules
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- GRILLE PRINCIPALE 3 COLONNES                                          -->
+    <!-- ===================================================================== -->
+    <main class="flex-1 max-w-[1680px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+        <!-- ================================================================= -->
+        <!-- COLONNE GAUCHE (5 col) : IMPORT, CIBLAGE DE ZONE & EFFETS         -->
+        <!-- ================================================================= -->
+        <section class="lg:col-span-5 flex flex-col gap-3.5">
+
+            <!-- 1. CARTE IMPORT & MODÈLES DE TEST -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center justify-center">1</span>
+                        <div>
+                            <h2 class="font-bold text-sm text-white">Image de base & Résolution Native</h2>
+                            <p class="text-[11px] text-slate-400">Importez votre item (ou glissez-déposez / Ctrl+V)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btnDemoPickaxe" type="button" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-purple-300 border border-slate-700 transition">
+                            ⛏️ Pioche Démo
+                        </button>
+                        <button id="btnDemoSword" type="button" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-rose-300 border border-slate-700 transition">
+                            ⚔️ Épée Démo
+                        </button>
+                        <button id="btnTriggerFile" type="button" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow transition">
+                            📂 Importer PNG
+                        </button>
+                        <input type="file" id="fileInput" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Réglages globaux de l'animation Minecraft (Nombre de frames & Vitesse) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
+                    <label class="flex flex-col gap-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-300 font-medium">Nombre de frames :</span>
+                            <span id="lblFrameCount" class="mono font-bold text-purple-300">10 frames</span>
+                        </div>
+                        <input type="range" id="rngFrameCount" min="4" max="32" step="1" value="10" class="w-full h-1.5">
+                        <span class="text-[10px] text-slate-500">Hauteur totale = Hauteur image × Frames</span>
+                    </label>
+
+                    <label class="flex flex-col gap-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-300 font-medium">Vitesse MC (<code class="mono text-[11px]">frametime</code>) :</span>
+                            <span id="lblFrameTime" class="mono font-bold text-emerald-300">2 ticks (10 FPS)</span>
+                        </div>
+                        <input type="range" id="rngFrameTime" min="1" max="10" step="1" value="2" class="w-full h-1.5">
+                        <span class="text-[10px] text-slate-500">1 tick Minecraft = 50 ms (20 FPS max)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2. CARTE CIBLAGE DE ZONE (ex: Haut de la pioche / Lame uniquement) -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs font-bold flex items-center justify-center">2</span>
+                        <div>
+                            <h2 class="font-bold text-sm text-white">Zone Ciblée (Haut de la pioche, Lame, Couleurs...)</h2>
+                            <p class="text-[11px] text-slate-400">Définit où s'appliquent le Glint, l'Aura et l'émanation des Particules</p>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-xs bg-slate-950 border border-slate-700 px-2.5 py-1 rounded-lg cursor-pointer select-none">
+                        <input type="checkbox" id="chkShowMask" class="rounded bg-slate-900 border-slate-600 text-fuchsia-500 focus:ring-0">
+                        <span class="text-fuchsia-300 font-medium">Voir masque</span>
+                    </label>
+                </div>
+
+                <!-- Sélecteur du mode de masque -->
+                <div class="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button type="button" data-mask="color" class="mask-mode-btn py-1.5 px-2 rounded-lg font-semibold transition bg-fuchsia-600 text-white shadow">
+                        🎨 Par Couleurs (Tête/Lame)
+                    </button>
+                    <button type="button" data-mask="head_geo" class="mask-mode-btn py-1.5 px-2 rounded-lg font-semibold transition text-slate-400 hover:text-white">
+                        📐 Haut / Diagonale
+                    </button>
+                    <button type="button" data-mask="all" class="mask-mode-btn py-1.5 px-2 rounded-lg font-semibold transition text-slate-400 hover:text-white">
+                        🌟 Tout l'item
+                    </button>
+                </div>
+
+                <!-- Sous-panneau : Ciblage par Couleurs / Familles (Pipette sur l'item) -->
+                <div id="panelMaskColor" class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-300 font-medium">Cliquez sur une famille ou directement sur l'aperçu central :</span>
+                        <div class="flex gap-1.5">
+                            <button type="button" id="btnMaskAllColors" class="text-purple-400 hover:underline">Tout</button>
+                            <span class="text-slate-600">|</span>
+                            <button type="button" id="btnMaskNoOutline" class="text-emerald-400 hover:underline">Sans contours</button>
+                        </div>
+                    </div>
+                    <div id="maskFamilyChips" class="flex flex-wrap gap-1.5"></div>
+                    <div id="maskColorSwatches" class="flex flex-wrap gap-1.5 pt-1 max-h-[84px] overflow-y-auto"></div>
+                </div>
+
+                <!-- Sous-panneau : Ciblage Géométrique (Haut / Tête de la pioche) -->
+                <div id="panelMaskGeo" class="hidden bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-300">Direction de la tête de l'item :</span>
+                        <select id="selGeoDirection" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                            <option value="top_right">Haut-Droite (Pioche / Épée / Hache)</option>
+                            <option value="top_left">Haut-Gauche (Faux / Arc)</option>
+                            <option value="top_only">Haut vertical uniquement</option>
+                        </select>
+                    </div>
+                    <label class="flex flex-col gap-1">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Seuil de coupure (Exclure le manche) :</span>
+                            <span id="lblGeoThreshold" class="mono text-fuchsia-300 font-semibold">52%</span>
+                        </div>
+                        <input type="range" id="rngGeoThreshold" min="15" max="90" value="52" class="w-full h-1.5">
+                    </label>
+                    <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+                        <input type="checkbox" id="chkGeoExcludeDark" checked class="rounded bg-slate-900 border-slate-600 text-fuchsia-500">
+                        <span>Exclure automatiquement les contours noirs très sombres du reflet</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3. ACCORDÉON / CARTES DES 3 EFFETS COMBINABLES -->
+            <div class="flex flex-col gap-3">
+
+                <!-- ========================================================= -->
+                <!-- EFFET A : GLINT / REFLET BALAYANT                         -->
+                <!-- ========================================================= -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" id="chkEnableGlint" checked class="w-4 h-4 rounded bg-slate-950 border-slate-600 text-purple-500 focus:ring-0">
+                            <div>
+                                <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+                                    <span>✨ Effet 1 — Glint / Reflet Balayant</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400">Faisceau lumineux qui balaie la tête de la pioche ou la lame</p>
+                            </div>
+                        </label>
+                        <input type="color" id="colGlint" value="#f5d0fe" class="w-8 h-7 rounded cursor-pointer bg-transparent border border-slate-700" title="Couleur du Glint">
+                    </div>
+
+                    <div id="bodyGlint" class="grid grid-cols-2 gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 text-xs">
+                        <label class="flex flex-col gap-1">
+                            <span class="text-slate-400 text-[11px]">Angle du balayage :</span>
+                            <select id="selGlintAngle" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                                <option value="diag_1">Diagonale 45° (Haut-Gauche ➔ Bas-Droite)</option>
+                                <option value="diag_2">Diagonale -45° (Manche ➔ Pointe)</option>
+                                <option value="horizontal">Horizontal (Gauche ➔ Droite)</option>
+                                <option value="vertical">Vertical (Haut ➔ Bas)</option>
+                            </select>
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <span class="text-slate-400 text-[11px]">Style de rendu :</span>
+                            <select id="selGlintStyle" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                                <option value="pixel_crisp">Pixel-Art Net (Paliers francs)</option>
+                                <option value="smooth_add">Éclat Doux & Lumineux</option>
+                            </select>
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-400">Largeur du reflet :</span>
+                                <span id="lblGlintWidth" class="mono text-purple-300">5 px</span>
+                            </div>
+                            <input type="range" id="rngGlintWidth" min="2" max="14" value="5" class="w-full h-1.5">
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-400">Intensité d'éclat :</span>
+                                <span id="lblGlintIntensity" class="mono text-purple-300">75%</span>
+                            </div>
+                            <input type="range" id="rngGlintIntensity" min="15" max="100" value="75" class="w-full h-1.5">
+                        </label>
+
+                        <div class="col-span-2 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                            <span class="text-[11px] text-slate-400">Teintes rapides :</span>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" data-glint-col="#FFFFFF" class="glint-swatch w-5 h-5 rounded-full border border-white/40" style="background:#FFFFFF" title="Blanc Pur"></button>
+                                <button type="button" data-glint-col="#FDE68A" class="glint-swatch w-5 h-5 rounded-full border border-white/40" style="background:#FDE68A" title="Or Divin"></button>
+                                <button type="button" data-glint-col="#F5D0FE" class="glint-swatch w-5 h-5 rounded-full border border-white/40" style="background:#F5D0FE" title="Améthyste Clair"></button>
+                                <button type="button" data-glint-col="#FDA4AF" class="glint-swatch w-5 h-5 rounded-full border border-white/40" style="background:#FDA4AF" title="Éclat Sanguinaire"></button>
+                                <button type="button" data-glint-col="#A5F3FC" class="glint-swatch w-5 h-5 rounded-full border border-white/40" style="background:#A5F3FC" title="Glace Cryolithe"></button>
+                                <button type="button" data-glint-col="#BEF264" class="glint-swatch w-5 h-5 rounded-full border border-white/40" style="background:#BEF264" title="Acide Viridium"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- EFFET B : PARTICULES VOLANTES / GOUTTES / ORBITE          -->
+                <!-- ========================================================= -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" id="chkEnableParticles" checked class="w-4 h-4 rounded bg-slate-950 border-slate-600 text-fuchsia-500 focus:ring-0">
+                            <div>
+                                <h3 class="font-bold text-sm text-white">🪐 Effet 2 — Particules Volantes & Gouttes</h3>
+                                <p class="text-[11px] text-slate-400">Particules animées autour de l'item ou de la zone ciblée</p>
+                            </div>
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="color" id="colParticle1" value="#e879f9" class="w-7 h-6 rounded cursor-pointer bg-transparent border border-slate-700" title="Couleur Particule Principale">
+                            <input type="color" id="colParticle2" value="#fde047" class="w-7 h-6 rounded cursor-pointer bg-transparent border border-slate-700" title="Couleur Particule Secondaire">
+                        </div>
+                    </div>
+
+                    <div id="bodyParticles" class="grid grid-cols-2 gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 text-xs">
+                        <label class="flex flex-col gap-1">
+                            <span class="text-slate-400 text-[11px]">Comportement :</span>
+                            <select id="selParticleMode" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                                <option value="sparkles">✨ Étincelles Flottantes</option>
+                                <option value="embers">🔥 Braises / Aura Montante</option>
+                                <option value="drips">🩸 Gouttes Tombantes (Sang/Poison)</option>
+                                <option value="orbit">🪐 Orbite Magique (Autour de la tête)</option>
+                            </select>
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <span class="text-slate-400 text-[11px]">Taille & Forme :</span>
+                            <select id="selParticleShape" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                                <option value="mixed">Mixte (Pixels 1px + Étoiles 3×3)</option>
+                                <option value="px1">Pixels 1×1 px uniquement</option>
+                                <option value="star3">Croix / Étoiles 3×3 pulsantes</option>
+                                <option value="streak">Traînées verticales (1×2 px)</option>
+                            </select>
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-400">Nombre de particules :</span>
+                                <span id="lblParticleCount" class="mono text-fuchsia-300">9</span>
+                            </div>
+                            <input type="range" id="rngParticleCount" min="2" max="24" value="9" class="w-full h-1.5">
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-400">Rayon / Distance :</span>
+                                <span id="lblParticleSpread" class="mono text-fuchsia-300">5 px</span>
+                            </div>
+                            <input type="range" id="rngParticleSpread" min="1" max="10" value="5" class="w-full h-1.5">
+                        </label>
+
+                        <div class="col-span-2 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                            <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                                <span>Plan :</span>
+                                <select id="selParticleLayer" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] text-slate-200">
+                                    <option value="around">Autour (Dans le vide + devant)</option>
+                                    <option value="behind">Strictement derrière l'item</option>
+                                    <option value="front">Devant l'item aussi</option>
+                                </select>
+                            </label>
+
+                            <div class="flex items-center gap-1">
+                                <span class="text-[10px] text-slate-500 mr-1">Thèmes :</span>
+                                <button type="button" data-pcols="#E879F9,#FDE047" class="p-theme-btn px-1.5 py-0.5 rounded bg-purple-950 border border-purple-700 text-[10px] text-purple-200">Améthyste</button>
+                                <button type="button" data-pcols="#F43F5E,#881337" class="p-theme-btn px-1.5 py-0.5 rounded bg-rose-950 border border-rose-700 text-[10px] text-rose-200">Sanguin</button>
+                                <button type="button" data-pcols="#FBBF24,#FEF08A" class="p-theme-btn px-1.5 py-0.5 rounded bg-amber-950 border border-amber-700 text-[10px] text-amber-200">Or</button>
+                                <button type="button" data-pcols="#38BDF8,#E0F2FE" class="p-theme-btn px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-[10px] text-cyan-200">Cryo</button>
+                                <button type="button" data-pcols="#4ADE80,#BEF264" class="p-theme-btn px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-700 text-[10px] text-emerald-200">Poison</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- EFFET C : AURA & PULSATION ÉNERGÉTIQUE                    -->
+                <!-- ========================================================= -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" id="chkEnablePulse" class="w-4 h-4 rounded bg-slate-950 border-slate-600 text-emerald-500 focus:ring-0">
+                            <div>
+                                <h3 class="font-bold text-sm text-white">🔮 Effet 3 — Aura Externe & Pulsation de Lame</h3>
+                                <p class="text-[11px] text-slate-400">Fait respirer la luminosité de la tête ou ajoute un halo 1px</p>
+                            </div>
+                        </label>
+                        <input type="color" id="colPulse" value="#c026d3" class="w-8 h-7 rounded cursor-pointer bg-transparent border border-slate-700" title="Couleur de l'Aura">
+                    </div>
+
+                    <div id="bodyPulse" class="grid grid-cols-2 gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 text-xs">
+                        <label class="flex flex-col gap-1">
+                            <span class="text-slate-400 text-[11px]">Type d'Aura :</span>
+                            <select id="selPulseMode" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                                <option value="inner_glow">Pulsation interne (Tête/Lame)</option>
+                                <option value="outer_outline">Contour Halo 1px autour de l'item</option>
+                                <option value="both">Pulsation interne + Halo 1px</option>
+                            </select>
+                        </label>
+
+                        <label class="flex flex-col gap-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-400">Puissance de pulsation :</span>
+                                <span id="lblPulseStrength" class="mono text-emerald-300">45%</span>
+                            </div>
+                            <input type="range" id="rngPulseStrength" min="10" max="100" value="45" class="w-full h-1.5">
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- COLONNE CENTRALE (4 col) : APERÇU ANIMÉ LIVE & SLOT 1.8.9         -->
+        <!-- ================================================================= -->
+        <section class="lg:col-span-4 flex flex-col gap-3.5 lg:sticky lg:top-16">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Aperçu Animé en Direct</h2>
+                        <p class="text-[11px] text-slate-400">Cliquez sur un pixel de l'item pour cibler/retirer sa couleur</p>
+                    </div>
+                    <span id="badgeSingleDim" class="px-2.5 py-1 rounded-md bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold mono">
+                        32×32 px
+                    </span>
+                </div>
+
+                <!-- Zone Canvas d'Aperçu de la Frame Courante (avec Drag & Drop) -->
+                <div id="dropZonePreview" class="relative rounded-xl border-2 border-slate-800 hover:border-purple-500/50 transition checkerboard h-[340px] flex items-center justify-center overflow-hidden select-none">
+                    <canvas id="canvasLivePreview" class="pixelated cursor-crosshair shadow-2xl"></canvas>
+
+                    <!-- Indicateur Frame courante -->
+                    <div class="absolute top-2.5 left-2.5 bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700/80 text-[11px] mono text-slate-200 flex items-center gap-2 pointer-events-none">
+                        <span>Frame :</span>
+                        <strong id="lblCurrentFrame" class="text-fuchsia-400">1 / 10</strong>
+                    </div>
+
+                    <!-- Badge couleur survolée -->
+                    <div id="hoverColorBadge" class="hidden absolute top-2.5 right-2.5 bg-slate-950/90 backdrop-blur px-2 py-1 rounded-md border border-slate-700 text-[11px] mono text-slate-200 items-center gap-1.5 pointer-events-none">
+                        <span id="hoverColorSwatch" class="w-3 h-3 rounded-sm inline-block border border-white/30"></span>
+                        <span id="hoverColorHex">#000000</span>
+                    </div>
+
+                    <!-- Contrôles Grille & Zoom -->
+                    <div class="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-slate-950/90 backdrop-blur p-1 rounded-lg border border-slate-800 text-xs">
+                        <label class="flex items-center gap-1 px-2 py-0.5 cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                            <input type="checkbox" id="chkPixelGrid" class="rounded bg-slate-900 border-slate-600 text-purple-500 focus:ring-0">
+                            <span>Grille</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Contrôles de lecture (Play/Pause + Scrubbing) -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2">
+                    <button id="btnPrevFrame" type="button" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center font-bold text-xs" title="Frame précédente">
+                        ◀
+                    </button>
+                    <button id="btnPlayPause" type="button" class="px-3.5 h-8 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow">
+                        <span id="iconPlayPause">⏸</span>
+                        <span id="txtPlayPause">Pause</span>
+                    </button>
+                    <button id="btnNextFrame" type="button" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center font-bold text-xs" title="Frame suivante">
+                        ▶
+                    </button>
+                    <input type="range" id="rngScrubFrame" min="0" max="9" value="0" class="flex-1 h-1.5 ml-1">
+                </div>
+
+                <!-- Simulation en conditions réelles : Slot Hotbar Minecraft 1.8.9 + Fond Sombre -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-4">
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-xs font-bold text-slate-200">Rendu en jeu (Hotbar 1.8.9)</span>
+                        <span class="text-[11px] text-slate-400">Aperçu à taille d'inventaire & en main</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <!-- Slot Hotbar authentique -->
+                        <div class="mc-slot w-14 h-14 flex items-center justify-center p-1" title="Aperçu dans un slot d'inventaire Minecraft 1.8.9">
+                            <canvas id="canvasMcSlot" class="pixelated w-10 h-10"></canvas>
+                        </div>
+                        <!-- Aperçu fond nuit -->
+                        <div class="w-14 h-14 rounded-lg bg-[#05070b] border border-slate-800 flex items-center justify-center p-1" title="Aperçu sur fond noir">
+                            <canvas id="canvasDarkSlot" class="pixelated w-10 h-10"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- COLONNE DROITE (3 col) : SPRITESHEET VERTICAL & EXPORT MCMETA     -->
+        <!-- ================================================================= -->
+        <section class="lg:col-span-3 flex flex-col gap-3.5">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3.5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                    <div>
+                        <h2 class="font-bold text-sm text-white">Spritesheet Minecraft</h2>
+                        <p class="text-[11px] text-slate-400">Aligné de haut en bas (0px d'écart)</p>
+                    </div>
+                    <span id="badgeStripDim" class="px-2 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold mono">
+                        32×320 px
+                    </span>
+                </div>
+
+                <!-- Boutons d'Export PNG + MCMETA -->
+                <div class="flex flex-col gap-2">
+                    <button id="btnExportSpritesheet" type="button" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2">
+                        <span>⬇ Télécharger Spritesheet (.PNG)</span>
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnDownloadMcmeta" type="button" class="py-2 px-2.5 rounded-xl bg-purple-600/25 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 font-semibold text-xs transition flex items-center justify-center gap-1">
+                            <span>📄 .png.mcmeta</span>
+                        </button>
+                        <button id="btnCopyMcmeta" type="button" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1">
+                            <span>📋 Copier JSON</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Aperçu déroulant de toute la bande verticale (W × (H*N)) -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-300 font-semibold">Bande complète (<span id="lblStripSummary">10 frames</span>) :</span>
+                        <label class="flex items-center gap-1 text-slate-400 cursor-pointer select-none" title="Affiche les séparations uniquement sur cet aperçu (jamais sur le PNG exporté)">
+                            <input type="checkbox" id="chkStripGuides" checked class="rounded bg-slate-900 border-slate-600 text-emerald-500 focus:ring-0">
+                            <span>Repères frames</span>
+                        </label>
+                    </div>
+
+                    <div class="checkerboard rounded-xl border border-slate-800 h-[360px] overflow-y-auto overflow-x-auto p-3 flex items-start">
+                        <canvas id="canvasStripPreview" class="pixelated mx-auto shadow-xl border border-white/10"></canvas>
+                    </div>
+                </div>
+
+                <!-- Aperçu du code .png.mcmeta généré -->
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400 font-medium">Contenu <code class="mono text-purple-300">item.png.mcmeta</code> :</span>
+                        <label class="flex items-center gap-1 text-slate-400 cursor-pointer">
+                            <input type="checkbox" id="chkMcmetaInterpolate" class="rounded bg-slate-900 border-slate-600 text-purple-500 focus:ring-0">
+                            <span>interpolate</span>
+                        </label>
+                    </div>
+                    <pre id="preMcmetaCode" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[11px] mono text-emerald-300 overflow-x-auto select-all"></pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Conteneur de Notifications Toast -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /***********************************************************************
+         * MC ANIMFORGE 1.8.9 — MOTEUR D'ANIMATION PIXEL ART MINECRAFT
+         * - Respect strict de la résolution native (W × H par frame -> W × (H*N))
+         * - Ciblage de la tête/lame par couleurs (pipette) ou géométrie
+         * - Boucle périodique 100% fluide sur N frames
+         ***********************************************************************/
+
+        // --- 1. Utilitaires Mathématiques & Couleurs ---
+        function clamp(v, min, max) {
+            return Math.max(min, Math.min(max, v));
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b]
+                .map(x => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0'))
+                .join('')
+                .toUpperCase();
+        }
+
+        function hexToRgb(hex) {
+            const clean = String(hex).replace('#', '').trim();
+            const n = parseInt(clean, 16) || 0;
+            return {
+                r: (n >> 16) & 255,
+                g: (n >> 8) & 255,
+                b: n & 255
+            };
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0, s = 0, l = (max + min) / 2;
+            if (max !== min) {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        }
+
+        // Générateur pseudo-aléatoire déterministe (pour que chaque particule garde sa trajectoire)
+        function mulberry32(seed) {
+            return function() {
+                let t = seed += 0x6D2B79F5;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        // Classification des couleurs d'un item pour isoler facilement la tête/lame du manche
+        function classifyColorFamily(hex) {
+            const { r, g, b } = hexToRgb(hex);
+            const { h, s, l } = rgbToHsl(r, g, b);
+            if (l <= 12) return { id: 'outline', name: 'Contours Noirs', badge: '#1e293b', order: 99 };
+            if (s <= 15) return { id: 'metal', name: 'Gris / Métal', badge: '#94a3b8', order: 50 };
+            if (h >= 340 || h < 18) return { id: 'red', name: 'Rouge / Sanguin', badge: '#ef4444', order: 2 };
+            if (h >= 18 && h < 68) return { id: 'gold', name: 'Or / Bois', badge: '#f59e0b', order: 3 };
+            if (h >= 68 && h < 165) return { id: 'green', name: 'Vert / Viridium', badge: '#22c55e', order: 4 };
+            if (h >= 165 && h < 255) return { id: 'blue', name: 'Bleu / Cryolithe', badge: '#38bdf8', order: 5 };
+            return { id: 'purple', name: 'Violet / Améthyste', badge: '#d946ef', order: 1 };
+        }
+
+        // --- 2. État Global de l'Application ---
+        const state = {
+            baseImageData: null,      // ImageData natif (W × H)
+            itemName: 'pioche_sanguinaire',
+            palette: new Map(),       // hex -> { hex, r, g, b, hsl, count, family }
+
+            // Paramètres d'animation Minecraft
+            frameCount: 10,
+            frameTimeTicks: 2,        // 1 tick = 50ms
+            interpolateMcmeta: false,
+
+            // Ciblage de zone (Masque)
+            maskMode: 'color',        // 'color' | 'head_geo' | 'all'
+            targetedHexSet: new Set(),
+            geoDirection: 'top_right',
+            geoThreshold: 52,
+            geoExcludeDark: true,
+            showMaskOverlay: false,
+
+            // Effet 1 : Glint / Reflet Balayant
+            enableGlint: true,
+            glintColor: '#F5D0FE',
+            glintAngle: 'diag_1',
+            glintStyle: 'pixel_crisp',
+            glintWidth: 5,
+            glintIntensity: 75,
+
+            // Effet 2 : Particules Volantes & Gouttes
+            enableParticles: true,
+            particleMode: 'sparkles', // 'sparkles' | 'embers' | 'drips' | 'orbit'
+            particleShape: 'mixed',   // 'mixed' | 'px1' | 'star3' | 'streak'
+            particleCount: 9,
+            particleSpread: 5,
+            particleLayer: 'around',  // 'around' | 'behind' | 'front'
+            particleColor1: '#E879F9',
+            particleColor2: '#FDE047',
+            randomSeed: 1337,
+
+            // Effet 3 : Aura & Pulsation
+            enablePulse: false,
+            pulseColor: '#C026D3',
+            pulseMode: 'inner_glow',  // 'inner_glow' | 'outer_outline' | 'both'
+            pulseStrength: 45,
+
+            // Frames calculées & Lecture
+            frames: [],               // Tableau de N ImageData (chacun W × H)
+            exportStripCanvas: null,  // Canvas hors-écran strictement W × (H * N)
+            currentFrameIndex: 0,
+            isPlaying: true,
+            lastTickTimestamp: 0,
+            showPixelGrid: false,
+            showStripGuides: true
+        };
+
+        // --- 3. Notifications Toast ---
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const el = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
+                warn: 'bg-amber-950/95 border-amber-500/50 text-amber-200',
+                info: 'bg-slate-900/95 border-purple-500/50 text-purple-200'
+            };
+            el.className = `px-3.5 py-2 rounded-xl border text-xs font-medium shadow-xl backdrop-blur transition-all duration-300 ${colors[type] || colors.info}`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            }, 2600);
+        }
+
+        // --- 4. Extraction de la Palette et Calcul du Masque de Zone (W × H) ---
+        function extractPalette(imgData) {
+            const map = new Map();
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i + 3] < 16) continue;
+                const r = d[i], g = d[i + 1], b = d[i + 2];
+                const hex = rgbToHex(r, g, b);
+                if (map.has(hex)) {
+                    map.get(hex).count++;
+                } else {
+                    const hsl = rgbToHsl(r, g, b);
+                    const family = classifyColorFamily(hex);
+                    map.set(hex, { hex, r, g, b, hsl, count: 1, family });
+                }
+            }
+            return new Map(
+                Array.from(map.entries()).sort((a, b) => a[1].hsl.l - b[1].hsl.l)
+            );
+        }
+
+        // Sélectionne automatiquement les couleurs de la tête/lame (ex: Violet/Magenta sur la pioche)
+        function autoSelectHeadColors() {
+            state.targetedHexSet.clear();
+            const hasPurple = Array.from(state.palette.values()).some(c => c.family.id === 'purple');
+            if (hasPurple) {
+                state.palette.forEach(c => {
+                    if (c.family.id === 'purple') state.targetedHexSet.add(c.hex);
+                });
+                return;
+            }
+            // Sinon, sélectionne la famille colorée la plus présente (hors contours noirs)
+            const famCounts = new Map();
+            state.palette.forEach(c => {
+                if (c.family.id === 'outline') return;
+                famCounts.set(c.family.id, (famCounts.get(c.family.id) || 0) + c.count);
+            });
+            let bestFam = null, bestCnt = -1;
+            famCounts.forEach((cnt, fid) => {
+                if (cnt > bestCnt) { bestCnt = cnt; bestFam = fid; }
+            });
+            if (bestFam) {
+                state.palette.forEach(c => {
+                    if (c.family.id === bestFam) state.targetedHexSet.add(c.hex);
+                });
+            }
+        }
+
+        /**
+         * Retourne un tableau Uint8Array(W * H) où 1 = pixel de l'item ciblé par les effets
+         */
+        function buildTargetMask(imgData) {
+            const w = imgData.width;
+            const h = imgData.height;
+            const d = imgData.data;
+            const mask = new Uint8Array(w * h);
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = y * w + x;
+                    const p = idx * 4;
+                    if (d[p + 3] < 16) continue; // Pixel transparent
+
+                    const r = d[p], g = d[p + 1], b = d[p + 2];
+                    const hex = rgbToHex(r, g, b);
+
+                    if (state.maskMode === 'all') {
+                        mask[idx] = 1;
+                    } else if (state.maskMode === 'color') {
+                        if (state.targetedHexSet.has(hex)) {
+                            mask[idx] = 1;
+                        }
+                    } else if (state.maskMode === 'head_geo') {
+                        if (state.geoExcludeDark) {
+                            const { l } = rgbToHsl(r, g, b);
+                            if (l <= 12) continue;
+                        }
+                        const normX = x / Math.max(1, w - 1);
+                        const normY = y / Math.max(1, h - 1);
+                        const cutoff = state.geoThreshold / 100;
+                        let score = 0;
+                        if (state.geoDirection === 'top_right') {
+                            score = ((normX + (1 - normY)) / 2);
+                        } else if (state.geoDirection === 'top_left') {
+                            score = (((1 - normX) + (1 - normY)) / 2);
+                        } else {
+                            score = 1 - normY;
+                        }
+                        if (score >= (1 - cutoff)) {
+                            mask[idx] = 1;
+                        }
+                    }
+                }
+            }
+            return mask;
+        }
+
+        // --- 5. Moteur de Génération des N Frames (100% Périodique & Natif 1:1) ---
+        function generateAllFrames() {
+            if (!state.baseImageData) return;
+
+            const w = state.baseImageData.width;
+            const h = state.baseImageData.height;
+            const baseData = state.baseImageData.data;
+            const N = clamp(state.frameCount, 2, 64);
+
+            const mask = buildTargetMask(state.baseImageData);
+
+            // Recensement des coordonnées des pixels ciblés (et de tous les pixels opaques)
+            const targetedPixels = [];
+            const bottomEdgePixels = [];
+            const outlineCandidatePixels = [];
+            let sumX = 0, sumY = 0;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = y * w + x;
+                    const alpha = baseData[idx * 4 + 3];
+                    if (alpha >= 16 && mask[idx] === 1) {
+                        targetedPixels.push({ x, y });
+                        sumX += x;
+                        sumY += y;
+                        // Bord inférieur d'un pixel ciblé (idéal pour faire tomber des gouttes)
+                        if (y + 1 < h && baseData[((y + 1) * w + x) * 4 + 3] < 16) {
+                            bottomEdgePixels.push({ x, y: y + 1 });
+                        }
+                    }
+                    // Pixel transparent adjacent à un pixel ciblé -> contour Halo 1px
+                    if (alpha < 16) {
+                        const neighbors = [
+                            [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
+                        ];
+                        for (let n = 0; n < neighbors.length; n++) {
+                            const nx = neighbors[n][0], ny = neighbors[n][1];
+                            if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                                const nIdx = ny * w + nx;
+                                if (baseData[nIdx * 4 + 3] >= 16 && mask[nIdx] === 1) {
+                                    outlineCandidatePixels.push({ x, y });
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Centre de gravité de la zone ciblée (ex: centre de la tête de la pioche)
+            const centerX = targetedPixels.length > 0 ? sumX / targetedPixels.length : w / 2;
+            const centerY = targetedPixels.length > 0 ? sumY / targetedPixels.length : h / 2;
+
+            // Pré-génération déterministe des entités de particules pour un bouclage parfait
+            const rng = mulberry32(state.randomSeed);
+            const particleEntities = [];
+            const pCount = state.particleCount;
+            const anchorPool = targetedPixels.length > 0 ? targetedPixels : [{ x: Math.round(w / 2), y: Math.round(h / 2) }];
+            const dripPool = bottomEdgePixels.length > 0 ? bottomEdgePixels : anchorPool;
+
+            for (let i = 0; i < pCount; i++) {
+                const anchor = anchorPool[Math.floor(rng() * anchorPool.length)];
+                const dripAnchor = dripPool[Math.floor(rng() * dripPool.length)];
+                const angle = rng() * Math.PI * 2;
+                const dist = 1.5 + rng() * state.particleSpread;
+                particleEntities.push({
+                    phaseOffset: (i / pCount + rng() * 0.18) % 1,
+                    anchorX: anchor.x,
+                    anchorY: anchor.y,
+                    dripX: dripAnchor.x,
+                    dripY: dripAnchor.y,
+                    offsetX: Math.cos(angle) * dist,
+                    offsetY: Math.sin(angle) * dist,
+                    orbitRadiusX: Math.max(3, state.particleSpread * 1.4 + (rng() - 0.5) * 3),
+                    orbitRadiusY: Math.max(2, state.particleSpread * 0.75 + (rng() - 0.5) * 2),
+                    orbitTilt: -0.55 + (rng() - 0.5) * 0.25,
+                    useSecondaryColor: (i % 2 === 1),
+                    isStarCandidate: (i % 3 === 0)
+                });
+            }
+
+            const glintRgb = hexToRgb(state.glintColor);
+            const pulseRgb = hexToRgb(state.pulseColor);
+            const pCol1 = hexToRgb(state.particleColor1);
+            const pCol2 = hexToRgb(state.particleColor2);
+
+            const generatedFrames = [];
+
+            // Fonction utilitaire pour poser un pixel avec fusion alpha propre sur une frame
+            function blendPixel(buf, px, py, r, g, b, alpha01, respectLayer) {
+                const x = Math.round(px);
+                const y = Math.round(py);
+                if (x < 0 || x >= w || y < 0 || y >= h) return;
+                const idx = (y * w + x) * 4;
+                const itemOpaque = baseData[idx + 3] >= 16;
+
+                if (respectLayer === 'behind' && itemOpaque) return;
+                if (respectLayer === 'around' && itemOpaque && alpha01 < 0.85) return;
+
+                const a = clamp(alpha01, 0, 1);
+                const dstA = buf[idx + 3] / 255;
+
+                if (dstA < 0.05) {
+                    buf[idx] = r;
+                    buf[idx + 1] = g;
+                    buf[idx + 2] = b;
+                    buf[idx + 3] = Math.round(a * 255);
+                } else {
+                    buf[idx] = clamp(Math.round(buf[idx] * (1 - a) + r * a), 0, 255);
+                    buf[idx + 1] = clamp(Math.round(buf[idx + 1] * (1 - a) + g * a), 0, 255);
+                    buf[idx + 2] = clamp(Math.round(buf[idx + 2] * (1 - a) + b * a), 0, 255);
+                    buf[idx + 3] = clamp(Math.round(Math.max(buf[idx + 3], a * 255)), 0, 255);
+                }
+            }
+
+            // Boucle sur chacune des N frames
+            for (let f = 0; f < N; f++) {
+                const progress = f / N; // 0.0 -> (N-1)/N (périodique sur 1.0)
+                const frameImg = new ImageData(new Uint8ClampedArray(baseData), w, h);
+                const buf = frameImg.data;
+
+                // -------------------------------------------------------------
+                // A. EFFET 3 : AURA & PULSATION ÉNERGÉTIQUE
+                // -------------------------------------------------------------
+                if (state.enablePulse) {
+                    const pulseWave = (Math.sin(progress * Math.PI * 2) + 1) / 2; // 0..1..0
+                    const strength = (state.pulseStrength / 100) * pulseWave;
+
+                    if (state.pulseMode === 'inner_glow' || state.pulseMode === 'both') {
+                        for (let i = 0; i < targetedPixels.length; i++) {
+                            const { x, y } = targetedPixels[i];
+                            const p = (y * w + x) * 4;
+                            buf[p] = clamp(Math.round(buf[p] + (pulseRgb.r - buf[p]) * strength * 0.55 + 35 * strength), 0, 255);
+                            buf[p + 1] = clamp(Math.round(buf[p + 1] + (pulseRgb.g - buf[p + 1]) * strength * 0.55 + 35 * strength), 0, 255);
+                            buf[p + 2] = clamp(Math.round(buf[p + 2] + (pulseRgb.b - buf[p + 2]) * strength * 0.55 + 35 * strength), 0, 255);
+                        }
+                    }
+
+                    if (state.pulseMode === 'outer_outline' || state.pulseMode === 'both') {
+                        const haloAlpha = 0.2 + 0.65 * ((state.pulseStrength / 100) * pulseWave);
+                        for (let i = 0; i < outlineCandidatePixels.length; i++) {
+                            const { x, y } = outlineCandidatePixels[i];
+                            blendPixel(buf, x, y, pulseRgb.r, pulseRgb.g, pulseRgb.b, haloAlpha, 'behind');
+                        }
+                    }
+                }
+
+                // -------------------------------------------------------------
+                // B. EFFET 1 : GLINT / REFLET BALAYANT SUR LA ZONE CIBLÉE
+                // -------------------------------------------------------------
+                if (state.enableGlint && targetedPixels.length > 0) {
+                    // Calcul des bornes de projection des pixels ciblés pour que le faisceau traverse exactement la tête/lame
+                    let minProj = Infinity, maxProj = -Infinity;
+                    const projections = new Float32Array(targetedPixels.length);
+
+                    for (let i = 0; i < targetedPixels.length; i++) {
+                        const { x, y } = targetedPixels[i];
+                        let proj = 0;
+                        if (state.glintAngle === 'diag_1') proj = x + y;
+                        else if (state.glintAngle === 'diag_2') proj = x - y;
+                        else if (state.glintAngle === 'horizontal') proj = x;
+                        else proj = y;
+
+                        projections[i] = proj;
+                        if (proj < minProj) minProj = proj;
+                        if (proj > maxProj) maxProj = proj;
+                    }
+
+                    const beamWidth = Math.max(1.5, state.glintWidth);
+                    const margin = beamWidth * 1.35;
+                    const beamPos = (minProj - margin) + progress * ((maxProj - minProj) + margin * 2);
+                    const maxIntensity = state.glintIntensity / 100;
+
+                    for (let i = 0; i < targetedPixels.length; i++) {
+                        const dist = Math.abs(projections[i] - beamPos);
+                        if (dist > beamWidth) continue;
+
+                        let factor = 1 - (dist / beamWidth);
+                        if (state.glintStyle === 'pixel_crisp') {
+                            // Quantification nette style Pixel-Art 1.8.9 (coeur brillant + bord franc)
+                            factor = factor > 0.62 ? 1.0 : (factor > 0.25 ? 0.52 : 0);
+                        } else {
+                            factor = Math.pow(factor, 1.5);
+                        }
+
+                        const boost = factor * maxIntensity;
+                        if (boost <= 0.01) continue;
+
+                        const { x, y } = targetedPixels[i];
+                        const p = (y * w + x) * 4;
+                        buf[p] = clamp(Math.round(buf[p] * (1 - boost * 0.65) + glintRgb.r * boost), 0, 255);
+                        buf[p + 1] = clamp(Math.round(buf[p + 1] * (1 - boost * 0.65) + glintRgb.g * boost), 0, 255);
+                        buf[p + 2] = clamp(Math.round(buf[p + 2] * (1 - boost * 0.65) + glintRgb.b * boost), 0, 255);
+                    }
+                }
+
+                // -------------------------------------------------------------
+                // C. EFFET 2 : PARTICULES VOLANTES / GOUTTES / ORBITE
+                // -------------------------------------------------------------
+                if (state.enableParticles) {
+                    for (let i = 0; i < particleEntities.length; i++) {
+                        const ent = particleEntities[i];
+                        const localT = (progress + ent.phaseOffset) % 1.0; // Cycle 0.0 -> 1.0 propre à chaque particule
+                        const col = ent.useSecondaryColor ? pCol2 : pCol1;
+
+                        let px = 0, py = 0, alpha = 1.0;
+                        let effectiveLayer = state.particleLayer;
+
+                        if (state.particleMode === 'sparkles') {
+                            // Étincelles flottantes avec léger mouvement sinusoïdal et apparition/disparition
+                            px = ent.anchorX + ent.offsetX + Math.sin(localT * Math.PI * 2) * 1.2;
+                            py = ent.anchorY + ent.offsetY - Math.cos(localT * Math.PI * 2) * 1.2;
+                            alpha = Math.sin(localT * Math.PI); // 0 -> 1 -> 0
+                        } else if (state.particleMode === 'embers') {
+                            // Braises qui montent vers le haut
+                            const riseDist = state.particleSpread + 4;
+                            px = ent.anchorX + (ent.offsetX * 0.6) + Math.sin(localT * Math.PI * 2) * 1.1;
+                            py = ent.anchorY + (ent.offsetY * 0.3) - localT * riseDist;
+                            alpha = Math.sin(localT * Math.PI);
+                        } else if (state.particleMode === 'drips') {
+                            // Gouttes qui se forment au bord inférieur de la tête/lame puis tombent
+                            const fallDist = state.particleSpread + 5;
+                            px = ent.dripX;
+                            const fallCurve = localT < 0.25 ? 0 : Math.pow((localT - 0.25) / 0.75, 1.4);
+                            py = ent.dripY + fallCurve * fallDist;
+                            alpha = localT < 0.8 ? 1.0 : (1.0 - (localT - 0.8) / 0.2);
+                        } else if (state.particleMode === 'orbit') {
+                            // Orbite elliptique inclinée autour du centre de la tête de la pioche
+                            const theta = localT * Math.PI * 2;
+                            const ox = Math.cos(theta) * ent.orbitRadiusX;
+                            const oy = Math.sin(theta) * ent.orbitRadiusY;
+                            px = centerX + ox * Math.cos(ent.orbitTilt) - oy * Math.sin(ent.orbitTilt);
+                            py = centerY + ox * Math.sin(ent.orbitTilt) + oy * Math.cos(ent.orbitTilt);
+                            const depth = Math.sin(theta); // > 0 devant, < 0 derrière
+                            if (state.particleLayer === 'around') {
+                                effectiveLayer = depth >= 0 ? 'front' : 'behind';
+                            }
+                            alpha = 0.55 + 0.45 * ((depth + 1) / 2);
+                        }
+
+                        if (alpha <= 0.12) continue;
+
+                        // Rendu selon la forme choisie
+                        const drawCross =
+                            (state.particleShape === 'star3' && alpha > 0.58) ||
+                            (state.particleShape === 'mixed' && ent.isStarCandidate && alpha > 0.72);
+
+                        if (drawCross) {
+                            // Étoile Pixel-Art 3×3 (coeur blanc/clair + 4 branches colorées)
+                            blendPixel(buf, px, py, 255, 255, 255, alpha, effectiveLayer);
+                            const armAlpha = alpha * 0.68;
+                            blendPixel(buf, px - 1, py, col.r, col.g, col.b, armAlpha, effectiveLayer);
+                            blendPixel(buf, px + 1, py, col.r, col.g, col.b, armAlpha, effectiveLayer);
+                            blendPixel(buf, px, py - 1, col.r, col.g, col.b, armAlpha, effectiveLayer);
+                            blendPixel(buf, px, py + 1, col.r, col.g, col.b, armAlpha, effectiveLayer);
+                        } else if (state.particleShape === 'streak' || state.particleMode === 'drips') {
+                            // Goutte ou traînée verticale 1×2 px
+                            blendPixel(buf, px, py, col.r, col.g, col.b, alpha, effectiveLayer);
+                            if (alpha > 0.45) {
+                                blendPixel(buf, px, py - 1, Math.min(255, col.r + 45), Math.min(255, col.g + 45), Math.min(255, col.b + 45), alpha * 0.6, effectiveLayer);
+                            }
+                        } else {
+                            // Pixel 1×1 net
+                            blendPixel(buf, px, py, col.r, col.g, col.b, alpha, effectiveLayer);
+                        }
+                    }
+                }
+
+                generatedFrames.push(frameImg);
+            }
+
+            state.frames = generatedFrames;
+
+            // Assemblage du Spritesheet vertical natif (W × (H * N)) sans aucun espace (0px gap)
+            const stripCanvas = document.createElement('canvas');
+            stripCanvas.width = w;
+            stripCanvas.height = h * N;
+            const stripCtx = stripCanvas.getContext('2d');
+            stripCtx.imageSmoothingEnabled = false;
+
+            for (let f = 0; f < N; f++) {
+                stripCtx.putImageData(generatedFrames[f], 0, f * h);
+            }
+            state.exportStripCanvas = stripCanvas;
+
+            if (state.currentFrameIndex >= N) {
+                state.currentFrameIndex = 0;
+            }
+
+            updateDimensionsAndStripUI();
+            renderCurrentLiveFrame();
+        }
+
+        // --- 6. Mise à jour de l'Interface, du Spritesheet et du code .mcmeta ---
+        function updateDimensionsAndStripUI() {
+            if (!state.baseImageData || !state.exportStripCanvas) return;
+
+            const w = state.baseImageData.width;
+            const h = state.baseImageData.height;
+            const N = state.frames.length;
+            const totalH = h * N;
+
+            document.getElementById('badgeSingleDim').textContent = `${w}×${h} px`;
+            document.getElementById('badgeStripDim').textContent = `${w}×${totalH} px`;
+            document.getElementById('lblStripSummary').textContent = `${N} frames de ${w}×${h}`;
+
+            const scrub = document.getElementById('rngScrubFrame');
+            scrub.max = Math.max(0, N - 1);
+
+            // Rendu de l'aperçu de la bande complète (avec repères visuels optionnels)
+            const previewCanvas = document.getElementById('canvasStripPreview');
+            previewCanvas.width = w;
+            previewCanvas.height = totalH;
+            const pCtx = previewCanvas.getContext('2d');
+            pCtx.imageSmoothingEnabled = false;
+            pCtx.drawImage(state.exportStripCanvas, 0, 0);
+
+            if (state.showStripGuides) {
+                pCtx.fillStyle = 'rgba(168, 85, 247, 0.45)';
+                for (let f = 1; f < N; f++) {
+                    pCtx.fillRect(0, f * h, w, 1);
+                }
+            }
+
+            // Mise à l'échelle CSS de l'aperçu de la bande pour qu'elle soit bien lisible
+            const displayScale = w <= 32 ? 3 : (w <= 64 ? 2 : 1);
+            previewCanvas.style.width = `${w * displayScale}px`;
+            previewCanvas.style.height = `${totalH * displayScale}px`;
+
+            // Mise à jour du fichier .png.mcmeta
+            const mcmetaObj = {
+                animation: {
+                    frametime: state.frameTimeTicks,
+                    interpolate: state.interpolateMcmeta
+                }
+            };
+            document.getElementById('preMcmetaCode').textContent = JSON.stringify(mcmetaObj, null, 2);
+        }
+
+        function renderCurrentLiveFrame() {
+            if (!state.frames || state.frames.length === 0) return;
+
+            const frameIdx = clamp(state.currentFrameIndex, 0, state.frames.length - 1);
+            const frameData = state.frames[frameIdx];
+            const w = frameData.width;
+            const h = frameData.height;
+
+            const liveCanvas = document.getElementById('canvasLivePreview');
+            if (liveCanvas.width !== w) liveCanvas.width = w;
+            if (liveCanvas.height !== h) liveCanvas.height = h;
+
+            const ctx = liveCanvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.putImageData(frameData, 0, 0);
+
+            // Superposition optionnelle du masque de zone ciblée
+            if (state.showMaskOverlay && state.baseImageData) {
+                const mask = buildTargetMask(state.baseImageData);
+                ctx.fillStyle = 'rgba(232, 121, 249, 0.42)';
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        if (mask[y * w + x] === 1) {
+                            ctx.fillRect(x, y, 1, 1);
+                        }
+                    }
+                }
+            }
+
+            // Taille d'affichage CSS dans le cadre central (conserve canvas.width = w intact)
+            const fitRatio = Math.min(280 / w, 280 / h);
+            const fitScale = fitRatio >= 1 ? Math.floor(fitRatio) : fitRatio; // Réduit les images > 280 px au lieu de les rogner
+            liveCanvas.style.width = `${w * fitScale}px`;
+            liveCanvas.style.height = `${h * fitScale}px`;
+
+            // Grille pixel optionnelle via background-image CSS sur le canvas
+            if (state.showPixelGrid && fitScale >= 4) {
+                liveCanvas.style.backgroundImage =
+                    `linear-gradient(to right, rgba(255,255,255,0.12) 1px, transparent 1px),
+                     linear-gradient(to bottom, rgba(255,255,255,0.12) 1px, transparent 1px)`;
+                liveCanvas.style.backgroundSize = `${fitScale}px ${fitScale}px`;
+            } else {
+                liveCanvas.style.backgroundImage = 'none';
+            }
+
+            // Mise à jour des 2 slots miniatures (Hotbar 1.8.9 & Fond Nuit)
+            ['canvasMcSlot', 'canvasDarkSlot'].forEach(id => {
+                const sc = document.getElementById(id);
+                if (sc.width !== w) sc.width = w;
+                if (sc.height !== h) sc.height = h;
+                const sCtx = sc.getContext('2d');
+                sCtx.imageSmoothingEnabled = false;
+                sCtx.clearRect(0, 0, w, h);
+                sCtx.putImageData(frameData, 0, 0);
+            });
+
+            document.getElementById('lblCurrentFrame').textContent = `${frameIdx + 1} / ${state.frames.length}`;
+            document.getElementById('rngScrubFrame').value = frameIdx;
+        }
+
+        // --- 7. Rendu des Pastilles de Ciblage de Couleurs (Zone Ciblée) ---
+        function renderMaskColorUI() {
+            const chipsContainer = document.getElementById('maskFamilyChips');
+            const swatchesContainer = document.getElementById('maskColorSwatches');
+            chipsContainer.innerHTML = '';
+            swatchesContainer.innerHTML = '';
+
+            const families = new Map();
+            state.palette.forEach(c => {
+                const fid = c.family.id;
+                if (!families.has(fid)) {
+                    families.set(fid, { ...c.family, hexes: [] });
+                }
+                families.get(fid).hexes.push(c.hex);
+            });
+
+            Array.from(families.values())
+                .sort((a, b) => a.order - b.order)
+                .forEach(fam => {
+                    const allActive = fam.hexes.every(h => state.targetedHexSet.has(h));
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `px-2.5 py-1 rounded-lg text-[11px] font-medium border transition flex items-center gap-1.5 ${
+                        allActive
+                            ? 'bg-fuchsia-600/35 border-fuchsia-400 text-white shadow-sm'
+                            : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+                    }`;
+                    btn.innerHTML = `<span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${fam.badge}"></span><span>${fam.name} (${fam.hexes.length})</span>`;
+                    btn.addEventListener('click', () => {
+                        if (allActive) {
+                            fam.hexes.forEach(h => state.targetedHexSet.delete(h));
+                        } else {
+                            fam.hexes.forEach(h => state.targetedHexSet.add(h));
+                        }
+                        renderMaskColorUI();
+                        generateAllFrames();
+                    });
+                    chipsContainer.appendChild(btn);
+                });
+
+            state.palette.forEach(col => {
+                const active = state.targetedHexSet.has(col.hex);
+                const sw = document.createElement('button');
+                sw.type = 'button';
+                sw.title = `${col.hex} — Cliquez pour inclure/exclure cette couleur de la zone animée`;
+                sw.className = `w-6 h-6 rounded-md border transition flex items-center justify-center ${
+                    active
+                        ? 'border-white scale-105 ring-2 ring-fuchsia-500 z-10'
+                        : 'border-slate-700 opacity-55 hover:opacity-100'
+                }`;
+                sw.style.backgroundColor = col.hex;
+                if (active) {
+                    sw.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white shadow border border-black/50"></span>`;
+                }
+                sw.addEventListener('click', () => {
+                    if (state.targetedHexSet.has(col.hex)) {
+                        state.targetedHexSet.delete(col.hex);
+                    } else {
+                        state.targetedHexSet.add(col.hex);
+                    }
+                    renderMaskColorUI();
+                    generateAllFrames();
+                });
+                swatchesContainer.appendChild(sw);
+            });
+        }
+
+        function setMaskMode(mode) {
+            state.maskMode = mode;
+            document.querySelectorAll('.mask-mode-btn').forEach(btn => {
+                if (btn.dataset.mask === mode) {
+                    btn.className = 'mask-mode-btn py-1.5 px-2 rounded-lg font-semibold transition bg-fuchsia-600 text-white shadow';
+                } else {
+                    btn.className = 'mask-mode-btn py-1.5 px-2 rounded-lg font-semibold transition text-slate-400 hover:text-white';
+                }
+            });
+            document.getElementById('panelMaskColor').classList.toggle('hidden', mode !== 'color');
+            document.getElementById('panelMaskGeo').classList.toggle('hidden', mode !== 'head_geo');
+            generateAllFrames();
+        }
+
+        // --- 8. Import d'Image Fiable (Conserve strictement naturalWidth × naturalHeight) ---
+        function importUserImageFile(file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('Veuillez sélectionner un fichier image valide (PNG, WebP, GIF, JPG).', 'warn');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+                    if (!w || !h) {
+                        showToast('Image sans dimensions exploitables (0 px).', 'warn');
+                        return;
+                    }
+
+                    const off = document.createElement('canvas');
+                    off.width = w;
+                    off.height = h;
+                    const ctx = off.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    state.baseImageData = ctx.getImageData(0, 0, w, h);
+                    state.itemName = (file.name || 'item_anime').replace(/\.[^/.]+$/, '');
+                    state.palette = extractPalette(state.baseImageData);
+                    autoSelectHeadColors();
+                    renderMaskColorUI();
+                    generateAllFrames();
+
+                    showToast(`Image importée en ${w}×${h} px ! Spritesheet : ${w}×${h * state.frameCount} px.`, 'success');
+                    if (w !== h) {
+                        // Minecraft 1.8.9 découpe une texture animée en frames carrées de W×W
+                        showToast(`Attention : image non carrée (${w}×${h}). Minecraft 1.8.9 découpe les frames en ${w}×${w} px, l'animation sera incorrecte en jeu.`, 'warn');
+                    }
+                };
+                img.onerror = () => showToast('Impossible de lire cette image (fichier corrompu ou format non supporté).', 'warn');
+                img.src = ev.target.result;
+            };
+            reader.onerror = () => showToast('Impossible de lire ce fichier.', 'warn');
+            reader.readAsDataURL(file);
+        }
+
+        // --- 9. Générateurs de Sprites 32×32 de Démonstration (Pioche & Épée) ---
+        function createDemoPickaxeImageData() {
+            const c = document.createElement('canvas');
+            c.width = 32; c.height = 32;
+            const ctx = c.getContext('2d');
+
+            const K = '#110C18'; // Contour noir
+            // Manche rouge sanguinaire & anneaux d'or
+            const R1 = '#4C0519', R2 = '#881337', R3 = '#BE123C', R4 = '#F43F5E';
+            const Au1 = '#78350F', Au2 = '#B45309', Au3 = '#F59E0B', Au4 = '#FDE68A';
+            // Tête de pioche en cristal Violet / Améthyste
+            const P1 = '#3B0764', P2 = '#581C87', P3 = '#7E22CE', P4 = '#A855F7', P5 = '#D946EF', P6 = '#F0ABFC', P7 = '#FDF4FF';
+
+            const grid = Array.from({ length: 32 }, () => Array(32).fill(null));
+            const setPx = (x, y, col) => {
+                if (x >= 0 && x < 32 && y >= 0 && y < 32) grid[y][x] = col;
+            };
+
+            // 1. Manche diagonal de bas-gauche (3,28) vers haut-droite (24,7)
+            for (let i = 3; i <= 23; i++) {
+                const x = i, y = 31 - i;
+                const isGoldRing = (i === 4 || i === 10 || i === 16 || i === 20);
+                setPx(x - 1, y - 1, K);
+                setPx(x, y - 1, isGoldRing ? Au4 : R4);
+                setPx(x, y, isGoldRing ? Au3 : R3);
+                setPx(x + 1, y, isGoldRing ? Au2 : R2);
+                setPx(x + 1, y + 1, K);
+            }
+            // Pommeau en joyau bas-gauche
+            setPx(1, 29, K); setPx(2, 28, K); setPx(2, 29, Au3); setPx(3, 29, P5);
+            setPx(1, 30, K); setPx(2, 30, P6); setPx(3, 30, Au2); setPx(4, 30, K);
+            setPx(2, 31, K); setPx(3, 31, K);
+
+            // 2. Tête de la pioche courbée (Arc supérieur gauche -> Centre -> Pointe inférieure droite)
+            for (let y = 2; y <= 23; y++) {
+                for (let x = 8; x <= 29; x++) {
+                    // Coordonnées relatives au noeud central de la tête (21, 10)
+                    const u = (x - 21) + (y - 10); // Position le long de l'axe de la tête
+                    const v = (x - 21) - (y - 10); // Position le long du manche
+
+                    // Courbe de l'arc de la pioche
+                    const arcCenterV = 1.5 - 0.065 * (u * u);
+                    const halfThickness = Math.max(0.9, 3.1 - Math.abs(u) * 0.17);
+
+                    if (Math.abs(u) <= 13 && Math.abs(v - arcCenterV) <= halfThickness) {
+                        const distEdge = halfThickness - Math.abs(v - arcCenterV);
+                        if (distEdge < 0.65 || Math.abs(u) >= 12.2) {
+                            setPx(x, y, K);
+                        } else {
+                            // Arabesques dorées proches du coeur de la pioche
+                            if (Math.abs(u) <= 2.4 && Math.abs(v - arcCenterV) < 1.8) {
+                                setPx(x, y, (x + y) % 2 === 0 ? Au4 : Au3);
+                            } else {
+                                // Dégradé cristallin Améthyste / Magenta
+                                const shade = (v - arcCenterV) / halfThickness; // -1 (arrière) à +1 (avant/haut)
+                                if (shade > 0.55) setPx(x, y, P7);
+                                else if (shade > 0.25) setPx(x, y, P6);
+                                else if (shade > -0.05) setPx(x, y, P5);
+                                else if (shade > -0.35) setPx(x, y, P4);
+                                else if (shade > -0.65) setPx(x, y, P3);
+                                else setPx(x, y, P2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Pointe supérieure droite (sommet de la pioche)
+            setPx(23, 6, K); setPx(24, 6, Au3); setPx(25, 6, Au4); setPx(26, 6, K);
+            setPx(24, 5, K); setPx(25, 5, Au4); setPx(26, 5, P5); setPx(27, 5, K);
+            setPx(25, 4, K); setPx(26, 4, K);
+
+            // Joyau central rubis sur la garde de la pioche
+            setPx(20, 10, R4); setPx(21, 10, R3); setPx(21, 11, R2); setPx(20, 11, Au4);
+
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillStyle = grid[y][x];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            return ctx.getImageData(0, 0, 32, 32);
+        }
+
+        function createDemoSwordImageData() {
+            const c = document.createElement('canvas');
+            c.width = 32; c.height = 32;
+            const ctx = c.getContext('2d');
+
+            const K = '#110C18';
+            const P = ['#3B0764', '#581C87', '#7E22CE', '#9333EA', '#C026D3', '#E879F9', '#F5D0FE', '#FFFFFF'];
+            const Au = ['#78350F', '#B45309', '#D97706', '#F59E0B', '#FDE68A'];
+            const R = ['#4C0519', '#881337', '#E11D48', '#FDA4AF'];
+
+            const grid = Array.from({ length: 32 }, () => Array(32).fill(null));
+            const setPx = (x, y, col) => {
+                if (x >= 0 && x < 32 && y >= 0 && y < 32) grid[y][x] = col;
+            };
+
+            // Poignée
+            for (let i = 2; i <= 9; i++) {
+                const x = i, y = 31 - i;
+                setPx(x - 1, y - 1, K);
+                setPx(x, y - 1, i % 3 === 0 ? Au[4] : R[3]);
+                setPx(x, y, i % 3 === 0 ? Au[3] : R[2]);
+                setPx(x + 1, y, i % 3 === 0 ? Au[1] : R[1]);
+                setPx(x + 1, y + 1, K);
+            }
+            // Garde ailée dorée
+            for (let d = -5; d <= 5; d++) {
+                const gx = 10 - d, gy = 21 - d;
+                setPx(gx, gy, Au[3]);
+                setPx(gx - 1, gy, Au[4]);
+                setPx(gx + 1, gy, K);
+                setPx(gx, gy - 1, K);
+            }
+            // Lame cristalline
+            for (let i = 11; i <= 29; i++) {
+                const cx = i, cy = 31 - i;
+                for (let w = -3; w <= 3; w++) {
+                    const px = cx + Math.floor(w / 2);
+                    const py = cy - Math.ceil(w / 2);
+                    if (w === -3 || w === 3 || i === 29) {
+                        setPx(px, py, K);
+                    } else {
+                        const idx = clamp(Math.floor(((i - 11) / 18) * 6) + (w < 0 ? 1 : 0), 0, 7);
+                        setPx(px, py, P[idx]);
+                    }
+                }
+            }
+
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillStyle = grid[y][x];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            return ctx.getImageData(0, 0, 32, 32);
+        }
+
+        function loadBuiltinItem(type) {
+            state.baseImageData = type === 'sword' ? createDemoSwordImageData() : createDemoPickaxeImageData();
+            state.itemName = type === 'sword' ? 'epee_sanguinaire' : 'pioche_sanguinaire';
+            state.palette = extractPalette(state.baseImageData);
+            autoSelectHeadColors();
+            renderMaskColorUI();
+            generateAllFrames();
+        }
+
+        // --- 10. Application des Presets d'Effets ---
+        function applyEffectPreset(presetId) {
+            if (presetId === 'glint_sparkles') {
+                state.enableGlint = true;
+                state.glintColor = '#F5D0FE';
+                state.glintAngle = 'diag_1';
+                state.glintWidth = 5;
+                state.glintIntensity = 80;
+
+                state.enableParticles = true;
+                state.particleMode = 'sparkles';
+                state.particleShape = 'mixed';
+                state.particleCount = 10;
+                state.particleSpread = 5;
+                state.particleColor1 = '#E879F9';
+                state.particleColor2 = '#FDE047';
+
+                state.enablePulse = false;
+            } else if (presetId === 'sanguine_drips') {
+                state.enableGlint = true;
+                state.glintColor = '#FDA4AF';
+                state.glintAngle = 'diag_2';
+                state.glintWidth = 4;
+                state.glintIntensity = 75;
+
+                state.enableParticles = true;
+                state.particleMode = 'drips';
+                state.particleShape = 'streak';
+                state.particleCount = 9;
+                state.particleSpread = 6;
+                state.particleColor1 = '#F43F5E';
+                state.particleColor2 = '#881337';
+
+                state.enablePulse = true;
+                state.pulseMode = 'inner_glow';
+                state.pulseColor = '#E11D48';
+                state.pulseStrength = 40;
+            } else if (presetId === 'rising_embers') {
+                state.enableGlint = true;
+                state.glintColor = '#FDE68A';
+                state.glintAngle = 'vertical';
+                state.glintWidth = 5;
+                state.glintIntensity = 70;
+
+                state.enableParticles = true;
+                state.particleMode = 'embers';
+                state.particleShape = 'mixed';
+                state.particleCount = 12;
+                state.particleSpread = 6;
+                state.particleColor1 = '#F59E0B';
+                state.particleColor2 = '#FEF08A';
+
+                state.enablePulse = true;
+                state.pulseMode = 'outer_outline';
+                state.pulseColor = '#F59E0B';
+                state.pulseStrength = 50;
+            } else if (presetId === 'cryo_orbit') {
+                state.enableGlint = true;
+                state.glintColor = '#E0F2FE';
+                state.glintAngle = 'diag_1';
+                state.glintWidth = 5;
+                state.glintIntensity = 75;
+
+                state.enableParticles = true;
+                state.particleMode = 'orbit';
+                state.particleShape = 'mixed';
+                state.particleCount = 8;
+                state.particleSpread = 5;
+                state.particleColor1 = '#38BDF8';
+                state.particleColor2 = '#E0F2FE';
+
+                state.enablePulse = true;
+                state.pulseMode = 'inner_glow';
+                state.pulseColor = '#0284C7';
+                state.pulseStrength = 40;
+            }
+
+            syncControlsFromState();
+            generateAllFrames();
+            showToast('Preset d\'animation appliqué !', 'success');
+        }
+
+        function syncControlsFromState() {
+            document.getElementById('chkEnableGlint').checked = state.enableGlint;
+            document.getElementById('colGlint').value = state.glintColor;
+            document.getElementById('selGlintAngle').value = state.glintAngle;
+            document.getElementById('selGlintStyle').value = state.glintStyle;
+            document.getElementById('rngGlintWidth').value = state.glintWidth;
+            document.getElementById('lblGlintWidth').textContent = `${state.glintWidth} px`;
+            document.getElementById('rngGlintIntensity').value = state.glintIntensity;
+            document.getElementById('lblGlintIntensity').textContent = `${state.glintIntensity}%`;
+
+            document.getElementById('chkEnableParticles').checked = state.enableParticles;
+            document.getElementById('selParticleMode').value = state.particleMode;
+            document.getElementById('selParticleShape').value = state.particleShape;
+            document.getElementById('rngParticleCount').value = state.particleCount;
+            document.getElementById('lblParticleCount').textContent = state.particleCount;
+            document.getElementById('rngParticleSpread').value = state.particleSpread;
+            document.getElementById('lblParticleSpread').textContent = `${state.particleSpread} px`;
+            document.getElementById('selParticleLayer').value = state.particleLayer;
+            document.getElementById('colParticle1').value = state.particleColor1;
+            document.getElementById('colParticle2').value = state.particleColor2;
+
+            document.getElementById('chkEnablePulse').checked = state.enablePulse;
+            document.getElementById('colPulse').value = state.pulseColor;
+            document.getElementById('selPulseMode').value = state.pulseMode;
+            document.getElementById('rngPulseStrength').value = state.pulseStrength;
+            document.getElementById('lblPulseStrength').textContent = `${state.pulseStrength}%`;
+        }
+
+        // --- 11. Boucle d'Animation Temps Réel calée sur les Ticks Minecraft ---
+        function animationLoop(timestamp) {
+            if (state.isPlaying && state.frames.length > 0) {
+                const intervalMs = state.frameTimeTicks * 50; // 1 tick MC = 50 ms
+                if (timestamp - state.lastTickTimestamp >= intervalMs) {
+                    state.currentFrameIndex = (state.currentFrameIndex + 1) % state.frames.length;
+                    // Avance d'un intervalle exact (sans dérive), sauf après une longue pause
+                    state.lastTickTimestamp = (timestamp - state.lastTickTimestamp >= intervalMs * 2) ? timestamp : state.lastTickTimestamp + intervalMs;
+                    renderCurrentLiveFrame();
+                }
+            }
+            requestAnimationFrame(animationLoop);
+        }
+
+        // --- 12. Initialisation des Événements ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Import fichier
+            const fileInput = document.getElementById('fileInput');
+            document.getElementById('btnTriggerFile').addEventListener('click', () => {
+                fileInput.value = '';
+                fileInput.click();
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    importUserImageFile(e.target.files[0]);
+                }
+            });
+
+            // Glisser-déposer sur la zone d'aperçu
+            const dropZone = document.getElementById('dropZonePreview');
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-purple-400');
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-purple-400');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-purple-400');
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    importUserImageFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            // Collage Ctrl+V
+            window.addEventListener('paste', (e) => {
+                const items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith('image/')) {
+                        const file = items[i].getAsFile();
+                        if (file) importUserImageFile(file);
+                        break;
+                    }
+                }
+            });
+
+            // Démos intégrées
+            document.getElementById('btnDemoPickaxe').addEventListener('click', () => {
+                loadBuiltinItem('pickaxe');
+                showToast('Pioche Sanguinaire / Améthyste 32×32 chargée.', 'info');
+            });
+            document.getElementById('btnDemoSword').addEventListener('click', () => {
+                loadBuiltinItem('sword');
+                showToast('Épée Sanguinaire / Améthyste 32×32 chargée.', 'info');
+            });
+
+            // Pipette directe sur le Canvas d'Aperçu Central pour cibler/retirer une couleur de l'item
+            const liveCanvas = document.getElementById('canvasLivePreview');
+            const hoverBadge = document.getElementById('hoverColorBadge');
+            const hoverSwatch = document.getElementById('hoverColorSwatch');
+            const hoverHex = document.getElementById('hoverColorHex');
+
+            function getBaseHexAtMouse(e) {
+                if (!state.baseImageData) return null;
+                const rect = liveCanvas.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) return null;
+                const x = Math.floor(((e.clientX - rect.left) / rect.width) * state.baseImageData.width);
+                const y = Math.floor(((e.clientY - rect.top) / rect.height) * state.baseImageData.height);
+                if (x < 0 || x >= state.baseImageData.width || y < 0 || y >= state.baseImageData.height) return null;
+                const p = (y * state.baseImageData.width + x) * 4;
+                if (state.baseImageData.data[p + 3] < 16) return null;
+                return rgbToHex(state.baseImageData.data[p], state.baseImageData.data[p + 1], state.baseImageData.data[p + 2]);
+            }
+
+            liveCanvas.addEventListener('mousemove', (e) => {
+                const hex = getBaseHexAtMouse(e);
+                if (hex) {
+                    hoverBadge.classList.remove('hidden');
+                    hoverBadge.classList.add('flex');
+                    hoverSwatch.style.backgroundColor = hex;
+                    hoverHex.textContent = hex;
+                } else {
+                    hoverBadge.classList.add('hidden');
+                    hoverBadge.classList.remove('flex');
+                }
+            });
+
+            liveCanvas.addEventListener('mouseleave', () => {
+                hoverBadge.classList.add('hidden');
+                hoverBadge.classList.remove('flex');
+            });
+
+            liveCanvas.addEventListener('click', (e) => {
+                const hex = getBaseHexAtMouse(e);
+                if (!hex) return;
+                setMaskMode('color');
+                if (state.targetedHexSet.has(hex)) {
+                    state.targetedHexSet.delete(hex);
+                } else {
+                    state.targetedHexSet.add(hex);
+                }
+                renderMaskColorUI();
+                generateAllFrames();
+            });
+
+            // Paramètres globaux Frames & Vitesse
+            document.getElementById('rngFrameCount').addEventListener('input', (e) => {
+                state.frameCount = parseInt(e.target.value, 10) || 10;
+                document.getElementById('lblFrameCount').textContent = `${state.frameCount} frames`;
+                generateAllFrames();
+            });
+
+            document.getElementById('rngFrameTime').addEventListener('input', (e) => {
+                state.frameTimeTicks = parseInt(e.target.value, 10) || 2;
+                const fps = Math.round((20 / state.frameTimeTicks) * 10) / 10;
+                document.getElementById('lblFrameTime').textContent = `${state.frameTimeTicks} tick${state.frameTimeTicks > 1 ? 's' : ''} (${fps} FPS)`;
+                updateDimensionsAndStripUI();
+            });
+
+            // Masque de zone
+            document.querySelectorAll('.mask-mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => setMaskMode(btn.dataset.mask));
+            });
+
+            document.getElementById('chkShowMask').addEventListener('change', (e) => {
+                state.showMaskOverlay = e.target.checked;
+                renderCurrentLiveFrame();
+            });
+
+            document.getElementById('btnMaskAllColors').addEventListener('click', () => {
+                state.palette.forEach(c => state.targetedHexSet.add(c.hex));
+                renderMaskColorUI();
+                generateAllFrames();
+            });
+
+            document.getElementById('btnMaskNoOutline').addEventListener('click', () => {
+                state.targetedHexSet.clear();
+                state.palette.forEach(c => {
+                    if (c.family.id !== 'outline') state.targetedHexSet.add(c.hex);
+                });
+                renderMaskColorUI();
+                generateAllFrames();
+            });
+
+            document.getElementById('selGeoDirection').addEventListener('change', (e) => {
+                state.geoDirection = e.target.value;
+                generateAllFrames();
+            });
+
+            document.getElementById('rngGeoThreshold').addEventListener('input', (e) => {
+                state.geoThreshold = parseInt(e.target.value, 10) || 52;
+                document.getElementById('lblGeoThreshold').textContent = `${state.geoThreshold}%`;
+                generateAllFrames();
+            });
+
+            document.getElementById('chkGeoExcludeDark').addEventListener('change', (e) => {
+                state.geoExcludeDark = e.target.checked;
+                generateAllFrames();
+            });
+
+            // Contrôles Effet 1 : Glint
+            document.getElementById('chkEnableGlint').addEventListener('change', (e) => {
+                state.enableGlint = e.target.checked;
+                generateAllFrames();
+            });
+            document.getElementById('colGlint').addEventListener('input', (e) => {
+                state.glintColor = e.target.value.toUpperCase();
+                generateAllFrames();
+            });
+            document.getElementById('selGlintAngle').addEventListener('change', (e) => {
+                state.glintAngle = e.target.value;
+                generateAllFrames();
+            });
+            document.getElementById('selGlintStyle').addEventListener('change', (e) => {
+                state.glintStyle = e.target.value;
+                generateAllFrames();
+            });
+            document.getElementById('rngGlintWidth').addEventListener('input', (e) => {
+                state.glintWidth = parseInt(e.target.value, 10) || 5;
+                document.getElementById('lblGlintWidth').textContent = `${state.glintWidth} px`;
+                generateAllFrames();
+            });
+            document.getElementById('rngGlintIntensity').addEventListener('input', (e) => {
+                state.glintIntensity = parseInt(e.target.value, 10) || 75;
+                document.getElementById('lblGlintIntensity').textContent = `${state.glintIntensity}%`;
+                generateAllFrames();
+            });
+            document.querySelectorAll('.glint-swatch').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.glintColor = btn.dataset.glintCol;
+                    document.getElementById('colGlint').value = state.glintColor;
+                    state.enableGlint = true;
+                    document.getElementById('chkEnableGlint').checked = true;
+                    generateAllFrames();
+                });
+            });
+
+            // Contrôles Effet 2 : Particules
+            document.getElementById('chkEnableParticles').addEventListener('change', (e) => {
+                state.enableParticles = e.target.checked;
+                generateAllFrames();
+            });
+            document.getElementById('selParticleMode').addEventListener('change', (e) => {
+                state.particleMode = e.target.value;
+                generateAllFrames();
+            });
+            document.getElementById('selParticleShape').addEventListener('change', (e) => {
+                state.particleShape = e.target.value;
+                generateAllFrames();
+            });
+            document.getElementById('rngParticleCount').addEventListener('input', (e) => {
+                state.particleCount = parseInt(e.target.value, 10) || 9;
+                document.getElementById('lblParticleCount').textContent = state.particleCount;
+                generateAllFrames();
+            });
+            document.getElementById('rngParticleSpread').addEventListener('input', (e) => {
+                state.particleSpread = parseInt(e.target.value, 10) || 5;
+                document.getElementById('lblParticleSpread').textContent = `${state.particleSpread} px`;
+                generateAllFrames();
+            });
+            document.getElementById('selParticleLayer').addEventListener('change', (e) => {
+                state.particleLayer = e.target.value;
+                generateAllFrames();
+            });
+            document.getElementById('colParticle1').addEventListener('input', (e) => {
+                state.particleColor1 = e.target.value.toUpperCase();
+                generateAllFrames();
+            });
+            document.getElementById('colParticle2').addEventListener('input', (e) => {
+                state.particleColor2 = e.target.value.toUpperCase();
+                generateAllFrames();
+            });
+            document.querySelectorAll('.p-theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const [c1, c2] = btn.dataset.pcols.split(',');
+                    state.particleColor1 = c1;
+                    state.particleColor2 = c2;
+                    document.getElementById('colParticle1').value = c1;
+                    document.getElementById('colParticle2').value = c2;
+                    state.enableParticles = true;
+                    document.getElementById('chkEnableParticles').checked = true;
+                    generateAllFrames();
+                });
+            });
+
+            document.getElementById('btnRegenSeed').addEventListener('click', () => {
+                state.randomSeed = Math.floor(Math.random() * 999999);
+                generateAllFrames();
+                showToast('Nouvelle disposition de particules générée !', 'info');
+            });
+
+            // Contrôles Effet 3 : Aura & Pulsation
+            document.getElementById('chkEnablePulse').addEventListener('change', (e) => {
+                state.enablePulse = e.target.checked;
+                generateAllFrames();
+            });
+            document.getElementById('colPulse').addEventListener('input', (e) => {
+                state.pulseColor = e.target.value.toUpperCase();
+                generateAllFrames();
+            });
+            document.getElementById('selPulseMode').addEventListener('change', (e) => {
+                state.pulseMode = e.target.value;
+                generateAllFrames();
+            });
+            document.getElementById('rngPulseStrength').addEventListener('input', (e) => {
+                state.pulseStrength = parseInt(e.target.value, 10) || 45;
+                document.getElementById('lblPulseStrength').textContent = `${state.pulseStrength}%`;
+                generateAllFrames();
+            });
+
+            // Presets globaux
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => applyEffectPreset(btn.dataset.preset));
+            });
+
+            // Contrôles du Lecteur Live
+            const btnPlayPause = document.getElementById('btnPlayPause');
+            function updatePlayPauseUI() {
+                document.getElementById('iconPlayPause').textContent = state.isPlaying ? '⏸' : '▶';
+                document.getElementById('txtPlayPause').textContent = state.isPlaying ? 'Pause' : 'Lecture';
+            }
+            btnPlayPause.addEventListener('click', () => {
+                state.isPlaying = !state.isPlaying;
+                updatePlayPauseUI();
+            });
+
+            document.getElementById('btnPrevFrame').addEventListener('click', () => {
+                state.isPlaying = false;
+                updatePlayPauseUI();
+                state.currentFrameIndex = (state.currentFrameIndex - 1 + state.frames.length) % state.frames.length;
+                renderCurrentLiveFrame();
+            });
+
+            document.getElementById('btnNextFrame').addEventListener('click', () => {
+                state.isPlaying = false;
+                updatePlayPauseUI();
+                state.currentFrameIndex = (state.currentFrameIndex + 1) % state.frames.length;
+                renderCurrentLiveFrame();
+            });
+
+            document.getElementById('rngScrubFrame').addEventListener('input', (e) => {
+                state.isPlaying = false;
+                updatePlayPauseUI();
+                state.currentFrameIndex = parseInt(e.target.value, 10) || 0;
+                renderCurrentLiveFrame();
+            });
+
+            document.getElementById('chkPixelGrid').addEventListener('change', (e) => {
+                state.showPixelGrid = e.target.checked;
+                renderCurrentLiveFrame();
+            });
+
+            document.getElementById('chkStripGuides').addEventListener('change', (e) => {
+                state.showStripGuides = e.target.checked;
+                updateDimensionsAndStripUI();
+            });
+
+            document.getElementById('chkMcmetaInterpolate').addEventListener('change', (e) => {
+                state.interpolateMcmeta = e.target.checked;
+                updateDimensionsAndStripUI();
+            });
+
+            // Export Spritesheet PNG (Strictement W × (H * N))
+            document.getElementById('btnExportSpritesheet').addEventListener('click', () => {
+                if (!state.exportStripCanvas) return;
+                const w = state.exportStripCanvas.width;
+                const h = state.exportStripCanvas.height;
+                const link = document.createElement('a');
+                const dataUrl = state.exportStripCanvas.toDataURL('image/png');
+                if (dataUrl === 'data:,') {
+                    // Canvas au-delà des limites du navigateur : toDataURL renvoie une image vide
+                    showToast(`Spritesheet trop grand pour le navigateur (${w}×${h} px) : réduisez le nombre de frames ou la taille de l'image.`, 'warn');
+                    return;
+                }
+                link.download = `${state.itemName}.png`;
+                link.href = dataUrl;
+                link.click();
+                showToast(`Spritesheet exporté : ${state.itemName}.png (${w}×${h} px) !`, 'success');
+            });
+
+            // Export fichier .png.mcmeta
+            document.getElementById('btnDownloadMcmeta').addEventListener('click', () => {
+                const content = document.getElementById('preMcmetaCode').textContent;
+                const blob = new Blob([content], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `${state.itemName}.png.mcmeta`;
+                link.href = url;
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast(`Fichier ${state.itemName}.png.mcmeta téléchargé !`, 'success');
+            });
+
+            // Copie du JSON .mcmeta dans le presse-papiers
+            document.getElementById('btnCopyMcmeta').addEventListener('click', () => {
+                const textArea = document.createElement('textarea');
+                textArea.value = document.getElementById('preMcmetaCode').textContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                textArea.remove();
+                showToast('Code .png.mcmeta copié dans le presse-papiers !', 'success');
+            });
+
+            // Chargement initial avec la Pioche Sanguinaire / Améthyste 32×32
+            loadBuiltinItem('pickaxe');
+            requestAnimationFrame(animationLoop);
+        });
+    </script>
+</body>
+</html>
