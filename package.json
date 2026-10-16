@@ -6,7 +6,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "build:items": "node src/items-editor/build.js lore-preview.html"
   },
   "repository": {
     "type": "git",
