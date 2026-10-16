@@ -644,6 +644,43 @@ test.describe('interface du réglage d\'entrée', () => {
     expect(errors).toEqual([]);
   });
 
+  test('RÉGRESSION chargement : ores/armor ignorés, entrées non chargées à part et sans faux refus, fichiers isolés expliqués', async ({ page }, testInfo) => {
+    const errors = collectErrors(page);
+    await openPanel(page);
+    // Dossier « pack » du serveur : mêmes sous-dossiers que pack-src, plus ores/ et armor/ que ce réglage ne traite pas
+    const files = (await packSrcFiles(page)).map(f => ({ ...f, name: f.name.replace(/^pack-src\//, 'pack/') }));
+    files.push({ name: 'pack/ores/oak_wood/texture.png', data: await pngBuffer(page, 16, 16, 1) });
+    files.push({ name: 'pack/armor/demo/layer_1.png', data: await pngBuffer(page, 64, 32, 1) });
+    for (const f of files) {
+      const p = path.join(testInfo.outputPath(), f.name);
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.writeFileSync(p, f.data);
+    }
+    await page.setInputFiles('#bcDir', testInfo.outputPath('pack'));
+    await settled(page);
+    // pas de fausse entrée « fichiers isolés » tirée de ores/oak_wood : la première vraie aile est choisie
+    await expect(page.locator('#bcEntry')).toHaveValue('wings/test_wings');
+    await expect(page.locator('#bcEntry option[value="*loose"]')).toHaveCount(0);
+
+    // Seuls quelques fichiers chargés : les autres entrées de pack.json sont regroupées à part…
+    await page.setInputFiles('#bcFiles', [
+      { name: 'pack.json', mimeType: 'application/json', buffer: Buffer.from(PACK) },
+      { name: 'model.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(WING_MODEL)) }
+    ]);
+    await settled(page);
+    const group = page.locator('#bcEntry optgroup[label="Dans pack.json — fichiers non chargés"]');
+    await expect(group.locator('option[value="items/flat_sword"]')).toHaveCount(1);
+    // … et des fichiers sans leur dossier sont expliqués (identifiant inconnu)
+    await expect(page.locator('#bcMsg')).toContainText('Fichiers chargés sans leur dossier');
+    // choisir une entrée non chargée : avertissement, jamais « Refusé par BeltariaContent »
+    await page.selectOption('#bcEntry', 'items/flat_sword');
+    await settled(page);
+    await expect(page.locator('#bcMsg')).toContainText('ne sont pas chargés');
+    await expect(page.locator('#bcMsg')).not.toContainText('Refusé par BeltariaContent');
+    await expect(page.locator('#bcMsg')).not.toContainText('dossier absent');
+    expect(errors).toEqual([]);
+  });
+
   test('téléphone 375 px : aucun défilement horizontal, tous contextes', async ({ page }) => {
     const errors = collectErrors(page);
     await page.setViewportSize({ width: 375, height: 812 });

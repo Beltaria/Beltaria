@@ -1831,17 +1831,22 @@ window.ItemModelUI = (() => {
             }
         }
         const byKey = new Map();
-        const loose = [];
+        let loose = [];
+        // Dossiers de pack-src que ce réglage ne traite pas (minerais, armures, entités, icônes du texte, assets) :
+        // leurs texture.png ne sont pas des « fichiers isolés » d'une entrée.
+        const OTHER_DIRS = /(^|\/)(ores|armor|entities|glyphs|assets)\//;
         paths.forEach(p => {
             const e = M.entryPath(p);
             if (e) {
                 const key = `${e.category}/${e.id}`;
                 if (!byKey.has(key)) byKey.set(key, { key, category: e.category, id: e.id, dir: p.slice(0, p.length - e.file.length), names: [], loose: false });
                 byKey.get(key).names.push(e.file);
-            } else if (/(^|\/)(model\.json|texture(_\d+)?\.png(\.mcmeta)?|texture[^/]*\.png(\.mcmeta)?|bow_[^/]*\.png|icon\.png)$/.test(p)) {
+            } else if (!OTHER_DIRS.test(p) && /(^|\/)(model\.json|texture(_\d+)?\.png(\.mcmeta)?|texture[^/]*\.png(\.mcmeta)?|bow_[^/]*\.png|icon\.png)$/.test(p)) {
                 loose.push(p);
             }
         });
+        // Des fichiers isolés n'ont de sens que sans arborescence <catégorie>/<id>/ chargée à côté
+        if (byKey.size) loose = [];
         if (st.pack) { // entrées déclarées sans dossier : listées (BC exigerait le dossier)
             M.CATEGORIES.forEach(c => {
                 const sec = st.pack[c];
@@ -1863,6 +1868,8 @@ window.ItemModelUI = (() => {
                 if (found) category = found;
             }
             st.entries.unshift({ key: '*loose', category, id, dir, names, loose: true });
+            const declaredHere = st.pack && M.CATEGORIES.some(c => st.pack[c] && Object.prototype.hasOwnProperty.call(st.pack[c], id));
+            if (st.pack && !declaredHere) st.loadMsgs.push({ type: 'warn', text: `Fichiers chargés sans leur dossier : l'outil ne sait pas à quelle entrée de pack.json ils appartiennent (identifiant « ${id} » supposé). Indiquez la catégorie et l'identifiant (ex. wings / fairy_wings) ci-dessous pour appliquer son réglage pack.json — ou chargez le dossier pack-src entier avec le bouton Dossier.` });
         }
         st.entries.forEach(e => {
             e.hasModel = e.names.includes('model.json');
@@ -1877,10 +1884,16 @@ window.ItemModelUI = (() => {
         const sel = $('bcEntry');
         sel.textContent = '';
         if (!st.entries.length) { sel.append(el('option', { value: '', text: 'Aucune entrée : chargez un dossier, des fichiers ou un .zip' })); return; }
+        // Entrées dont les fichiers sont chargés d'abord ; celles que pack.json déclare sans fichiers chargés
+        // sont regroupées à part (leur dossier peut très bien exister dans pack-src).
+        const notLoaded = el('optgroup', { label: 'Dans pack.json — fichiers non chargés' });
         st.entries.forEach(e => {
-            const kind = e.loose ? 'fichiers isolés' : !e.dir ? 'déclarée, dossier absent' : e.hasModel ? 'modèle' : 'texture plate';
-            sel.append(el('option', { value: e.key, text: `${e.loose ? '★ ' : ''}${e.category}/${e.id} (${kind}${e.declared ? '' : ', hors pack.json'})` }));
+            const missing = !e.loose && e.dir == null;
+            const kind = e.loose ? 'fichiers isolés' : missing ? 'fichiers non chargés' : e.hasModel ? 'modèle' : 'texture plate';
+            const opt = el('option', { value: e.key, text: `${e.loose ? '★ ' : ''}${e.category}/${e.id} (${kind}${e.declared ? '' : ', hors pack.json'})` });
+            (missing ? notLoaded : sel).append(opt);
         });
+        if (notLoaded.children.length) sel.append(notLoaded);
     }
 
     async function decodeImage(bytes) {
@@ -1966,7 +1979,8 @@ window.ItemModelUI = (() => {
             folders: st.pack ? (st.pack.folders && typeof st.pack.folders === 'object' ? st.pack.folders : {}) : null,
             modelText: c.modelText, files: c.names
         });
-        if (c.dir == null && !c.loose) st.res.errors.unshift({ text: `pack.json : ${c.category}.${c.id} : dossier ${c.category}/${c.id} absent des fichiers chargés (BC : « dossier absent »)`, ref: 'PackBuild.java:641 ; :881-885' });
+        // Fichiers non chargés ici : on ne peut rien conclure (le dossier existe peut-être dans pack-src)
+        st.res.notLoaded = c.dir == null && !c.loose;
         st.guiDirty = true;
         const key = (c.modelText || '') + '|' + JSON.stringify(st.res.merged ? st.res.entry.fits.shift : null) + '|' + Object.keys(st.textures).join(',') + '|' + (st.flatImage ? 'flat' : '');
         if (key !== st.geoKey) { st.geoKey = key; rebuildItem(); }
@@ -2133,7 +2147,10 @@ window.ItemModelUI = (() => {
         const r = st.res;
         const list = [...st.loadMsgs];
         if (st.actionMsg) list.push(st.actionMsg);
-        if (r) {
+        if (r && r.notLoaded) {
+            const c = st.cur;
+            list.push({ type: 'warn', text: `Les fichiers de ${c.category}/${c.id} ne sont pas chargés : rien à vérifier tant qu'ils manquent. Chargez le dossier pack-src (ou pack/ du serveur) entier avec le bouton Dossier, ou le dossier ${c.category}/${c.id}/ avec pack.json.` });
+        } else if (r) {
             if (r.errors.length) list.push({ type: 'err', text: `Refusé par BeltariaContent (BC s'arrête au premier défaut) : ${r.errors.length} défaut(s).` });
             else if (r.ok) list.push({ type: 'ok', text: r.flat ? 'Accepté par BC : règle CIT texture=, placements vanilla.' : 'Accepté par BC : le pack s\'assemblerait avec ces valeurs.' });
             r.errors.forEach(e => list.push({ type: 'err', text: e.text, ref: e.ref }));
