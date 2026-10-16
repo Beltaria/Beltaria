@@ -1,0 +1,25 @@
+{
+  "name": "beltaria-studio",
+  "version": "1.0.0",
+  "description": "Beltaria Studio: outils pixel art Minecraft 1.8",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beltaria/Beltaria.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Beltaria/Beltaria/issues"
+  },
+  "homepage": "https://github.com/Beltaria/Beltaria#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "http-server": "^14.1.1"
+  },
+  "private": true
+}
