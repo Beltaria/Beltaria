@@ -3,52 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualiseur d'Items 3D & Animations (Correction FPS)</title>
+    <title>Items 3D &amp; réglage d'entrée · Beltaria Studio</title>
+    <meta name="color-scheme" content="dark">
+    <link rel="stylesheet" href="studio.css">
+    <script src="studio-nav.js" defer></script>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: radial-gradient(circle at center, #1e1e24 0%, #0a0a0c 100%); 
-            color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; 
+        * { box-sizing: border-box; }
+        /* Ordinateur : en-tête + (panneau | vue 3D) sur toute la hauteur, sans défilement de page */
+        body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; font-size: 14px; }
+        .app { flex: 1 1 auto; min-height: 0; display: flex; }
+        #sidebar {
+            width: 380px; flex-shrink: 0; padding: 16px;
+            display: flex; flex-direction: column; gap: 14px; overflow-y: auto; overscroll-behavior: contain;
+            border-right: 1px solid var(--st-border); background: rgba(15, 23, 42, 0.55);
         }
-        #sidebar { 
-            width: 350px; background-color: rgba(20, 20, 25, 0.95); 
-            padding: 25px; box-shadow: 2px 0 15px rgba(0,0,0,0.8); 
-            display: flex; flex-direction: column; gap: 20px; z-index: 10; 
-            border-right: 2px solid #e67e22; overflow-y: auto;
-        }
-        #viewer { 
-            flex-grow: 1; position: relative; cursor: grab; transition: background 0.3s;
-            background-color: #1e1e24; /* Fond par défaut */
+        #sidebar > .st-panel { flex: none; }
+        #viewer {
+            flex-grow: 1; position: relative; cursor: grab; transition: background 0.3s; min-width: 0; overflow: hidden;
+            background: radial-gradient(circle at 50% 45%, var(--st-surface-2) 0%, var(--st-surface-solid) 45%, var(--st-bg) 100%); /* Fond par défaut */
         }
         #viewer:active { cursor: grabbing; }
-        h2 { margin-top: 0; color: #e67e22; font-size: 1.5em; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .upload-group { 
-            background: #2a2a35; padding: 15px; border-radius: 8px; 
-            border: 1px dashed #555; text-align: center; transition: 0.3s;
+        /* La toile three.js ne participe pas à la mise en page : la vue fixe sa taille, le rendu la suit */
+        #viewer > canvas { position: absolute; top: 0; left: 0; display: block; }
+
+        .st-panel-title { display: flex; align-items: center; gap: 8px; }
+        .st-panel-head .st-badge { flex: none; }
+
+        .upload-group {
+            display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px;
+            background: var(--st-inset); border: 1px dashed var(--st-border-strong); transition: border-color .15s;
         }
-        .upload-group:hover { border-color: #e67e22; background: #30303e; }
-        .upload-group label.title { display: block; margin-bottom: 12px; font-weight: bold; color: #ddd; }
+        .upload-group:hover, .upload-group:focus-within { border-color: var(--st-accent-line); }
         input[type=file] { display: none; }
-        .btn { 
-            background: #d35400; color: #fff; padding: 10px 20px; 
-            border-radius: 5px; cursor: pointer; display: inline-block; 
-            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s;
-            width: 100%; box-sizing: border-box;
+        .upload-group .st-btn { width: 100%; min-height: 36px; }
+
+        .status { font-size: 12px; color: var(--st-muted); display: block; overflow-wrap: anywhere; font-family: var(--st-mono); }
+
+        label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; margin-bottom: 10px; }
+        input[type=range] { width: 100%; cursor: pointer; }
+        input[type=range]:disabled { cursor: not-allowed; opacity: .5; }
+        label.field { flex-direction: column; align-items: stretch; gap: 6px; color: var(--st-muted); font-size: 12px; font-weight: 600; }
+        label.field .val { font-family: var(--st-mono); color: var(--st-accent-text); font-weight: 600; }
+        label.field:last-child { margin-bottom: 0; }
+
+        .toggle {
+            min-height: 40px; padding: 8px 12px; border-radius: var(--st-radius-sm);
+            background: var(--st-surface-2); border: 1px solid var(--st-border-strong); font-weight: 500;
+            transition: border-color .15s, background-color .15s;
         }
-        .btn:hover { background: #e67e22; }
-        
-        .status { font-size: 0.85em; color: #888; margin-top: 10px; display: block; word-break: break-all; }
-        
-        .box { background: #222; padding: 15px; border-radius: 8px; border-left: 3px solid #e67e22; }
-        .box h3 { margin: 0 0 10px 0; font-size: 1em; color: #ccc; }
-        
-        label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.9em; margin-bottom: 10px;}
-        input[type=range] { width: 100%; accent-color: #e67e22; cursor: pointer; }
-        
-        .info-text { font-size: 0.85em; color: #999; line-height: 1.5; }
-        
-        #loading { display: none; color: #e67e22; font-weight: bold; margin-top: 5px; font-size: 0.9em; }
+        .toggle:hover { border-color: var(--st-accent-line); }
+        .toggle input { width: 16px; height: 16px; margin: 0; flex: none; }
+        .toggle:has(input:checked) { background: var(--st-accent-soft); border-color: var(--st-accent-line); color: var(--st-accent-text); }
+        .toggle:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+        .toggle:has(input:focus-visible) { outline: 2px solid var(--st-accent-hover); outline-offset: 2px; }
+
+        .info-text { font-size: 12px; color: var(--st-muted); line-height: 1.5; }
+        .info-text b { color: var(--st-text); }
+        #sidebar code { font-family: var(--st-mono); color: var(--st-accent-text); font-size: 0.95em; }
+
+        #loading { display: none; align-items: center; gap: 8px; color: var(--st-accent-text); font-weight: 600; font-size: 12px; }
+        #loading::before {
+            content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -2px;
+            border: 2px solid var(--st-accent-line); border-top-color: var(--st-accent-hover); border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* État vide de la vue 3D */
+        .empty { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; }
+        .empty[hidden] { display: none; }
+        .empty-card {
+            pointer-events: auto; max-width: 340px; text-align: center; padding: 20px;
+            border-radius: var(--st-radius); border: 1px dashed var(--st-accent-line);
+            background: rgba(2, 6, 23, 0.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+        }
+        .empty-icon {
+            width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; display: grid; place-items: center;
+            background: var(--st-accent-soft); border: 1px solid var(--st-accent-line); color: var(--st-fuchsia);
+        }
+        .empty-icon svg { width: 24px; height: 24px; }
+        .empty-title { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--st-text-strong); }
+        .empty-sub { margin: 0 0 14px; font-size: 12px; color: var(--st-muted); line-height: 1.5; }
+        .empty-card .st-btn { margin: 0; min-height: 36px; }
 
         /* Le curseur Minecraft */
         #crosshair {
@@ -60,140 +96,176 @@
                         linear-gradient(white, white) center/16px 2px no-repeat;
             mix-blend-mode: difference; z-index: 5;
         }
-        .highlight-check { background: rgba(230, 126, 34, 0.15); padding: 10px; border-radius: 5px; border: 1px solid #e67e22; }
 
-        /* Téléphone : panneau au-dessus, vue 3D en dessous */
-        @media (max-width: 700px) {
-            body { flex-direction: column; }
-            #sidebar { width: auto; max-height: 45vh; padding: 15px; gap: 12px; border-right: none; border-bottom: 2px solid #e67e22; }
-            #viewer { min-height: 0; }
+        /* Tablette : en-tête sur une ligne (pastille masquée), panneau plus étroit */
+        @media (max-width: 1024px) {
+            .st-header .st-actions { display: none; }
+            #sidebar { width: 320px; }
+        }
+        /* Tablette étroite et téléphone : panneau au-dessus (défile seul), vue 3D toujours visible dessous */
+        @media (max-width: 760px) {
+            .app { flex-direction: column; }
+            #sidebar { width: auto; flex: 1 1 52%; min-height: 0; padding: 12px; gap: 12px; border-right: none; border-bottom: 1px solid var(--st-border); }
+            #viewer { flex: 1 1 48%; min-height: 220px; }
+            .empty-card { padding: 14px; }
+            .empty-sub { display: none; }
+        }
+        @media (max-width: 420px) {
+            .st-header .st-logo { display: none; }
+            .st-header .st-title { font-size: 16px; }
+            .st-header .st-actions { display: none; }
         }
         /* --- Réglage d'entrée BeltariaContent (pack.json + model.json) --- */
         #bcView { position: absolute; inset: 0; display: none; z-index: 6; cursor: grab; overflow: hidden; }
         #bcView.on { display: block; }
         #bcView canvas.bc-main, #bcView > canvas:first-child { display: block; width: 100%; height: 100%; }
-        .bc-label { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; pointer-events: none; max-width: calc(100% - 130px); }
-        .bc-label code { color: #f0a35e; }
-        .bc-note { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 12px; line-height: 1.4; background: rgba(0,0,0,0.6); padding: 6px 8px; border-radius: 6px; color: #ddd; pointer-events: none; }
-        .bc-fitinfo { position: absolute; left: 8px; top: 40px; font-size: 12px; background: rgba(0,0,0,0.6); color: #ddd; padding: 3px 8px; border-radius: 6px; pointer-events: none; max-width: calc(100% - 130px); }
+        .bc-label, .bc-note, .bc-fitinfo {
+            position: absolute; pointer-events: none; border-radius: var(--st-radius-sm);
+            background: rgba(2, 6, 23, 0.78); border: 1px solid var(--st-border-strong); color: var(--st-text);
+        }
+        .bc-label { top: 8px; left: 8px; padding: 4px 10px; font-size: 13px; font-weight: 700; max-width: calc(100% - 130px); }
+        .bc-label code, .bc-fitinfo code { font-family: var(--st-mono); color: var(--st-accent-text); }
+        .bc-note { left: 8px; right: 8px; bottom: 8px; font-size: 12px; line-height: 1.4; padding: 6px 8px; }
+        .bc-note:empty, .bc-fitinfo:empty, .bc-label:empty { display: none; }
+        .bc-fitinfo { left: 8px; top: 40px; font-size: 12px; padding: 3px 8px; max-width: calc(100% - 130px); }
         .bc-slot16 { position: absolute; top: 8px; right: 8px; width: 96px; height: 96px; image-rendering: pixelated; border: 2px solid #373737; background: #8b8b8b; pointer-events: none; }
-        .bc-slot16-label { position: absolute; top: 108px; right: 8px; font-size: 11px; color: #222; background: rgba(255,255,255,0.7); padding: 1px 5px; border-radius: 4px; pointer-events: none; }
+        .bc-slot16-label { position: absolute; top: 108px; right: 8px; font-size: 11px; color: var(--st-text); background: rgba(2, 6, 23, 0.78); padding: 1px 6px; border-radius: 4px; pointer-events: none; }
         #bcCrosshair { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; transform: translate(-50%, -50%); pointer-events: none; display: none;
             background: linear-gradient(white, white) center/2px 16px no-repeat, linear-gradient(white, white) center/16px 2px no-repeat; mix-blend-mode: difference; }
         #bcPanel[hidden] { display: none; }
-        #bcPanel { min-width: 0; }
-        #bcPanel select, #bcPanel .bc-text, #bcPanel textarea { width: 100%; box-sizing: border-box; background: #15151a; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 4px; font-size: 12px; }
-        .bc-load { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
-        .bc-btn { background: #3a3a48; color: #fff; border: 1px solid #555; border-radius: 5px; padding: 6px 8px; font-size: 0.78em; cursor: pointer; flex: 1 1 auto; text-align: center; margin: 0; display: inline-block; }
-        .bc-btn:hover { border-color: #e67e22; }
-        .bc-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .bc-field { display: block; font-size: 0.8em; margin: 6px 0; color: #ccc; }
-        .bc-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
-        .bc-tabs button { flex: 1 1 30%; min-width: 0; background: #2a2a35; color: #ddd; border: 1px solid #444; border-radius: 5px; padding: 6px 2px; font-size: 0.78em; cursor: pointer; }
-        .bc-tabs button[aria-selected="true"] { background: #d35400; color: #fff; border-color: #e67e22; }
-        .bc-ctxhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.8em; margin-bottom: 6px; }
-        .bc-ctxhead code { color: #f0a35e; }
-        .ime-badge { display: inline-block; font-size: 0.85em; padding: 2px 6px; border-radius: 999px; background: #333; color: #ccc; }
-        .ime-badge.own { background: rgba(230,126,34,0.25); color: #ffc58f; }
-        .bc-row { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr); gap: 4px 6px; align-items: center; margin-bottom: 4px; padding: 3px 4px; border-radius: 4px; }
-        .bc-row.on { background: rgba(230,126,34,0.12); }
+        #bcPanel { min-width: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+        #bcPanel select, #bcPanel .bc-text, #bcPanel textarea {
+            width: 100%; box-sizing: border-box; min-height: 32px; background: var(--st-inset); color: var(--st-text);
+            border: 1px solid var(--st-border-strong); border-radius: 6px; padding: 5px 8px; font: 12px/1.4 var(--st-font);
+        }
+        #bcPanel select:focus, #bcPanel .bc-text:focus, #bcPanel textarea:focus, .bc-num:focus { outline: none; border-color: var(--st-accent-hover); }
+        .bc-load { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+        .bc-btn { flex: 1 1 auto; margin: 0; font-size: 12px; }
+        .bc-btn:disabled { cursor: not-allowed; }
+        .bc-field { display: block; font-size: 12px; font-weight: 600; margin: 0; color: var(--st-muted); }
+        .bc-field select, .bc-field input { margin-top: 4px; }
+        .bc-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; padding: 4px; border-radius: 10px; background: var(--st-inset); border: 1px solid var(--st-border); }
+        .bc-tabs button {
+            flex: 1 1 30%; min-width: 0; min-height: 32px; background: transparent; color: var(--st-muted);
+            border: 1px solid transparent; border-radius: 6px; padding: 6px 2px; font: 600 12px/1.2 var(--st-font); cursor: pointer;
+            transition: background-color .15s, color .15s;
+        }
+        .bc-tabs button:hover { background: var(--st-surface-2); color: var(--st-text); }
+        .bc-tabs button:focus-visible { outline: 2px solid var(--st-accent-hover); outline-offset: 1px; }
+        .bc-tabs button[aria-selected="true"] { background: var(--st-accent); color: #fff; }
+        .bc-ctxhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 6px; }
+        .ime-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--st-surface-2); border: 1px solid var(--st-border-strong); color: var(--st-muted); }
+        .ime-badge.own { background: var(--st-accent-soft); border-color: var(--st-accent-line); color: var(--st-accent-text); }
+        .bc-row { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr); gap: 4px 6px; align-items: center; margin-bottom: 4px; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; }
+        .bc-row.on { background: var(--st-accent-soft); border-color: var(--st-accent-line); }
         .bc-row.blocked { opacity: 0.6; }
-        .bc-comp { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 0.78em; min-width: 0; }
+        .bc-comp { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; min-width: 0; }
         .bc-comp span { overflow-wrap: anywhere; }
         .bc-ctl { display: flex; gap: 4px; min-width: 0; }
-        .bc-num { width: 100%; min-width: 0; box-sizing: border-box; background: #15151a; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 3px 4px; font-size: 12px; }
-        .bc-num:disabled, .bc-text:disabled { color: #888; }
-        .bc-why { grid-column: 1 / -1; font-size: 0.72em; color: #f5b77a; }
-        .bc-mini { display: flex; font-size: 0.75em; margin: 2px 0 6px; gap: 6px; }
-        .ime-group-title { font-size: 0.8em; color: #e67e22; margin: 8px 0 3px; font-weight: bold; }
-        .ime-msg { font-size: 0.8em; line-height: 1.4; margin: 6px 0; overflow-wrap: anywhere; }
-        .ime-msg div { margin-bottom: 4px; padding-left: 6px; border-left: 2px solid; }
-        .ime-msg .err { color: #ff8a8a; border-color: #ff5c5c; }
-        .ime-msg .warn { color: #ffd166; border-color: #ffd166; }
-        .ime-msg .note { color: #f5b77a; border-color: #e67e22; }
-        .ime-msg .ok { color: #8fe3a1; border-color: #4caf50; }
-        .bc-ref { color: #888; font-size: 0.9em; }
-        #bcPanel details { margin: 6px 0; }
-        #bcPanel summary { cursor: pointer; font-size: 0.85em; color: #ccc; margin-bottom: 6px; }
+        .bc-num { width: 100%; min-width: 0; min-height: 30px; box-sizing: border-box; background: var(--st-inset); color: var(--st-text); border: 1px solid var(--st-border-strong); border-radius: 6px; padding: 3px 5px; font: 12px var(--st-mono); }
+        .bc-num:disabled, .bc-text:disabled { color: var(--st-faint); }
+        .bc-why { grid-column: 1 / -1; font-size: 11px; color: var(--st-warn); }
+        .bc-mini { display: flex; font-size: 12px; margin: 2px 0 6px; gap: 6px; color: var(--st-muted); }
+        .ime-group-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--st-faint); margin: 8px 0 0; }
+        .ime-msg { font-size: 12px; line-height: 1.45; margin: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 4px; }
+        .ime-msg:empty { display: none; }
+        .ime-msg div { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--st-border-strong); border-left-width: 3px; background: var(--st-surface-2); }
+        .ime-msg .err { color: var(--st-error); border-color: var(--st-error-line); background: var(--st-error-soft); }
+        .ime-msg .warn { color: var(--st-warn); border-color: var(--st-warn-line); background: var(--st-warn-soft); }
+        .ime-msg .note { color: var(--st-accent-text); border-color: var(--st-accent-line); background: var(--st-accent-soft); }
+        .ime-msg .ok { color: var(--st-ok); border-color: var(--st-ok-line); background: var(--st-ok-soft); }
+        .bc-ref { color: var(--st-faint); font-size: 0.9em; }
+        #bcPanel details { margin: 0; border: 1px solid var(--st-border); border-radius: 10px; padding: 8px 10px; background: rgba(2, 6, 23, 0.4); }
+        #bcPanel summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--st-text); min-height: 24px; display: list-item; }
+        #bcPanel details[open] > summary { margin-bottom: 8px; }
         .bc-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }
-        .bc-table th { text-align: left; color: #aaa; font-weight: normal; border-bottom: 1px solid #444; padding: 2px; }
+        .bc-table th { text-align: left; color: var(--st-muted); font-weight: 600; border-bottom: 1px solid var(--st-border-strong); padding: 2px; }
         .bc-table th:first-child, .bc-table td:first-child { width: 6.8em; }
-        .bc-table td { vertical-align: top; padding: 3px 2px; border-bottom: 1px solid #2c2c33; overflow-wrap: anywhere; }
-        .bc-table tr.cur td { background: rgba(230,126,34,0.12); }
-        .bc-table tr.bad td { color: #ff8a8a; }
-        .bc-vals { font-family: Consolas, monospace; }
-        .bc-src { color: #999; font-size: 0.95em; }
-        .bc-over { margin: 4px 0; padding-left: 16px; font-size: 0.78em; overflow-wrap: anywhere; }
-        .bc-over code { color: #f0a35e; }
-        textarea.bc-out { min-height: 110px; font-family: Consolas, monospace; font-size: 11px; resize: vertical; }
-        @media (max-width: 700px) {
+        .bc-table td { vertical-align: top; padding: 3px 2px; border-bottom: 1px solid var(--st-border); overflow-wrap: anywhere; }
+        .bc-table tr.cur td { background: var(--st-accent-soft); }
+        .bc-table tr.bad td { color: var(--st-error); }
+        .bc-vals { font-family: var(--st-mono); }
+        .bc-src { color: var(--st-muted); font-size: 0.95em; }
+        .bc-over { margin: 4px 0; padding-left: 16px; font-size: 12px; overflow-wrap: anywhere; }
+        textarea.bc-out { min-height: 110px; font-family: var(--st-mono) !important; font-size: 11px; resize: vertical; }
+        @media (max-width: 760px) {
             .bc-slot16 { width: 64px; height: 64px; }
             .bc-slot16-label { top: 76px; }
             .bc-label, .bc-fitinfo { max-width: calc(100% - 96px); }
-            .bc-note { font-size: 10px; max-height: 28%; overflow: hidden; }
+            .bc-note { font-size: 11px; max-height: 28%; overflow: hidden; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #viewer, .toggle, .upload-group, .bc-tabs button { transition: none; }
+            #loading::before { animation: none; }
         }
     </style>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-<div id="sidebar">
-    <a href="index.html" title="Retour à Beltaria Studio" style="display:inline-block;padding:4px 10px;border-radius:999px;background:#16121f;border:1px solid #2a2338;color:#ece8f4;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;white-space:nowrap;align-self:flex-start;margin-bottom:12px">← Beltaria Studio</a>
-    <h2>⛏️ Item 3D Maker</h2>
-    <div class="info-text">
-        Importez un PNG (ex: épée).<br>
-        • Pour <b>les arcs</b>, importez les 4 fichiers d'un coup.
+<header class="st-header"><div class="st-header-inner">
+    <div class="st-brand">
+        <a class="st-back" href="index.html" title="Retour à Beltaria Studio">←<span class="st-back-label"> Beltaria Studio</span></a>
+        <div class="st-logo"><span><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zm0 0v18m8-13.5l-8 4.5-8-4.5"/></svg></span></div>
+        <div><h1 class="st-title">Items 3D &amp; réglage d'entrée</h1><p class="st-subtitle">Texture d'item en relief, animations, et entrée pack.json comme BeltariaContent l'assemble</p></div>
     </div>
-    
-    <div class="upload-group">
-        <label class="title">Texture(s) de l'Item</label>
-        <label class="btn" for="itemUpload">📁 Choisir Fichier(s)</label>
-        <input type="file" id="itemUpload" accept="image/png" multiple>
-        <span class="status" id="statusText">Aucun item chargé.</span>
-        <div id="loading">Génération des voxels 3D...</div>
-    </div>
+    <div class="st-actions"><span class="st-badge st-badge-accent">Minecraft 1.8.9</span></div>
+</div></header>
 
-    <div class="box">
-        <h3>🎥 Contrôle d'Animation</h3>
-        <label>
-            <input type="checkbox" id="autoPlay" checked> Lecture Automatique (Boucle)
+<div class="app">
+<div id="sidebar">
+    <section class="st-panel">
+        <div class="st-panel-head"><h2 class="st-panel-title"><span class="st-step">1</span> Texture de l'item</h2></div>
+        <div class="upload-group">
+            <label class="st-btn st-btn-primary" for="itemUpload" style="margin:0">📁 Choisir un ou plusieurs PNG</label>
+            <input type="file" id="itemUpload" accept="image/png" multiple>
+            <span class="status" id="statusText">Aucun item chargé.</span>
+            <div id="loading">Génération des voxels 3D...</div>
+        </div>
+        <p class="info-text" style="margin:10px 0 0">Un PNG (ex : épée) ou une spritesheet verticale animée. Pour <b>les arcs</b>, importez les 4 fichiers d'un coup.</p>
+    </section>
+
+    <section class="st-panel">
+        <div class="st-panel-head"><h2 class="st-panel-title"><span class="st-step">2</span> Animation</h2></div>
+        <label class="toggle">
+            <input type="checkbox" id="autoPlay" checked> Lecture automatique (boucle)
         </label>
-        <label style="flex-direction: column; align-items: flex-start; gap: 5px;">
-            <span>Vitesse (Timer) : <span id="speedValue">400</span> ms</span>
+        <label class="field">
+            <span>Vitesse (timer) : <span class="val"><span id="speedValue">400</span> ms</span></span>
             <input type="range" id="speedSlider" min="50" max="2000" step="50" value="400">
         </label>
-        <label style="flex-direction: column; align-items: flex-start; gap: 5px;">
-            <span>Frame manuelle : <span id="frameCounter">1/1</span></span>
+        <label class="field">
+            <span>Frame manuelle : <span class="val" id="frameCounter">1/1</span></span>
             <input type="range" id="frameSlider" min="0" max="0" value="0" disabled>
         </label>
-    </div>
+    </section>
 
-    <div class="box">
-        <h3>👁️ Mode de Vue</h3>
-        <label class="highlight-check">
-            <input type="checkbox" id="inGameMode"> 🎮 Rendu In-Game 1.8 (Vue FPS)
+    <section class="st-panel">
+        <div class="st-panel-head"><h2 class="st-panel-title"><span class="st-step">3</span> Mode de vue</h2></div>
+        <label class="toggle">
+            <input type="checkbox" id="inGameMode"> 🎮 Rendu in-game 1.8 (vue FPS)
         </label>
-        <label>
-            <input type="checkbox" id="autoRotate" checked> Rotation Automatique
+        <label class="toggle">
+            <input type="checkbox" id="autoRotate" checked> Rotation automatique
         </label>
-        <label style="flex-direction: column; align-items: flex-start; gap: 5px;">
-            Épaisseur de l'objet (Z) :
+        <label class="field">
+            Épaisseur de l'objet (Z)
             <input type="range" id="thicknessSlider" min="0.2" max="3" step="0.2" value="1">
         </label>
-    </div>
-    <div class="box" id="bcBox">
-        <h3>🧩 Réglage d'entrée BeltariaContent</h3>
-        <label class="highlight-check">
+    </section>
+    <section class="st-panel" id="bcBox">
+        <div class="st-panel-head"><h2 class="st-panel-title"><span class="st-step">4</span> Réglage d'entrée BeltariaContent</h2><span class="st-badge">pack.json</span></div>
+        <label class="toggle" style="margin-bottom:0">
             <input type="checkbox" id="bcToggle"> Régler une entrée de pack.json
         </label>
         <div id="bcPanel" hidden aria-busy="false">
             <div class="info-text">Miroir exact de l'assemblage BeltariaContent : <code>pack.json</code> remplace le <code>display</code> de <code>model.json</code>, client 1.8.9 + OptiFine CIT. Tout reste dans le navigateur.</div>
             <div class="bc-load">
-                <label class="bc-btn" for="bcDir">📁 Dossier (entrée ou pack-src)</label>
+                <label class="bc-btn st-btn st-btn-soft" for="bcDir">📁 Dossier (entrée ou pack-src)</label>
                 <input type="file" id="bcDir" webkitdirectory multiple>
-                <label class="bc-btn" for="bcFiles">📄 Fichiers / .zip</label>
+                <label class="bc-btn st-btn st-btn-soft" for="bcFiles">📄 Fichiers / .zip</label>
                 <input type="file" id="bcFiles" multiple accept=".json,.png,.mcmeta,.zip,application/json,application/zip,image/png">
             </div>
             <div class="info-text">Dossier <code>&lt;catégorie&gt;/&lt;id&gt;/</code> (model.json + texture*.png [+ .mcmeta]), fichiers isolés, ou tout <code>pack-src</code> (dossier ou .zip) avec <code>pack.json</code>.</div>
@@ -214,7 +286,7 @@
             <div class="ime-group-title">Géométrie de l'entrée</div>
             <div id="bcShift"></div>
             <label class="bc-mini"><input type="checkbox" id="bcAnimate" checked> Animer l'item au sol</label>
-            <button type="button" class="bc-btn" id="bcReset">↺ Revenir au pack.json chargé</button>
+            <button type="button" class="bc-btn st-btn" id="bcReset">↺ Revenir au pack.json chargé</button>
             <div id="bcMsg" class="ime-msg" aria-live="polite"></div>
             <details open>
                 <summary>Valeurs finales écrites par BC</summary>
@@ -227,18 +299,26 @@
             <details open>
                 <summary>Export pack.json</summary>
                 <textarea id="bcOut" class="bc-out" readonly aria-label="Extrait pack.json"></textarea>
-                <div class="bc-load">
-                    <button type="button" class="bc-btn" id="bcCopy">📋 Copier l'extrait</button>
-                    <button type="button" class="bc-btn" id="bcDlPack" disabled>💾 pack.json complet</button>
+                <div class="bc-load" style="margin-top:6px">
+                    <button type="button" class="bc-btn st-btn" id="bcCopy">📋 Copier l'extrait</button>
+                    <button type="button" class="bc-btn st-btn st-btn-primary" id="bcDlPack" disabled>💾 pack.json complet</button>
                 </div>
                 <div class="info-text" id="bcExportInfo"></div>
             </details>
         </div>
-    </div>
+    </section>
 </div>
 
 <div id="viewer">
     <div id="crosshair"></div>
+    <div class="empty" id="emptyState">
+        <div class="empty-card">
+            <div class="empty-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zm0 0v18m8-13.5l-8 4.5-8-4.5"/></svg></div>
+            <p class="empty-title">Importez une texture pour commencer</p>
+            <p class="empty-sub">PNG d'item (16x16, 32x32…), spritesheet verticale animée, ou les 4 images d'un arc d'un coup. Glissez ensuite pour tourner, molette pour zoomer.</p>
+            <label class="st-btn st-btn-primary" for="itemUpload">📁 Choisir un ou plusieurs PNG</label>
+        </div>
+    </div>
     <div id="bcView">
         <div class="bc-label" id="bcViewLabel"></div>
         <div class="bc-fitinfo" id="bcFitInfo"></div>
@@ -247,6 +327,7 @@
         <div id="bcCrosshair"></div>
         <div class="bc-note" id="bcViewNote"></div>
     </div>
+</div>
 </div>
 
 <script>
@@ -275,6 +356,15 @@
         camera.updateProjectionMatrix();
         renderer.setSize(viewerDiv.clientWidth, viewerDiv.clientHeight);
     });
+    // La vue change aussi de taille sans redimensionner la fenêtre (mise en page téléphone, barre d'adresse) :
+    // on suit sa boîte, en ignorant une taille nulle
+    if ('ResizeObserver' in window) new ResizeObserver(() => {
+        const w = viewerDiv.clientWidth, h = viewerDiv.clientHeight;
+        if (!w || !h) return;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+    }).observe(viewerDiv);
 
     // --- VARIABLES GLOBALES ---
     let itemGroup = new THREE.Group();
@@ -377,6 +467,7 @@
         }
 
         updateUI();
+        document.getElementById('emptyState').hidden = true;
         document.getElementById('loading').style.display = 'none';
         
         if (inGameMode) {
@@ -501,7 +592,7 @@
             controls.enabled = true;
             autoRotateCheckbox.disabled = false;
             crosshair.style.display = 'none';
-            viewerDiv.style.background = ""; // Rend le fond CSS par défaut (#1e1e24)
+            viewerDiv.style.background = ""; // Rend le fond CSS par défaut (dégradé du thème)
             
             camera.fov = 45;
             camera.updateProjectionMatrix();
